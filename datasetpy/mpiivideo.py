@@ -227,8 +227,12 @@ class MPIIDataset(Dataset):
         if img_np is None:
             raise ValueError('Failed to read {}'.format(image_file_path))
         # Since openCV use BGR, need to inverse it
-        img_np = img_np[:, :, ::-1]
-        # img_np = plt_2_viz(img_np) # C x H x W
+        # cannot use the following, will raise  some of the strides of a given numpy array are negative. ERROR
+        # img_np = img_np[:, :, ::-1]
+        
+        img_np =  cv2.cvtColor(img_np,cv2.COLOR_BGR2RGB)
+
+        
         joints = person['annopoints']
         joints_np = np.zeros([self.num_joints, 3])
         for j in joints:
@@ -249,15 +253,27 @@ class MPIIDataset(Dataset):
         feat_stride = self.img_size[0] / self.hmap_size[0]
         gt_heatmaps = gaussian_ground_truth(feat_stride, self.hmap_size, joints_np)
         
-        target = torch.from_numpy(gt_heatmaps)
-        img = torch.from_numpy(resized_img)
+        # All to float32 to avoid type confliction
+        # self.num_joints x heatmapsize
+        target = torch.from_numpy(gt_heatmaps).float()
+        # convert to C x H x W
+        img = torch.from_numpy(plt_2_viz(resized_img)).float()
         
         person.update({
             'gt_heatmaps': target,
             'data': img,
-            'original': img_np
+            'original': img_np,
+            'head_bbox': torch.tensor([person['x1'],person['x2'],person['y1'],person['y2']]).float()
         })
-        
+        if not __name__ == '__main__':
+            del person['original'] # must be same size so save it only when debuging
+            del person['image']  # str infomation eliminate
+            del person['annopoints']  # only need gt_heatmaps to train
+            del person['x1']
+            del person['x2']
+            del person['y1']
+            del person['y2']
+        # return person['data'], person['gt_heatmaps'],person['track_id'],person['']
         return person
 
 
