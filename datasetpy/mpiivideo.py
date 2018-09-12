@@ -15,29 +15,42 @@ from utils import transforms
 from utils.imutils import batch_with_heatmap
 
 
-def gaussian_ground_truth(feat_stride, heatmap_size, joints_np, sigma = 7):
-    # TODO: even if it's not visible, still give it a hmap, for now
+def gaussian_ground_truth(feat_stride, heatmap_size, joints_np, sigmas = (7)):
+    # DONE: even if it's not visible, still give it a hmap, for now
+    '''
+    
+    :param feat_stride:
+    :param heatmap_size:
+    :param joints_np:
+    :param sigmas:
+    :return:
+    '''
     joints_np = joints_np.copy()
     # cast joints to be in heatmap_size
     joints_np[:, :2] /= feat_stride
     
     def single_gaussian_gt(pt):
-        hmap = np.zeros(heatmap_size)
-        # In pt, y comse first
-        if pt[2]:
-            # if visible
-            hmap[int(pt[0])][int(pt[1])] = 1
-            hmap = cv2.GaussianBlur(hmap, (sigma, sigma), 0)
-            am = np.amax(hmap)
-            hmap /= am / 255
-        return hmap
+        hmaps = []
+        for sigma in sigmas:
+            # generate heatmaps for different kernel size
+            hmap = np.zeros(heatmap_size)
+            # In pt, y comse first
+            if pt[2]:
+                # if visible
+                hmap[int(pt[0])][int(pt[1])] = 1
+                hmap = cv2.GaussianBlur(hmap, (sigma, sigma), 0)
+                am = np.amax(hmap)
+                hmap /= am / 255
+            hmaps.append(hmap)
+        hmaps_tensor = np.stack(hmaps)
+        return hmaps_tensor
     
     hmaps = [single_gaussian_gt(pos) for pos in joints_np]
     return np.stack(hmaps)
 
 
 def flip_coin():
-    return 1  # random.randint(0, 1)
+    return  random.randint(0, 1)
 
 
 def plt_2_viz(g):
@@ -113,12 +126,14 @@ class MPIIDataset(Dataset):
         self.mode = mode
         self.img_size = (256, 256)
         self.hmap_size = (64, 64)
+        self.feat_stride = self.img_size[0]/self.hmap_size[0]
         self.data_path = datapath
         self.person_anno, self.frame_with_no_anno, self.person_only_head = self.process_anno()
         self.flip_images = False
         self.rotate_images = False
         self.transform = None
-        self.gt_hmap_sigmas = [3]  # sigma when generating 2d gaussian heatmaps
+        # use different sigmas to adapt to different scale of people
+        self.gt_hmap_sigmas = [3,7,11]  # sigma when generating 2d gaussian heatmaps,
         self.num_joints = 16  # actually joints id 6 and 7 are not annotated in this dataset, so only 14 avaliable
         self.max_theta = 45
     
@@ -197,13 +212,13 @@ class MPIIDataset(Dataset):
     
     def _resize_image(self, img_np, joints_np):
         
-        h, w, channel = img_np.shape
-        h_ratio = h / self.img_size[0]
-        w_ratio = w / self.img_size[1]
         # ALright always think this is to violent brutal...
         resized_img = cv2.resize(img_np, self.img_size)
         
-        # Cast joints to be in 0~img_size
+        # clamp joints to be in 0~img_size
+        h, w, channel = img_np.shape
+        h_ratio = h / self.img_size[0]
+        w_ratio = w / self.img_size[1]
         joints_np[:, 0] /= h_ratio
         joints_np[:, 0] = np.floor(joints_np[:, 0])
         joints_np[:, 1] /= w_ratio
@@ -227,15 +242,14 @@ class MPIIDataset(Dataset):
         if img_np is None:
             raise ValueError('Failed to read {}'.format(image_file_path))
         # Since openCV use BGR, need to inverse it
-        # cannot use the following, will raise  some of the strides of a given numpy array are negative. ERROR
+        img_np =  cv2.cvtColor(img_np,cv2.COLOR_BGR2RGB)
+        # cannot use the following, will raise
+        # ERROR some of the strides of a given numpy array are negative.
         # img_np = img_np[:, :, ::-1]
         
-        img_np =  cv2.cvtColor(img_np,cv2.COLOR_BGR2RGB)
-
-        
-        joints = person['annopoints']
+        joints_anno = person['annopoints']
         joints_np = np.zeros([self.num_joints, 3])
-        for j in joints:
+        for j in joints_anno:
             # Note here we use y first, since height comes first
             joints_np[j['id'], :] = np.array([j['y'], j['x'], j['is_visible']])
         
@@ -250,29 +264,30 @@ class MPIIDataset(Dataset):
             resized_img, joints_np = self._augment_image(resized_img, joints_np)
         
         # after conv, the downsample rate is feat_stride
-        feat_stride = self.img_size[0] / self.hmap_size[0]
-        gt_heatmaps = gaussian_ground_truth(feat_stride, self.hmap_size, joints_np)
+        gt_heatmaps = gaussian_ground_truth(self.feat_stride, self.hmap_size, joints_np,self.gt_hmap_sigmas)
         
         # All to float32 to avoid type confliction
         # self.num_joints x heatmapsize
         target = torch.from_numpy(gt_heatmaps).float()
         # convert to C x H x W
         img = torch.from_numpy(plt_2_viz(resized_img)).float()
-        
+        head_bbox = torch.tensor([person['x1'],person['x2'],person['y1'],person['y2']]).float()
+        joints = torch.from_numpy(joints_np).long()
         person.update({
             'gt_heatmaps': target,
             'data': img,
             'original': img_np,
-            'head_bbox': torch.tensor([person['x1'],person['x2'],person['y1'],person['y2']]).float()
+            'head_bbox': head_bbox,
+            'joints': joints,
         })
+        del person['x1']
+        del person['x2']
+        del person['y1']
+        del person['y2']
         if not __name__ == '__main__':
             del person['original'] # must be same size so save it only when debuging
             del person['image']  # str infomation eliminate
             del person['annopoints']  # only need gt_heatmaps to train
-            del person['x1']
-            del person['x2']
-            del person['y1']
-            del person['y2']
         # return person['data'], person['gt_heatmaps'],person['track_id'],person['']
         return person
 

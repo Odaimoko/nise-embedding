@@ -12,6 +12,14 @@ import numpy as np
 import cv2
 
 
+def color_normalize(x, mean):
+    if x.size(0) == 1:
+        x = x.repeat(3, 1, 1)
+    mean /= 255
+    for t, m in zip(x, mean):
+        t.sub_(m)
+    return x
+
 def flip_back(output_flipped, matched_parts):
     '''
     ouput_flipped: numpy.ndarray(batch_size, num_joints, height, width)
