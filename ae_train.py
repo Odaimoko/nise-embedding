@@ -126,7 +126,8 @@ for person in mpii_train_loader:
     hourglass_final_layer_id = net_cfg['nstack'] - 1
     num_joints = net_cfg['num_parts']
     heatmap_joints = result[:, hourglass_final_layer_id, 0:num_joints]  # bs x num_joints x *heatmap_size
-    tags = result[:, hourglass_final_layer_id, num_joints + 3:]  # bs x len_emb x *heatmap_size
+    # 这里是分开来的， 训练的tag并没有帮助到heatmap
+    tags = result[:, hourglass_final_layer_id, num_joints:]  # bs x len_emb x *heatmap_size
     
     
     tag_loss = tag_loss_batch(tags, track_id, joints_for_hmap)
