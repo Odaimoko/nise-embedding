@@ -1,6 +1,6 @@
 import numpy as np
 import visdom
-from utils.imutils import batch_with_heatmap
+from nise_utils.imutils import batch_with_heatmap
 import torch
 
 class Visualizer(object):
@@ -93,6 +93,14 @@ def viz_plot_gt_and_pred(viz, imgs, gt_heatmaps, predicted_heatmaps):
                                                 num_rows = 2)
             p_viz = plt_2_viz(pred_batch_img)
             viz.image(p_viz)
+
+def plot_all_loss_with_vis_set(vis_set, update):
+    if vis_set is None: return
+    viz, loss_meters = vis_set[0], vis_set[1]
+    for k, v in loss_meters.items():
+        if k in update.keys():
+            v.add(update[k])  # 为了可视化增加的内容
+    viz.plot_many_stack({k: v.value()[0] for k, v in loss_meters.items()})
 
 
 if __name__ == '__main__':

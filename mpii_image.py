@@ -22,8 +22,8 @@ from datasetpy.mscocoMulti import MscocoMulti
 from datasetpy.mpii import Mpii
 from mpii_config import cfg, get_arg_parser
 from coco_config import cfg as coco_cfg
-from utils.misc import save_checkpoint
-from utils.visualize import Visualizer
+from nise_utils.misc import save_checkpoint
+from nise_utils.visualize import Visualizer
 
 
 def train_mpii_video(epoch, data_loader, model, optimizer, vis_set = None):

@@ -11,7 +11,7 @@ import numpy as np
 import torch
 from torch.utils.data import Dataset
 
-from utils.visualize import viz_plot_gt_and_pred, plt_2_viz
+from nise_utils.visualize import viz_plot_gt_and_pred, plt_2_viz
 
 
 def gaussian_ground_truth(feat_stride, heatmap_size, joints_np, sigmas = (7)):

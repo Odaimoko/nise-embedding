@@ -10,9 +10,9 @@ import skimage.transform
 import torch
 import torch.utils.data as data
 
-from utils.osutils import *
-from utils.imutils import *
-from utils.transforms import *
+from nise_utils.osutils import *
+from nise_utils.imutils import *
+from nise_utils.transforms import *
 
 class MscocoMulti(data.Dataset):
     def __init__(self, cfg, train=True):

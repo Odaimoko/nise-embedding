@@ -35,9 +35,9 @@ class Config:
     #
 
     START_EPOCH = 0
-    END_EPOCH = 20
-    batch_size = 16
-    lr = 2e-4
+    END_EPOCH = 40
+    batch_size = 32
+    lr = 2.5e-4
     weight_decay = .05
     # lr_gamma = 0.05
     # lr_dec_epoch = list(range(6, 40, 6))
