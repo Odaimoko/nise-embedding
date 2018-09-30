@@ -51,7 +51,7 @@ cfg.emb_tag_weight = 4
 # ─── DATA ───────────────────────────────────────────────────────────────────────
 #
 cfg.DATA = ed()
-cfg.DATA.num_class = 16
+cfg.DATA.num_joints = 16
 cfg.DATA.image_path = 'data/mpii-video-pose'
 cfg.DATA.data_shape = (512, 512)
 cfg.DATA.output_shape = (128, 128)
@@ -60,7 +60,7 @@ cfg.DATA.gt_hmap_sigmas = [3, 7, 11]
 
 cfg.DATA.symmetry = [(1, 2), (3, 4), (5, 6), (7, 8),
                      (9, 10), (11, 12), (13, 14), (15, 16)]
-cfg.DATA.bbox_extend_factor = (0.1, 0.15)  # x, y
+cfg.DATA.bbox_extend_factor = (0.075, 0.075)  # x, y
 
 # data augmentation setting
 cfg.DATA.scale_factor = (0.7, 1.35)
@@ -68,8 +68,19 @@ cfg.DATA.rot_factor = 45
 
 cfg.DATA.pixel_means = np.array([122.7717, 115.9465, 102.9801])  # RGB
 
+#  should ask author
+cfg.DATA.flow_input_size = (640,384 )
+cfg.DATA.human_bbox_size = (384, 384)
+
 # debugging
 
 cfg.DEBUG = ed()
 cfg.DEBUG.DEVELOPING = True
-cfg.DEBUG.FLOW = True
+cfg.DEBUG.FLOW = False
+cfg.DEBUG.FRAME = True
+cfg.DEBUG.HUMAN = True
+
+# ─── ALGORITHM ──────────────────────────────────────────────────────────────────
+
+cfg.ALG = ed()
+cfg.ALG.DEQUE_CAPACITY = 3

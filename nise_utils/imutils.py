@@ -5,6 +5,7 @@ import scipy.misc
 import cv2
 import copy
 
+
 def to_numpy(tensor):
     if torch.is_tensor(tensor):
         return tensor.cpu().numpy()
@@ -22,29 +23,33 @@ def to_torch(ndarray):
                          .format(type(ndarray)))
     return ndarray
 
+
 def im_to_numpy(img):
     img = to_numpy(img)
-    img = np.transpose(img, (1, 2, 0)) # H*W*C
+    img = np.transpose(img, (1, 2, 0))  # H*W*C
     return img
 
+
 def im_to_torch(img):
-    img = np.transpose(img, (2, 0, 1)) # C*H*W
+    img = np.transpose(img, (2, 0, 1))  # C*H*W
     img = to_torch(img).float()
     if img.max() > 1:
         img /= 255
     return img
 
+
 def load_image(img_path):
     # H x W x C => C x H x W
     return im_to_torch(scipy.misc.imread(img_path, mode='RGB'))
 
-def resize(img, owidth, oheight):
+
+def resize(img,owidth ,oheight ):
     img = im_to_numpy(img)
     print('%f %f' % (img.min(), img.max()))
     img = scipy.misc.imresize(
-            img,
-            (oheight, owidth)
-        )
+        img,
+        (oheight, owidth)
+    )
     img = im_to_torch(img)
     print('%f %f' % (img.min(), img.max()))
     return img
@@ -65,28 +70,32 @@ def generate_heatmap(heatmap, pt, sigma):
 def gauss(x, a, b, c, d=0):
     return a * np.exp(-(x - b)**2 / (2 * c**2)) + d
 
+
 def color_heatmap(x):
     x = to_numpy(x)
-    color = np.zeros((x.shape[0],x.shape[1],3))
-    color[:,:,0] = gauss(x, .5, .6, .2) + gauss(x, 1, .8, .3)
-    color[:,:,1] = gauss(x, 1, .5, .3)
-    color[:,:,2] = gauss(x, 1, .2, .3)
+    color = np.zeros((x.shape[0], x.shape[1], 3))
+    color[:, :, 0] = gauss(x, .5, .6, .2) + gauss(x, 1, .8, .3)
+    color[:, :, 1] = gauss(x, 1, .5, .3)
+    color[:, :, 2] = gauss(x, 1, .2, .3)
     color[color > 1] = 1
     color = (color * 255).astype(np.uint8)
     return color
+
 
 def imshow(img):
     npimg = im_to_numpy(img*255).astype(np.uint8)
     plt.imshow(npimg)
     plt.axis('off')
 
+
 def show_joints(img, pts):
     imshow(img)
-    
+
     for i in range(pts.size(0)):
         if pts[i, 2] > 0:
             plt.plot(pts[i, 0], pts[i, 1], 'yo')
     plt.axis('off')
+
 
 def show_sample(inputs, target):
     num_sample = inputs.size(0)
@@ -95,14 +104,15 @@ def show_sample(inputs, target):
     width = target.size(3)
 
     for n in range(num_sample):
-        inp = resize(inputs[n], width, height)
+        inp = resize(inputs[n], height, width)
         out = inp
         for p in range(num_joints):
-            tgt = inp*0.5 + color_heatmap(target[n,p,:,:])*0.5
+            tgt = inp*0.5 + color_heatmap(target[n, p, :, :])*0.5
             out = torch.cat((out, tgt), 2)
-        
+
         imshow(out)
         plt.show()
+
 
 def draw_labelmap(img, pt, sigma, type='Gaussian'):
     # Draw a 2D gaussian
@@ -128,7 +138,6 @@ def draw_labelmap(img, pt, sigma, type='Gaussian'):
     elif type == 'Cauchy':
         g = sigma / (((x - x0) ** 2 + (y - y0) ** 2 + sigma ** 2) ** 1.5)
 
-
     # Usable gaussian range
     g_x = max(0, -ul[0]), min(br[0], img.shape[1]) - ul[0]
     g_y = max(0, -ul[1]), min(br[1], img.shape[0]) - ul[1]
@@ -138,6 +147,7 @@ def draw_labelmap(img, pt, sigma, type='Gaussian'):
 
     img[img_y[0]:img_y[1], img_x[0]:img_x[1]] = g[g_y[0]:g_y[1], g_x[0]:g_x[1]]
     return to_torch(img)
+
 
 def sample_with_heatmap(inp, out, num_rows=2, parts_to_show=None):
     inp = to_numpy(inp * 255)
@@ -154,7 +164,8 @@ def sample_with_heatmap(inp, out, num_rows=2, parts_to_show=None):
     num_cols = int(np.ceil(float(len(parts_to_show)) / num_rows))
     size = img.shape[0] // num_rows
 
-    full_img = np.zeros((img.shape[0], size * (num_cols + num_rows), 3), np.uint8)
+    full_img = np.zeros(
+        (img.shape[0], size * (num_cols + num_rows), 3), np.uint8)
     full_img[:img.shape[0], :img.shape[1]] = img
 
     inp_small = scipy.misc.imresize(img, [size, size])
@@ -170,17 +181,20 @@ def sample_with_heatmap(inp, out, num_rows=2, parts_to_show=None):
 
         col_offset = (i % num_cols + num_rows) * size
         row_offset = (i // num_cols) * size
-        full_img[row_offset:row_offset + size, col_offset:col_offset + size] = out_img
+        full_img[row_offset:row_offset + size,
+                 col_offset:col_offset + size] = out_img
 
     return full_img
+
 
 def batch_with_heatmap(inputs, outputs, mean=torch.Tensor([0.5, 0.5, 0.5]), num_rows=2, parts_to_show=None):
     batch_img = []
     inputs = copy.deepcopy(inputs)
-    inputs/=torch.max(inputs) # normalize
+    inputs /= torch.max(inputs)  # normalize
     for n in range(min(inputs.size(0), 4)):
         inp = inputs[n] + mean.view(3, 1, 1).expand_as(inputs[n])
         batch_img.append(
-            sample_with_heatmap(inp.clamp(0, 1), outputs[n], num_rows=num_rows, parts_to_show=parts_to_show)
+            sample_with_heatmap(
+                inp.clamp(0, 1), outputs[n], num_rows=num_rows, parts_to_show=parts_to_show)
         )
     return np.concatenate(batch_img)

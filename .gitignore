@@ -1,7 +1,8 @@
 # Oda's
 .idea/
 ae_lib/
-
+*.jpg
+*.pdf
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
