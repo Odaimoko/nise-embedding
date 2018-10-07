@@ -17,7 +17,7 @@ def to_numpy(tensor):
 
 def to_torch(ndarray):
     if type(ndarray).__module__ == 'numpy':
-        return torch.from_numpy(ndarray)
+        return torch.from_numpy(np.array(ndarray))
     elif not torch.is_tensor(ndarray):
         raise ValueError("Cannot convert {} to torch tensor"
                          .format(type(ndarray)))
@@ -43,15 +43,23 @@ def load_image(img_path):
     return im_to_torch(scipy.misc.imread(img_path, mode='RGB'))
 
 
-def resize(img,owidth ,oheight ):
+def resize(img, owidth, oheight):
+    '''
+    
+    :param img: CHW
+    :param owidth:
+    :param oheight:
+    :return:
+    '''
+    # convert to HWC
     img = im_to_numpy(img)
-    print('%f %f' % (img.min(), img.max()))
+    # print('%f %f' % (img.min(), img.max()))
     img = scipy.misc.imresize(
         img,
         (oheight, owidth)
     )
     img = im_to_torch(img)
-    print('%f %f' % (img.min(), img.max()))
+    # print('%f %f' % (img.min(), img.max()))
     return img
 
 

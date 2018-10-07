@@ -3,6 +3,7 @@ import visdom
 from nise_utils.imutils import batch_with_heatmap
 import torch
 
+
 class Visualizer(object):
     def __init__(self, env = 'default', **kwargs):
         self.vis = visdom.Visdom(env = env, **kwargs)
@@ -29,12 +30,15 @@ class Visualizer(object):
                       )
         self.index[name_total] = x + 1
 
+
 NUM_IMG_SHOWN_DEBUG = 2
+
 
 def plt_2_viz(g):
     """
         NOT INPLACE
         img with h x w x channels to channels x h x w
+        For rgb only. no converting from bgr to rgb
     """
     
     def single(single_img):
@@ -65,6 +69,14 @@ def plt_2_viz(g):
     return g_plot
 
 
+def vis_simple_plot(viz, img):
+    if type(img) == list:
+        for i in img:
+            viz.image(plt_2_viz(i))
+    else:
+        viz.image(plt_2_viz(img))
+
+
 def viz_plot_gt_and_pred(viz, imgs, gt_heatmaps, predicted_heatmaps):
     '''
 
@@ -93,6 +105,7 @@ def viz_plot_gt_and_pred(viz, imgs, gt_heatmaps, predicted_heatmaps):
                                                 num_rows = 2)
             p_viz = plt_2_viz(pred_batch_img)
             viz.image(p_viz)
+
 
 def plot_all_loss_with_vis_set(vis_set, update):
     if vis_set is None: return

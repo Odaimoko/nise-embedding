@@ -19,7 +19,7 @@ def color_normalize(x, mean, std):
     return x
 
 
-def flip_back(flip_output, dataset='mpii'):
+def Rflip_back(flip_output, dataset='mpii'):
     """
     flip output map
     """

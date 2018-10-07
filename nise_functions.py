@@ -1,13 +1,159 @@
+import nise_lib._init_paths
+import torch
+from torch import nn
+import os
+import pycocotools
+import colorama
+import argparse
+import numpy as np
+
+# local packages
+from nise_debugging_func import *
+from simple_lib.core.config import config as simple_cfg
+from nise_config import cfg as nise_cfg
 import flow_models
 import flow_losses
 import flow_datasets
-import torch
-from torch import nn
-from nise_debugging_func import gen_rand_flow
-import os, sys
-from tensorboardX import SummaryWriter
-import colorama
-import argparse
+from nise_utils.imutils import *
+
+# ─── LOAD MODEL ─────────────────────────────────────────────────────────────────
+
+import tron_tools._init_paths
+
+from tron_lib.core.config import cfg_from_file, cfg_from_list, assert_and_infer_cfg
+from tron_lib.modeling.model_builder import Generalized_RCNN_for_posetrack
+from tron_lib.utils.timer import Timer
+import tron_lib.nn as mynn
+from tron_lib.utils.detectron_weight_helper import load_detectron_weight
+import tron_lib.utils.net as net_utils
+from tron_lib.core.test_engine import initialize_model_from_cfg
+import tron_lib.datasets.dummy_datasets as datasets
+
+
+def human_detect_parse_args():
+    """Parse input arguments"""
+    parser = argparse.ArgumentParser(description = 'Train a X-RCNN network')
+    
+    parser.add_argument(
+        '--dataset', dest = 'dataset', required = True,
+        help = 'Dataset to use')
+    parser.add_argument(
+        '--tron_cfg', dest = 'cfg_file', required = True,
+        help = 'Config file for training (and optionally testing)')
+    parser.add_argument(
+        '--set', dest = 'set_cfgs',
+        help = 'Set config keys. Key value sequence seperate by whitespace.'
+               'e.g. [key] [value] [key] [value]',
+        default = [], nargs = '+')
+    
+    parser.add_argument(
+        '--disp_interval',
+        help = 'Display training info every N iterations',
+        default = 20, type = int)
+    parser.add_argument(
+        '--no_cuda', dest = 'cuda', help = 'Do not use CUDA device', action = 'store_false')
+    
+    # Optimization
+    # These options has the highest prioity and can overwrite the values in config file
+    # or values set by set_cfgs. `None` means do not overwrite.
+    parser.add_argument(
+        '--bs', dest = 'batch_size',
+        help = 'Explicitly specify to overwrite the value comed from cfg_file.',
+        type = int)
+    parser.add_argument(
+        '--nw', dest = 'num_workers',
+        help = 'Explicitly specify to overwrite number of workers to load data. Defaults to 4',
+        type = int)
+    parser.add_argument(
+        '--iter_size',
+        help = 'Update once every iter_size steps, as in Caffe.',
+        default = 1, type = int)
+    
+    parser.add_argument(
+        '--o', dest = 'optimizer', help = 'Training optimizer.',
+        default = None)
+    parser.add_argument(
+        '--lr', help = 'Base learning rate.',
+        default = None, type = float)
+    parser.add_argument(
+        '--lr_decay_gamma',
+        help = 'Learning rate decay rate.',
+        default = None, type = float)
+    
+    # Epoch
+    parser.add_argument(
+        '--start_step',
+        help = 'Starting step count for training epoch. 0-indexed.',
+        default = 0, type = int)
+    
+    # Resume training: requires same iterations per epoch
+    parser.add_argument(
+        '--resume',
+        help = 'resume to training on a checkpoint',
+        action = 'store_true')
+    
+    parser.add_argument(
+        '--no_save', help = 'do not save anything', action = 'store_true')
+    
+    parser.add_argument(
+        '--load_ckpt', help = 'checkpoint path to load')
+    parser.add_argument(
+        '--load_detectron', help = 'path to the detectron weight pickle file')
+    
+    parser.add_argument(
+        '--use_tfboard', help = 'Use tensorflow tensorboard to log training info',
+        action = 'store_true')
+    
+    args, rest = parser.parse_known_args()
+    return args
+
+
+def load_human_detect_model(args, tron_cfg):
+    if not torch.cuda.is_available():
+        sys.exit("Need a CUDA device to run the code.")
+    # print('Called with args:')
+    # print(args)
+    
+    if args.dataset.startswith("coco"):
+        dataset = datasets.get_coco_dataset()
+        tron_cfg.MODEL.NUM_CLASSES = len(dataset.classes)
+    elif args.dataset.startswith("keypoints_coco"):
+        dataset = datasets.get_coco_dataset()
+        tron_cfg.MODEL.NUM_CLASSES = 2
+    else:
+        raise ValueError('Unexpected dataset name: {}'.format(args.dataset))
+    
+    print('load cfg from file: {}'.format(args.cfg_file))
+    cfg_from_file(args.cfg_file)
+    if args.set_cfgs is not None:
+        cfg_from_list(args.set_cfgs)
+    # When testing, this is set to True. WHen inferring, this is False
+    # QQ: Why????????????????????????
+    # Don't need to load imagenet pretrained weights
+    tron_cfg.MODEL.LOAD_IMAGENET_PRETRAINED_WEIGHTS = False
+    
+    assert_and_infer_cfg()
+    
+    model = Generalized_RCNN_for_posetrack(tron_cfg)
+    model.eval()
+    if args.cuda:
+        model.cuda()
+    
+    if args.load_ckpt:
+        load_name = args.load_ckpt
+        logger.info("loading checkpoint %s", load_name)
+        checkpoint = torch.load(
+            load_name, map_location = lambda storage, loc: storage)
+        net_utils.load_ckpt(model, checkpoint['model'])
+    
+    if args.load_detectron:
+        logger.info("loading detectron weights %s", args.load_detectron)
+        load_detectron_weight(model, args.load_detectron)
+    
+    model = mynn.DataParallel(
+        model, cpu_keywords = ['im_info', 'roidb'], minibatch = True)
+    
+    return model, dataset
 
 
 def flow_init_parser_and_tools(parser, tools):
@@ -205,41 +351,11 @@ def load_flow_model(args, parser, tools):
     return model_and_loss
 
 
-# Reusable function for inference
-def pred_flow(two_images, model):
-    '''
-        Already cudaed
-    :param two_images: channels, 2, h, w
-    :param model:
-    :return:
-    '''
-    model.eval()
-    
-    c, _, h, w = two_images.shape
-    with torch.no_grad():
-        # data[0] torch.Size([8, 3, 2, 384, 1024]) ，bs x channels x num_images, h, w
-        # target torch.Size([8, 2, 384, 1024]) maybe offsets
-        # losses: list (2)
-        # output: torch.Size([bs, 2, 384, 1024])
-        two_images = torch.unsqueeze(two_images, 0)  # batchize
-        # losses, output = model(
-        #     data=two_images, target=gen_rand_flow(1, h, w), inference=True)
-        output = model(two_images)
-    
-    return output
-
-
 def load_simple_model():
     from pose_estimation import _init_paths
-    from core.config import config as simple_cfg
-    from core.config import update_config
-    from core.config import update_dir
-    from core.config import get_model_name
-    from core.inference import get_final_preds
-    from core.loss import JointsMSELoss
-    from nise_utils.utils import get_optimizer
-    from nise_utils.utils import save_checkpoint
-    from nise_utils.utils import create_logger
+    from simple_lib.core.config import update_config
+    from simple_lib.core.config import update_dir
+    from simple_lib.core.config import get_model_name
     from simple_models.pose_resnet import get_pose_net
     
     def reset_config(config, args):
@@ -299,6 +415,33 @@ def load_simple_model():
     return simple_human_det_model
 
 
+# ─── USE MODEL ──────────────────────────────────────────────────────────────────
+
+
+# Reusable function for inference
+def pred_flow(two_images, model):
+    '''
+        Already cudaed
+    :param two_images: channels, 2, h, w
+    :param model:
+    :return:
+    '''
+    model.eval()
+    
+    c, _, h, w = two_images.shape
+    with torch.no_grad():
+        # data[0] torch.Size([8, 3, 2, 384, 1024]) ，bs x channels x num_images, h, w
+        # target torch.Size([8, 2, 384, 1024]) maybe offsets
+        # losses: list (2)
+        # output: torch.Size([bs, 2, 384, 1024])
+        two_images = torch.unsqueeze(two_images, 0)  # batchize
+        # losses, output = model(
+        #     data=two_images, target=gen_rand_flow(1, h, w), inference=True)
+        output = model(two_images)
+        output.squeeze_()  # out is a batch, so remove the zeroth dimension
+    return output
+
+
 # Backup
 # def inference(args, epoch, data_loader, model, offset=0):
 #
@@ -353,179 +496,11 @@ def load_simple_model():
 #     progress.close()
 #
 #     return
-import tron_tools._init_paths
-
-from tron_lib.core.config import cfg_from_file, cfg_from_list, assert_and_infer_cfg
-from tron_lib.modeling.model_builder import Generalized_RCNN_for_posetrack
-from tron_lib.utils.timer import Timer
-import tron_lib.nn as mynn
-from tron_lib.utils.detectron_weight_helper import load_detectron_weight
-import tron_lib.utils.net as net_utils
-from tron_lib.core.test_engine import initialize_model_from_cfg
-import tron_lib.datasets.dummy_datasets as datasets
-
-
-def human_detect_parse_args():
-    """Parse input arguments"""
-    parser = argparse.ArgumentParser(description = 'Train a X-RCNN network')
-    
-    parser.add_argument(
-        '--dataset', dest = 'dataset', required = True,
-        help = 'Dataset to use')
-    parser.add_argument(
-        '--tron_cfg', dest = 'cfg_file', required = True,
-        help = 'Config file for training (and optionally testing)')
-    parser.add_argument(
-        '--set', dest = 'set_cfgs',
-        help = 'Set config keys. Key value sequence seperate by whitespace.'
-               'e.g. [key] [value] [key] [value]',
-        default = [], nargs = '+')
-    
-    parser.add_argument(
-        '--disp_interval',
-        help = 'Display training info every N iterations',
-        default = 20, type = int)
-    parser.add_argument(
-        '--no_cuda', dest = 'cuda', help = 'Do not use CUDA device', action = 'store_false')
-    
-    # Optimization
-    # These options has the highest prioity and can overwrite the values in config file
-    # or values set by set_cfgs. `None` means do not overwrite.
-    parser.add_argument(
-        '--bs', dest = 'batch_size',
-        help = 'Explicitly specify to overwrite the value comed from cfg_file.',
-        type = int)
-    parser.add_argument(
-        '--nw', dest = 'num_workers',
-        help = 'Explicitly specify to overwrite number of workers to load data. Defaults to 4',
-        type = int)
-    parser.add_argument(
-        '--iter_size',
-        help = 'Update once every iter_size steps, as in Caffe.',
-        default = 1, type = int)
-    
-    parser.add_argument(
-        '--o', dest = 'optimizer', help = 'Training optimizer.',
-        default = None)
-    parser.add_argument(
-        '--lr', help = 'Base learning rate.',
-        default = None, type = float)
-    parser.add_argument(
-        '--lr_decay_gamma',
-        help = 'Learning rate decay rate.',
-        default = None, type = float)
-    
-    # Epoch
-    parser.add_argument(
-        '--start_step',
-        help = 'Starting step count for training epoch. 0-indexed.',
-        default = 0, type = int)
-    
-    # Resume training: requires same iterations per epoch
-    parser.add_argument(
-        '--resume',
-        help = 'resume to training on a checkpoint',
-        action = 'store_true')
-    
-    parser.add_argument(
-        '--no_save', help = 'do not save anything', action = 'store_true')
-    
-    parser.add_argument(
-        '--load_ckpt', help = 'checkpoint path to load')
-    parser.add_argument(
-        '--load_detectron', help = 'path to the detectron weight pickle file')
-    
-    parser.add_argument(
-        '--use_tfboard', help = 'Use tensorflow tensorboard to log training info',
-        action = 'store_true')
-    
-    args, rest = parser.parse_known_args()
-    return args
-
-
-def load_human_detect_model(args, tron_cfg):
-    if not torch.cuda.is_available():
-        sys.exit("Need a CUDA device to run the code.")
-    print('Called with args:')
-    print(args)
-    
-    if args.dataset.startswith("coco"):
-        dataset = datasets.get_coco_dataset()
-        tron_cfg.MODEL.NUM_CLASSES = len(dataset.classes)
-    elif args.dataset.startswith("keypoints_coco"):
-        dataset = datasets.get_coco_dataset()
-        tron_cfg.MODEL.NUM_CLASSES = 2
-    else:
-        raise ValueError('Unexpected dataset name: {}'.format(args.dataset))
-    
-    print('load cfg from file: {}'.format(args.cfg_file))
-    cfg_from_file(args.cfg_file)
-    if args.set_cfgs is not None:
-        cfg_from_list(args.set_cfgs)
-    # When testing, this is set to True. WHen inferring, this is False
-    # QQ: Why????????????????????????
-    tron_cfg.MODEL.LOAD_IMAGENET_PRETRAINED_WEIGHTS = False  # Don't need to load imagenet pretrained weights
-    
-    assert_and_infer_cfg()
-    
-    model = Generalized_RCNN_for_posetrack(tron_cfg)
-    model.eval()
-    # print(model)
-    if args.cuda:
-        model.cuda()
-    
-    if args.load_ckpt:
-        load_name = args.load_ckpt
-        logger.info("loading checkpoint %s", load_name)
-        checkpoint = torch.load(load_name, map_location = lambda storage, loc: storage)
-        net_utils.load_ckpt(model, checkpoint['model'])
-    
-    if args.load_detectron:
-        logger.info("loading detectron weights %s", args.load_detectron)
-        load_detectron_weight(model, args.load_detectron)
-    
-    model = mynn.DataParallel(model, cpu_keywords = ['im_info', 'roidb'], minibatch = True)
-    
-    return model, dataset
-    #
-    # ### Adaptively adjust some tron_configs ###
-    # original_batch_size = tron_cfg.NUM_GPUS * tron_cfg.TRAIN.IMS_PER_BATCH
-    # original_ims_per_batch = tron_cfg.TRAIN.IMS_PER_BATCH
-    # original_num_gpus = tron_cfg.NUM_GPUS
-    # if args.batch_size is None:
-    #     args.batch_size = original_batch_size
-    # tron_cfg.NUM_GPUS = torch.cuda.device_count()
-    # assert (args.batch_size % tron_cfg.NUM_GPUS) == 0, \
-    #     'batch_size: %d, NUM_GPUS: %d' % (args.batch_size, tron_cfg.NUM_GPUS)
-    # tron_cfg.TRAIN.IMS_PER_BATCH = args.batch_size // tron_cfg.NUM_GPUS
-    # effective_batch_size = args.iter_size * args.batch_size
-    # print('effective_batch_size = batch_size * iter_size = %d * %d' % (args.batch_size, args.iter_size))
-    #
-    # print('Adaptive config changes:')
-    # print('    effective_batch_size: %d --> %d' % (original_batch_size, effective_batch_size))
-    # print('    NUM_GPUS:             %d --> %d' % (original_num_gpus, tron_cfg.NUM_GPUS))
-    # print('    IMS_PER_BATCH:        %d --> %d' % (original_ims_per_batch, tron_cfg.TRAIN.IMS_PER_BATCH))
-    #
-    #
-    # if args.num_workers is not None:
-    #     tron_cfg.DATA_LOADER.NUM_THREADS = args.num_workers
-    #
-    # ### Overwrite some solver settings from command line arguments
-    # if args.optimizer is not None:
-    #     tron_cfg.SOLVER.TYPE = args.optimizer
-    # if args.lr is not None:
-    #     tron_cfg.SOLVER.BASE_LR = args.lr
-    # if args.lr_decay_gamma is not None:
-    #     tron_cfg.SOLVER.GAMMA = args.lr_decay_gamma
-    # assert_and_infer_cfg()
-
-
 def inference_simple():
     pass
 
 
-def human_detect(detector, img):
-    pass
+# ─── CHECKPOINT UTIL ────────────────────────────────────────────────────────────
 
 
 from tron_lib.utils.logging import setup_logging
@@ -551,3 +526,139 @@ def save_ckpt(output_dir, args, step, train_size, model, optimizer):
         'model': model.state_dict(),
         'optimizer': optimizer.state_dict()}, save_name)
     logger.info('save model: %s', save_name)
+
+
+# ─── IMAGE UTILS ────────────────────────────────────────────────────────────────
+
+def imcrop(img, bbox):
+    def pad_img_to_fit_bbox(img, x1, x2, y1, y2):
+        img = np.pad(img, ((np.abs(np.minimum(0, y1)), np.maximum(y2 - img.shape[0], 0)),
+                           (np.abs(np.minimum(0, x1)), np.maximum(x2 - img.shape[1], 0)), (0, 0)), mode = "constant")
+        y1 += np.abs(np.minimum(0, y1))
+        y2 += np.abs(np.minimum(0, y1))
+        x1 += np.abs(np.minimum(0, x1))
+        x2 += np.abs(np.minimum(0, x1))
+        return img, x1, x2, y1, y2
+    
+    x1, y1, x2, y2 = bbox
+    if x1 < 0 or y1 < 0 or x2 > img.shape[1] or y2 > img.shape[0]:
+        img, x1, x2, y1, y2 = pad_img_to_fit_bbox(img, x1, x2, y1, y2)
+    return img[y1:y2, x1:x2, :]
+
+
+# ─── BOX UTILS ──────────────────────────────────────────────────────────────────
+
+
+def joints_to_bboxes(new_joints):
+    '''
+
+    :param new_joints:  num_people x num_joints x 2
+    :return:
+    '''
+    min_xs, _ = torch.min(new_joints[:, :, 0], 1)
+    min_ys, _ = torch.min(new_joints[:, :, 1], 1)
+    max_xs, _ = torch.max(new_joints[:, :, 0], 1)
+    max_ys, _ = torch.max(new_joints[:, :, 1], 1)
+    # extend by a centain factor
+    ws = max_xs - min_xs
+    hs = max_ys - min_ys
+    ws = ws * nise_cfg.DATA.bbox_extend_factor[0]
+    hs = hs * nise_cfg.DATA.bbox_extend_factor[1]
+    min_xs -= ws
+    max_xs += ws
+    min_ys -= hs
+    max_xs += hs
+    min_xs.clamp_(0, nise_cfg.DATA.flow_input_size[0])
+    max_xs.clamp_(0, nise_cfg.DATA.flow_input_size[0])
+    min_ys.clamp_(0, nise_cfg.DATA.flow_input_size[1])
+    max_ys.clamp_(0, nise_cfg.DATA.flow_input_size[1])
+    
+    joint_prop_bboxes = torch.stack([
+        min_xs, min_ys, max_xs, max_ys
+    ], 1)
+    return joint_prop_bboxes
+
+
+# From simple_lib.dataset.coco
+def _box2cs(box, ratio):
+    '''
+
+    :param box: with x1y1x2y2
+    :param ratio:
+    :return:
+    '''
+    
+    # our bbox is x1 y1, x2 y2, _box2cs takes x y w h
+    bb = np.copy(box)
+    bb[2], bb[3] = bb[2] - bb[0], bb[3] - bb[1]
+    x, y, w, h = bb[:4]
+    return _xywh2cs(x, y, w, h, ratio)
+
+
+def _xywh2cs(x, y, w, h, origianl_img_aspect_ratio):
+    pixel_std = 200
+    center = np.zeros((2), dtype = np.float32)
+    center[0] = x + w * 0.5
+    center[1] = y + h * 0.5
+    
+    if w > origianl_img_aspect_ratio * h:
+        h = w * 1.0 / origianl_img_aspect_ratio
+    elif w < origianl_img_aspect_ratio * h:
+        w = h * origianl_img_aspect_ratio
+    scale = np.array(
+        [w * 1.0 / pixel_std, h * 1.0 / pixel_std],
+        dtype = np.float32)
+    if center[0] != -1:
+        scale = scale * 1.25
+    
+    return center, scale
+
+
+def filter_bbox_with_scores(boxes, thres = nise_cfg.ALG.HUMAN_THRES):
+    scores = boxes[:, -1]
+    valid_scores_idx = torch.nonzero(
+        scores >= thres).squeeze_().long()  # in case it's 6 x **1** x 5
+    filtered_box = boxes[valid_scores_idx, :]
+    return filtered_box, valid_scores_idx
+
+
+def computer_joints_oks_mtx(j1, j2):
+    '''
+
+    :param j1: num_people 1 x 16 x 2
+    :param j2: num_people 2 x 16 x 2
+    :return:
+    '''
+    num_person_prev = j1.shape[0]
+    num_person_cur = j2.shape[0]
+    j1 = to_numpy(j1)
+    j2 = to_numpy(j2)
+    
+    # sigma = np.array([
+    #     .26, .25, .25, .35, .35, .79, .79, .72, .72, .62, .62, 1.07, 1.07, .87,
+    #     .87, .89, .89]) / 10.0
+    sigma = np.ones(nise_cfg.DATA.num_joints)
+    var = sigma ** 2
+    
+    dist_mat = np.zeros(
+        [num_person_prev, num_person_cur, nise_cfg.DATA.num_joints])
+    for i in range(num_person_cur):
+        diff_sq = (j1 - j2[i]) ** 2  # num_per_cur * 16 x 2
+        eucl = diff_sq.sum(2)  # keypoint wise distance # num_per_cur * 16
+        
+        dist_mat[:, i, :] = eucl
+    
+    e = dist_mat / var / 2
+    e = np.sum(np.exp(-e), axis = 2) / e.shape[2]
+    return to_torch(e)
+
+
+if __name__ == '__main__':
+    # test oks distance
+    num_person = 2
+    h, w = 576, 1024
+    person = gen_rand_joints(num_person, h, w)
+    threesome = torch.cat(
+        [person + torch.rand(num_person, 16, 2), gen_rand_joints(1, h, w)])
+    dist = computer_joints_oks_mtx(person, threesome)
+    print(dist)

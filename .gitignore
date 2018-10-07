@@ -108,3 +108,6 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+mkrs_try.py
+run_with_flownet_debugging_backup.py
+f.json

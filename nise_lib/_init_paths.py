@@ -2,9 +2,12 @@ import sys
 import os.path as osp
 
 paths = [
-    '../flownet2-pytorch/',
-    '../simple-baseline-pytorch/',
-    '../Detectron.pytorch/',
+    '/home/zhangxt/disk/posetrack/flownet2-pytorch/',
+    '/home/zhangxt/disk/posetrack/flownet2-pytorch/flow_lib',
+    '/home/zhangxt/disk/posetrack/simple-baseline-pytorch/',
+    '/home/zhangxt/disk/posetrack/simple-baseline-pytorch/simple_lib',
+    '/home/zhangxt/disk/posetrack/Detectron.pytorch/',
+    '/home/zhangxt/disk/posetrack/Detectron.pytorch/tron_lib',
 ]
 
 
@@ -17,5 +20,6 @@ this_dir = osp.dirname(__file__)
 
 for p in paths:
     lib_path = osp.join(this_dir, '..', p)
-    print('add',lib_path)
+    lib_path = p
+    print('add', lib_path)
     add_path(lib_path)

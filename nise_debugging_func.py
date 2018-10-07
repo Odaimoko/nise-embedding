@@ -34,3 +34,7 @@ def gen_rand_joints(num_people, h, w):
         h/2), size=[num_people, nise_cfg.DATA. num_joints])
     joints = torch.stack([x1, y1], 2)
     return joints  # ng
+
+def debug_print(*args,**kwargs):
+    if nise_cfg.DEBUG.PRINT:
+        print(*args,**kwargs)
