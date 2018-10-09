@@ -1,5 +1,5 @@
 import torch
-from nise_config import cfg as nise_cfg
+from nise_lib.nise_config import cfg as nise_cfg
 
 
 def gen_rand_flow(batch_size, h, w):

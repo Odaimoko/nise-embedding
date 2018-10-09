@@ -1,33 +1,28 @@
-import nise_lib._init_paths
-import torch
-from torch import nn
 import os
-import pycocotools
 import colorama
 import argparse
-import numpy as np
 
 # local packages
-from nise_debugging_func import *
-from simple_lib.core.config import config as simple_cfg
-from nise_config import cfg as nise_cfg
+import nise_lib._init_paths
+from nise_lib.nise_debugging_func import *
+from nise_lib.nise_config import cfg as nise_cfg
 import flow_models
 import flow_losses
 import flow_datasets
 from nise_utils.imutils import *
+from simple_lib.core.config import config as simple_cfg
+from simple_lib.core.config import update_config
+from simple_models.pose_resnet import get_pose_net
 
 # ─── LOAD MODEL ─────────────────────────────────────────────────────────────────
 
-import tron_tools._init_paths
-
 from tron_lib.core.config import cfg_from_file, cfg_from_list, assert_and_infer_cfg
 from tron_lib.modeling.model_builder import Generalized_RCNN_for_posetrack
-from tron_lib.utils.timer import Timer
 import tron_lib.nn as mynn
 from tron_lib.utils.detectron_weight_helper import load_detectron_weight
 import tron_lib.utils.net as net_utils
-from tron_lib.core.test_engine import initialize_model_from_cfg
 import tron_lib.datasets.dummy_datasets as datasets
+import pathlib
 
 
 def human_detect_parse_args():
@@ -352,12 +347,6 @@ def load_flow_model(args, parser, tools):
 
 
 def load_simple_model():
-    from pose_estimation import _init_paths
-    from simple_lib.core.config import update_config
-    from simple_lib.core.config import update_dir
-    from simple_lib.core.config import get_model_name
-    from simple_models.pose_resnet import get_pose_net
-    
     def reset_config(config, args):
         if args.gpus:
             config.GPUS = args.gpus
@@ -580,7 +569,7 @@ def joints_to_bboxes(new_joints):
 
 
 # From simple_lib.dataset.coco
-def _box2cs(box, ratio):
+def box2cs(box, ratio):
     '''
 
     :param box: with x1y1x2y2
@@ -588,14 +577,14 @@ def _box2cs(box, ratio):
     :return:
     '''
     
-    # our bbox is x1 y1, x2 y2, _box2cs takes x y w h
+    # our bbox is x1 y1, x2 y2, _xywh2cs takes x y w h
     bb = np.copy(box)
     bb[2], bb[3] = bb[2] - bb[0], bb[3] - bb[1]
     x, y, w, h = bb[:4]
-    return _xywh2cs(x, y, w, h, ratio)
+    return xywh2cs(x, y, w, h, ratio)
 
 
-def _xywh2cs(x, y, w, h, origianl_img_aspect_ratio):
+def xywh2cs(x, y, w, h, origianl_img_aspect_ratio):
     pixel_std = 200
     center = np.zeros((2), dtype = np.float32)
     center[0] = x + w * 0.5
@@ -614,7 +603,7 @@ def _xywh2cs(x, y, w, h, origianl_img_aspect_ratio):
     return center, scale
 
 
-def filter_bbox_with_scores(boxes, thres = nise_cfg.ALG.HUMAN_THRES):
+def filter_bbox_with_scores(boxes, thres = nise_cfg.ALG._HUMAN_THRES):
     scores = boxes[:, -1]
     valid_scores_idx = torch.nonzero(
         scores >= thres).squeeze_().long()  # in case it's 6 x **1** x 5
@@ -622,7 +611,22 @@ def filter_bbox_with_scores(boxes, thres = nise_cfg.ALG.HUMAN_THRES):
     return filtered_box, valid_scores_idx
 
 
-def computer_joints_oks_mtx(j1, j2):
+def filter_bbox_with_area(boxes, thres = nise_cfg.ALG._AREA_THRES):
+    area = (boxes[:, 2] - boxes[:, 0]) * (boxes[:, 3] - boxes[:, 1])
+    
+    valid_area_idx = torch.nonzero(
+        area >= thres).squeeze_().long()  # in case it's 6 x **1** x 5
+    filtered_box = boxes[valid_area_idx, :]
+    return filtered_box, valid_area_idx
+
+
+def expand_vector_to_tensor(tensor, target_dim = 2):
+    while len(tensor.shape) < target_dim:  # vector
+        tensor = tensor.unsqueeze(0)
+    return tensor
+
+
+def get_joints_oks_mtx(j1, j2):
     '''
 
     :param j1: num_people 1 x 16 x 2
@@ -653,6 +657,33 @@ def computer_joints_oks_mtx(j1, j2):
     return to_torch(e)
 
 
+# ─── MISC ───────────────────────────────────────────────────────────────────────
+
+
+def mkdir(path):
+    path = path.strip().rstrip("\\")
+    
+    if not os.path.exists(path):
+        os.makedirs(path)
+        return True
+    else:
+        return False
+
+
+def make_nise_dirs():
+    mkdir(nise_cfg.PATH.IMAGES_OUT_DIR)
+    mkdir(nise_cfg.PATH.JSON_SAVE_DIR)
+    mkdir(nise_cfg.PATH.JOINTS_DIR)
+
+
+def get_type_from_dir(dirpath, type_list):
+    files = []
+    for f in os.listdir(dirpath):
+        if pathlib.PurePosixPath(f).suffix.lower() in type_list:
+            files.append(os.path.join(dirpath, f))
+    return files
+
+
 if __name__ == '__main__':
     # test oks distance
     num_person = 2
@@ -660,5 +691,5 @@ if __name__ == '__main__':
     person = gen_rand_joints(num_person, h, w)
     threesome = torch.cat(
         [person + torch.rand(num_person, 16, 2), gen_rand_joints(1, h, w)])
-    dist = computer_joints_oks_mtx(person, threesome)
+    dist = get_joints_oks_mtx(person, threesome)
     print(dist)

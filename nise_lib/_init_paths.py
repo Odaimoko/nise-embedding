@@ -14,12 +14,12 @@ paths = [
 def add_path(path):
     if path not in sys.path:
         sys.path.insert(0, path)
+        print('add', path)
 
 
 this_dir = osp.dirname(__file__)
 
 for p in paths:
-    lib_path = osp.join(this_dir, '..', p)
+    # lib_path = osp.join(this_dir, '..', p)
     lib_path = p
-    print('add', lib_path)
     add_path(lib_path)
