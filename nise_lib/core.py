@@ -1,7 +1,8 @@
 import nise_lib._init_paths
 from collections import deque
-from nise_lib.nise_functions import *
+import torch.backends.cudnn as cudnn
 
+from nise_lib.nise_functions import *
 from nise_lib.nise_debugging_func import *
 from nise_lib.nise_config import cfg as nise_cfg
 import json
@@ -14,9 +15,9 @@ def nise_pred(gt_anno_dir, json_save_dir, vis_dataset, hunam_detector, joint_est
     anno_file_names = get_type_from_dir(
         gt_anno_dir, ['.json'])
     anno_file_names = sorted(anno_file_names)
-    for file_name in anno_file_names[:1]:
-        # if not '15882' in file_name:
-        #     continue
+    for file_name in anno_file_names[10:20]:
+        if '00098' in file_name:  # the first images contains no people, cant deal with this now so ignore this.
+            continue
         p = PurePosixPath(file_name)
         json_path = os.path.join(json_save_dir, p.parts[-1])
         with open(file_name, 'r') as f:
@@ -49,3 +50,15 @@ def nise_pred(gt_anno_dir, json_save_dir, vis_dataset, hunam_detector, joint_est
         
         with open(json_path, 'w') as f:
             json.dump({'annolist': pred_frames}, f)
+
+
+# def train_est_on_posetrack(args,config, est_model, loader, ):
+#     ''''''
+#     # args already reset
+#     # cudnn related setting
+#     cudnn.benchmark = config.CUDNN.BENCHMARK
+#     cudnn.deterministic = config.CUDNN.DETERMINISTIC
+#     cudnn.enabled = config.CUDNN.ENABLED
+#
+#     if est_model==None:
+#         """train from scratch"""

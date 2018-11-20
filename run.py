@@ -10,8 +10,9 @@ import nise_lib._init_paths
 from flownet_utils import tools
 from nise_lib.nise_functions import *
 from nise_lib.nise_debugging_func import *
-from nise_lib.core import nise_pred
+from nise_lib.core import nise_pred, train_est_on_posetrack
 from tron_lib.core.config import cfg as tron_cfg
+from simple_lib.core.config import config as simple_cfg
 
 viz = visdom.Visdom(env = 'run-with-flownet')
 make_nise_dirs()
@@ -26,7 +27,7 @@ if nise_cfg.DEBUG.load_flow_model:
 
 # ─── FROM SIMPLE BASELINE ───────────────────────────────────────────────────────
 if nise_cfg.DEBUG.load_joint_est_model:
-    simple_joint_est_model = load_simple_model()
+    simple_args, simple_joint_est_model = load_simple_model()
     debug_print('Simple pose detector loaded.')
 
 # ─── HUMAN DETECT ───────────────────────────────────────────────────────────────
@@ -34,5 +35,8 @@ if nise_cfg.DEBUG.load_human_det_model:
     human_detect_args = human_detect_parse_args()
     maskRCNN, human_det_dataset = load_human_detect_model(human_detect_args, tron_cfg)
 
-nise_pred(nise_cfg.PATH.GT_TRAIN_ANNOTATION_DIR, nise_cfg.PATH.JSON_SAVE_DIR, human_det_dataset, maskRCNN,
-          simple_joint_est_model, flow_model)
+nise_args = get_nise_arg_parser()
+setattr(nise_args, 'simple_model_file', simple_args.simple_model_file)
+# nise_pred(nise_cfg.PATH.GT_TRAIN_ANNOTATION_DIR, nise_cfg.PATH.JSON_SAVE_DIR, human_det_dataset, maskRCNN,
+#           simple_joint_est_model, flow_model)
+train_est_on_posetrack(simple_args,simple_cfg, simple_joint_est_model, None)

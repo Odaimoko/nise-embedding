@@ -71,6 +71,8 @@ class FrameItem:
         
         self.human_ids = None
         
+        self.has_no_human = False
+        
         # ─── FLAGS FOR CORRENT ORDER ─────────────────────────────────────
         self.human_detected = False
         self.flow_calculated = False
@@ -95,6 +97,8 @@ class FrameItem:
             self.detected_bboxes, idx = filter_bbox_with_scores(human_bboxes)
         else:
             self.detected_bboxes = human_bboxes
+        # 有可能出现没检测到的情况，大部分不可能，但是工程起见。
+        # TODO 比如 bonn_mpii_train_5sec\00098_mpii 最前面几个是全黑所以检测不到……emmmm怎么办呢
         self.detected_bboxes = expand_vector_to_tensor(self.detected_bboxes)
         self.human_detected = True
     
@@ -312,6 +316,24 @@ class FrameItem:
             debug_print('ID Assigned')
         self.id_assigned = True
     
+    def _resize_x(self, x):
+        return x * self.ori_img_w / self.img_w
+    
+    def _resize_y(self, y):
+        return y * self.ori_img_h / self.img_h
+    
+    def _resize_joints(self, joints):
+        '''
+        
+        :param joints: num people x 16 x 2
+        :return:
+        '''
+        joints = expand_vector_to_tensor(joints, 3)
+        resized_joints = torch.zeros(joints.shape)
+        resized_joints[:, :, 0] = self._resize_x(joints[:, :, 0])
+        resized_joints[:, :, 1] = self._resize_y(joints[:, :, 1])
+        return resized_joints
+    
     def visualize(self, dataset):
         if self.id_assigned is False:
             raise ValueError('Should assign id first.')
@@ -341,7 +363,7 @@ class FrameItem:
         
         # SHOW JOINTS
         joints_to_show = self.joints[self.id_idx_in_unified]
-        joints_to_show = expand_vector_to_tensor(joints_to_show, 3)
+        joints_to_show = self._resize_joints(joints_to_show)
         num_people, num_joints, _ = joints_to_show.shape
         
         out_dir = os.path.join(nise_cfg.PATH.JOINTS_DIR, p.parts[-2])
@@ -352,14 +374,13 @@ class FrameItem:
             nise_batch_joints = torch.cat([joints_i, joint_visible], 1)  # 16 x 3
             
             save_batch_image_with_joints(
-                im_to_torch(self.bgr_img).unsqueeze(0),
+                im_to_torch(self.original_img).unsqueeze(0),
                 nise_batch_joints.unsqueeze(0),
                 joint_visible.reshape([1, -1]),
-                os.path.join(out_dir, self.img_name + "_id_" + "{:03d}".format(
+                os.path.join(out_dir, self.img_name + "_id_" + "{:02d}".format(
                     self.human_ids[i].item()) + ".jpg"),
                 nrow = 2
             )
-            return
     
     def to_dict(self):
         '''

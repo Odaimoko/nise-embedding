@@ -25,6 +25,24 @@ import tron_lib.datasets.dummy_datasets as datasets
 import pathlib
 
 
+def get_nise_arg_parser():
+    parser = argparse.ArgumentParser(description = 'PyTorch CPN Training')
+    parser.add_argument('-j', '--workers', default = 4, type = int, metavar = 'N',
+                        help = 'number of data loading workers (default: 12)')
+    parser.add_argument('-g', '--num_gpus', default = 1, type = int, metavar = 'N',
+                        help = 'number of GPU to use (default: 1)')
+    parser.add_argument('--epochs', default = 32, type = int, metavar = 'N',
+                        help = 'number of total epochs to run (default: 32)')
+    parser.add_argument('--start-epoch', default = 0, type = int, metavar = 'N',
+                        help = 'manual epoch number (useful on restarts)')
+    parser.add_argument('-c', '--checkpoint', default = 'checkpoint', type = str, metavar = 'PATH',
+                        help = 'path to save checkpoint (default: checkpoint)')
+    parser.add_argument('--resume', default = '', type = str, metavar = 'PATH',
+                        help = 'path to latest checkpoint')
+    args, rest = parser.parse_known_args()
+    return args
+
+
 def human_detect_parse_args():
     """Parse input arguments"""
     parser = argparse.ArgumentParser(description = 'Train a X-RCNN network')
@@ -401,7 +419,7 @@ def load_simple_model():
             torch.load(simple_cfg.TEST.MODEL_FILE))
     simple_human_det_model = torch.nn.DataParallel(
         simple_human_det_model, device_ids = gpus).cuda()
-    return simple_human_det_model
+    return simple_args, simple_human_det_model
 
 
 # ─── USE MODEL ──────────────────────────────────────────────────────────────────
@@ -556,7 +574,7 @@ def joints_to_bboxes(new_joints):
     min_xs -= ws
     max_xs += ws
     min_ys -= hs
-    max_xs += hs
+    max_ys += hs
     min_xs.clamp_(0, nise_cfg.DATA.flow_input_size[0])
     max_xs.clamp_(0, nise_cfg.DATA.flow_input_size[0])
     min_ys.clamp_(0, nise_cfg.DATA.flow_input_size[1])
