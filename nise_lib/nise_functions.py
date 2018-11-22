@@ -415,8 +415,13 @@ def load_simple_model():
     gpus = [int(i) for i in simple_cfg.GPUS.split(',')]
     
     if simple_cfg.TEST.MODEL_FILE:
-        simple_human_det_model.load_state_dict(
-            torch.load(simple_cfg.TEST.MODEL_FILE))
+        meta_info = torch.load(simple_cfg.TEST.MODEL_FILE)
+        if 'pt17-epoch' in simple_cfg.TEST.MODEL_FILE:
+            state_dict = {k.replace('module.', ''): v
+                          for k, v in meta_info['state_dict'].items()}
+        else:
+            state_dict = meta_info
+        simple_human_det_model.load_state_dict(state_dict)
     simple_human_det_model = torch.nn.DataParallel(
         simple_human_det_model, device_ids = gpus).cuda()
     return simple_args, simple_human_det_model

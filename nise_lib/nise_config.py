@@ -5,7 +5,6 @@ import sys
 
 import numpy as np
 
-
 def get_nise_arg_parser():
     parser = argparse.ArgumentParser(description = 'PyTorch CPN Training')
     parser.add_argument('-j', '--workers', default = 4, type = int, metavar = 'N',
@@ -44,7 +43,7 @@ class NiseConfig:
     
     class _DATA:
         def __init__(self):
-            self.num_joints = 16
+            self.num_joints = 15
             self.image_path = 'data/mpii-video-pose'
             self.data_shape = (512, 512)
             self.output_shape = (128, 128)
@@ -64,7 +63,8 @@ class NiseConfig:
             
             #  should ask author
             self.flow_input_size = (1024, 576)
-            self.human_bbox_size = (384, 384)
+            # should initialize from simple_cfg
+            self.human_bbox_size = (256, 192)
     
     class _DEBUG:
         def __init__(self):
