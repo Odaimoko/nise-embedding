@@ -372,6 +372,9 @@ class FrameItem:
         )
         
         # SHOW JOINTS
+        if self.joints.numel()==0:
+            # No joints to draw
+            return
         joints_to_show = self.joints[self.id_idx_in_unified]
         joints_to_show = self._resize_joints(joints_to_show)
         num_people, num_joints, _ = joints_to_show.shape

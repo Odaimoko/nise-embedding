@@ -34,7 +34,7 @@ if nise_cfg.DEBUG.load_joint_est_model:
 if nise_cfg.DEBUG.load_human_det_model:
     human_detect_args = human_detect_parse_args()
     maskRCNN, human_det_dataset = load_human_detect_model(human_detect_args, tron_cfg)
-
+ 
 nise_args = get_nise_arg_parser()
 setattr(nise_args, 'simple_model_file', simple_args.simple_model_file)
 nise_pred_task_3_debug(nise_cfg.PATH.GT_TRAIN_ANNOTATION_DIR,
