@@ -205,6 +205,12 @@ class FrameItem:
             all_bboxes = torch.cat([self.detected_bboxes, self.joint_prop_bboxes])  # x 5
         num_people = all_bboxes.shape[0]
         
+        if all_bboxes.numel() == 0:
+            # no box
+            self.unified_bboxes = all_bboxes
+            self.bboxes_unified = True
+            return
+        
         scores = all_bboxes[:, 4]  # vector
         scores = torch.stack([torch.zeros(num_people), scores], 1)  # num_people x 2
         cls_all_bboxes = torch.cat([torch.zeros(num_people, 4), all_bboxes[:, :4]], 1)  # num people x 8
@@ -219,6 +225,9 @@ class FrameItem:
     def get_filtered_bboxes(self):
         if not self.bboxes_unified:
             raise ValueError("Should unify bboxes first")
+        if self.unified_bboxes.numel() == 0:
+            # if no bboxes at all
+            return self.unified_bboxes, None
         filtered, valid_score_idx = filter_bbox_with_scores(self.unified_bboxes)
         final_valid_idx = valid_score_idx
         return filtered, final_valid_idx
@@ -229,6 +238,7 @@ class FrameItem:
             # if first, no unified box because no flow to prop, so dont raise
             raise ValueError('Should unify bboxes first')
         self.joints = torch.zeros(self.unified_bboxes.shape[0], nise_cfg.DATA.num_joints, 2)  # FloatTensor
+        # if no human boxes, self.joints is tensor([])
         joint_detector.eval()
         for i in range(self.unified_bboxes.shape[0]):
             bb = self.unified_bboxes[i, :4]  # no score

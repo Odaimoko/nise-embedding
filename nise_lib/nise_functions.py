@@ -644,6 +644,9 @@ def filter_bbox_with_area(boxes, thres = nise_cfg.ALG._AREA_THRES):
 
 
 def expand_vector_to_tensor(tensor, target_dim = 2):
+    if tensor.numel() == 0:
+        # size is 0
+        return tensor
     while len(tensor.shape) < target_dim:  # vector
         tensor = tensor.unsqueeze(0)
     return tensor
