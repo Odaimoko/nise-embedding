@@ -10,13 +10,56 @@ from pathlib import PurePosixPath
 from nise_lib.frameitem import FrameItem
 
 
-def nise_pred(gt_anno_dir, json_save_dir, vis_dataset, hunam_detector, joint_estimator, flow_model):
+def nise_pred_task_3_debug(gt_anno_dir, json_save_dir, vis_dataset, hunam_detector, joint_estimator, flow_model):
     # PREDICT ON TRAINING SET OF 2017
     anno_file_names = get_type_from_dir(
         gt_anno_dir, ['.json'])
     anno_file_names = sorted(anno_file_names)
     for file_name in anno_file_names[10:20]:
         if '00098' in file_name:  # the first images contains no people, cant deal with this now so ignore this.
+            continue
+        p = PurePosixPath(file_name)
+        json_path = os.path.join(json_save_dir, p.parts[-1])
+        with open(file_name, 'r') as f:
+            gt = json.load(f)['annolist']
+        pred_frames = []
+        Q = deque(maxlen = nise_cfg.ALG._DEQUE_CAPACITY)
+        for i, frame in enumerate(gt):
+            # frame dict_keys(['image', 'annorect', 'imgnum', 'is_labeled', 'ignore_regions'])
+            img_file_path = frame['image'][0]['name']
+            img_file_path = os.path.join(nise_cfg.PATH.POSETRACK_ROOT, img_file_path)
+            debug_print(img_file_path)
+            if i == 0:  # first frame doesnt have flow, joint prop
+                fi = FrameItem(img_file_path, True)
+                fi.detect_human(hunam_detector)
+                fi.unify_bbox()
+                fi.est_joints(joint_estimator)
+                fi.assign_id(Q)
+                fi.visualize(dataset = vis_dataset)
+            else:
+                fi = FrameItem(img_file_path)
+                fi.detect_human(hunam_detector)
+                fi.gen_flow(flow_model, Q[-1].bgr_img)
+                fi.joint_prop(Q)
+                fi.unify_bbox()
+                fi.est_joints(joint_estimator)
+                fi.assign_id(Q, get_joints_oks_mtx)
+                fi.visualize(vis_dataset)
+            pred_frames.append(fi.to_dict())
+            Q.append(fi)
+        
+        with open(json_path, 'w') as f:
+            json.dump({'annolist': pred_frames}, f)
+
+
+def nise_pred_task_3(gt_anno_dir, json_save_dir, vis_dataset, hunam_detector, joint_estimator, flow_model):
+    # PREDICT ON TRAINING SET OF 2017
+    anno_file_names = get_type_from_dir(
+        gt_anno_dir, ['.json'])
+    anno_file_names = sorted(anno_file_names)
+    for file_name in anno_file_names:
+        if '00098' in file_name:  # the first images contains no people, 
+            # cant deal with this now so ignore this.
             continue
         p = PurePosixPath(file_name)
         json_path = os.path.join(json_save_dir, p.parts[-1])
