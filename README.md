@@ -4,7 +4,7 @@
 
 # experiment
 
-Single-frame pose estimation training log
+Single-frame pose estimation training log. The person is cropped using gt, and the  accuracy is calculated according to single person.
 
 ```
 Epoch 0
@@ -46,6 +46,21 @@ Using Model from epoch 18, use it on pt17 validation for PT task 2 & 3 (multi-fr
 ```
 & Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
 & 12.6 & 11.8 &  7.1 &  4.1 &  7.7 &  3.8 &  1.8 &  7.4 \\
+```
+
+For task 1
+
+```
+
+Namespace(evalPoseEstimation=True, evalPoseTracking=False, groundTruth='../../nise_embedding/pred_json/val_gt_task1/', outputDir='./out', predictions='../../nise_embedding/pred_json/valid_anno_json_pred/', saveEvalPerSequence=False)
+Loading data
+('# gt frames  :', 66558)
+('# pred frames:', 66558)
+Evaluation of per-frame multi-person pose estimation
+('saving results to', './out/total_AP_metrics.json')
+Average Precision (AP) metric:
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 14.0 & 13.6 &  8.8 &  5.1 & 10.2 &  5.7 &  3.3 &  9.0 \\
 ```
 
 
