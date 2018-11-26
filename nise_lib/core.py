@@ -20,7 +20,7 @@ def nise_pred_task_1_debug(gt_anno_dir, json_save_dir, vis_dataset, hunam_detect
         print(i, file_name)
         # if not '17839_mpii' in file_name:  # the first images contains no people, cant deal with this now so ignore this.
         #     continue
-        if i > 3: continue
+        # if i > 3: continue
         p = PurePosixPath(file_name)
         json_path = os.path.join(json_save_dir, p.parts[-1])
         with open(file_name, 'r') as f:
@@ -37,17 +37,13 @@ def nise_pred_task_1_debug(gt_anno_dir, json_save_dir, vis_dataset, hunam_detect
                 fi.detect_human(hunam_detector)
                 fi.unify_bbox()
                 fi.est_joints(joint_estimator)
-                # fi.assign_id(Q)
-                fi.visualize(dataset = vis_dataset)
+                # fi.visualize(dataset = vis_dataset)
             else:
                 fi = FrameItem(img_file_path, 1)
                 fi.detect_human(hunam_detector)
-                # fi.gen_flow(flow_model, Q[-1].bgr_img)
-                # fi.joint_prop(Q)
                 fi.unify_bbox()
                 fi.est_joints(joint_estimator)
-                # fi.assign_id(Q, get_joints_oks_mtx)
-                fi.visualize(vis_dataset)
+                # fi.visualize(vis_dataset)
             pred_frames.append(fi.to_dict())
             Q.append(fi)
         

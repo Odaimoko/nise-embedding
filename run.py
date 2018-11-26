@@ -44,7 +44,7 @@ elif nise_args.nise_mode=='train':
     dataset_path=nise_cfg.PATH.GT_TRAIN_ANNOTATION_DIR
 
 
-nise_pred_task_3_debug(dataset_path,
+nise_pred_task_1_debug(dataset_path,
                        os.path.join(nise_cfg.PATH.JSON_SAVE_DIR,
                                     PurePosixPath(dataset_path).name + '_pred'), human_det_dataset,
                        maskRCNN,

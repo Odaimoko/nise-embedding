@@ -57,17 +57,17 @@ class FrameItem:
         
         # tensor num_person x num_joints x 2
         # should be LongTensor since we are going to use them as index. same length with unified_bbox
-        self.joints = None
+        self.joints = torch.tensor([])
         # tensor
-        self.new_joints = None  # for similarity
+        self.new_joints = torch.tensor([])  # for similarity
         # tensor, in the resized img for flow.
         self.flow_to_current = None  # 2, h, w
         
         # tensors, coord in the original image
-        self.detected_bboxes = None  # num_people x 5, with score
-        self.joint_prop_bboxes = None
-        self.unified_bboxes = None
-        self.id_bboxes = None  # those have ids. should have the same length with human_ids
+        self.detected_bboxes = torch.tensor([])  # num_people x 5, with score
+        self.joint_prop_bboxes = torch.tensor([])
+        self.unified_bboxes = torch.tensor([])
+        self.id_bboxes = torch.tensor([])  # those have ids. should have the same length with human_ids
         self.id_idx_in_unified = None
         
         self.human_ids = None
@@ -128,84 +128,80 @@ class FrameItem:
         """ - choose prev joints pos, add flow to determine pos in the next frame; generate new bbox - """
         
         def set_empty_joint():
-            self.joint_prop_bboxes = torch.tensor([])
-            self.new_joints = torch.tensor([])
             self.joints_proped = True
         
         # preprocess
         prev_frame = Q[-1]
-        if prev_frame.joints.numel() == 0:
-            # if no joints to propagate
-            set_empty_joint()
-            return
-        
-        if nise_cfg.ALG.JOINT_PROP_WITH_FILTERED_HUMAN:
-            prev_filtered_box, filtered_idx = prev_frame.get_filtered_bboxes()
-            if prev_filtered_box.numel() == 0:
-                set_empty_joint()
-                return
+        if not prev_frame.joints.numel() == 0:
+            # if there  are joints to propagate
+            if nise_cfg.ALG.JOINT_PROP_WITH_FILTERED_HUMAN:
+                prev_filtered_box, filtered_idx = prev_frame.get_filtered_bboxes()
+                if prev_filtered_box.numel() == 0:
+                    set_empty_joint()
+                    return
+                
+                prev_frame_joints = prev_frame.joints[filtered_idx]
+                scores = prev_frame.id_bboxes[:, -1]
+            else:  # use all prev joints rather than filtered, or should we?
+                prev_frame_joints = prev_frame.joints
+                scores = prev_frame.unified_bboxes[:, -1]
+            prev_frame_joints = expand_vector_to_tensor(prev_frame_joints, 3)
             
-            prev_frame_joints = prev_frame.joints[filtered_idx]
-            scores = prev_frame.id_bboxes[:, -1]
-        else:  # use all prev joints rather than filtered, or should we?
-            prev_frame_joints = prev_frame.joints
-            scores = prev_frame.unified_bboxes[:, -1]
-        prev_frame_joints = expand_vector_to_tensor(prev_frame_joints, 3)
+            if not ((prev_frame_joints.shape[2] == nise_cfg.DATA.num_joints and prev_frame_joints.shape[0] == 2) or (
+                    prev_frame_joints.shape[2] == 2 and prev_frame_joints.shape[1] == nise_cfg.DATA.num_joints)):
+                raise ValueError(
+                    'Size not matched, current size ' + str(prev_frame_joints.shape))
+            if prev_frame_joints.shape[2] == nise_cfg.DATA.num_joints:
+                # :param prev_frame_joints: 2x num_people x num_joints. to num_people x num_joints x 2
+                prev_frame_joints = torch.transpose(prev_frame_joints, 0, 1)
+                prev_frame_joints = torch.transpose(prev_frame_joints, 1, 2)
+            
+            prev_frame_joints = prev_frame_joints.int()
+            
+            # if nise_cfg.ALG.JOINT_PROP_WITH_FILTERED_HUMAN:
+            #     # Dont use all, only high confidence
+            #     valid_scores_idx = torch.nonzero(scores >= nise_cfg.ALG._HUMAN_THRES).squeeze_()
+            #     joint_prop_bboxes_scores = scores[valid_scores_idx]  # vector
+            #
+            #     new_joints = torch.zeros([len(joint_prop_bboxes_scores), nise_cfg.DATA.num_joints, 2])
+            #
+            #     # the ith in new_joints is the valid_scores_idx[i] th in prev_frame_joints
+            #     for person in range(new_joints.shape[0]):
+            #         # if we dont use item, o_p will be a tensor and
+            #         # use tensor to index prev_frame_joints resulting in size [1,2] of joint_pos
+            #         original_person = valid_scores_idx[person].item()
+            #         for joint in range(nise_cfg.DATA.num_joints):
+            #             joint_pos = prev_frame_joints[original_person, joint, :]  # x,y
+            #             # if joint pos is inside the image, use the flow; otherwise set to 0.
+            #             if joint_pos[0] < self.img_w and joint_pos[1] < self.img_h:
+            #                 # this is cuda so turn it into cpu
+            #                 joint_flow = self.flow_to_current[:, joint_pos[1], joint_pos[0]].cpu()
+            #             else:
+            #                 joint_flow = torch.zeros(2)
+            #             new_joints[person, joint, :] = prev_frame_joints[original_person, joint, :].float() + joint_flow
+            # else:
+            new_joints = torch.zeros(prev_frame_joints.shape)
+            
+            joint_prop_bboxes_scores = scores  # vector
+            
+            for person in range(new_joints.shape[0]):
+                for joint in range(nise_cfg.DATA.num_joints):
+                    joint_pos = prev_frame_joints[person, joint, :]  # x,y
+                    if joint_pos[0] < self.img_w and joint_pos[1] < self.img_h:
+                        joint_flow = self.flow_to_current[:, joint_pos[1], joint_pos[0]].cpu()
+                    else:
+                        joint_flow = torch.zeros(2)
+                    new_joints[person, joint, :] = prev_frame_joints[person, joint, :].float() + joint_flow
+            
+            # for similarity. no need to expand here cause if only prev_joints has the right dimension
+            self.new_joints = new_joints
+            # calc new bboxes from new joints
+            joint_prop_bboxes = joints_to_bboxes(self.new_joints)
+            # add scores
+            joint_prop_bboxes_scores.unsqueeze_(1)
+            self.joint_prop_bboxes = torch.cat([joint_prop_bboxes, joint_prop_bboxes_scores], 1)
+            self.joint_prop_bboxes = expand_vector_to_tensor(self.joint_prop_bboxes)
         
-        if not ((prev_frame_joints.shape[2] == nise_cfg.DATA.num_joints and prev_frame_joints.shape[0] == 2) or (
-                prev_frame_joints.shape[2] == 2 and prev_frame_joints.shape[1] == nise_cfg.DATA.num_joints)):
-            raise ValueError(
-                'Size not matched, current size ' + str(prev_frame_joints.shape))
-        if prev_frame_joints.shape[2] == nise_cfg.DATA.num_joints:
-            # :param prev_frame_joints: 2x num_people x num_joints. to num_people x num_joints x 2
-            prev_frame_joints = torch.transpose(prev_frame_joints, 0, 1)
-            prev_frame_joints = torch.transpose(prev_frame_joints, 1, 2)
-        
-        prev_frame_joints = prev_frame_joints.int()
-        
-        # if nise_cfg.ALG.JOINT_PROP_WITH_FILTERED_HUMAN:
-        #     # Dont use all, only high confidence
-        #     valid_scores_idx = torch.nonzero(scores >= nise_cfg.ALG._HUMAN_THRES).squeeze_()
-        #     joint_prop_bboxes_scores = scores[valid_scores_idx]  # vector
-        #
-        #     new_joints = torch.zeros([len(joint_prop_bboxes_scores), nise_cfg.DATA.num_joints, 2])
-        #
-        #     # the ith in new_joints is the valid_scores_idx[i] th in prev_frame_joints
-        #     for person in range(new_joints.shape[0]):
-        #         # if we dont use item, o_p will be a tensor and
-        #         # use tensor to index prev_frame_joints resulting in size [1,2] of joint_pos
-        #         original_person = valid_scores_idx[person].item()
-        #         for joint in range(nise_cfg.DATA.num_joints):
-        #             joint_pos = prev_frame_joints[original_person, joint, :]  # x,y
-        #             # if joint pos is inside the image, use the flow; otherwise set to 0.
-        #             if joint_pos[0] < self.img_w and joint_pos[1] < self.img_h:
-        #                 # this is cuda so turn it into cpu
-        #                 joint_flow = self.flow_to_current[:, joint_pos[1], joint_pos[0]].cpu()
-        #             else:
-        #                 joint_flow = torch.zeros(2)
-        #             new_joints[person, joint, :] = prev_frame_joints[original_person, joint, :].float() + joint_flow
-        # else:
-        new_joints = torch.zeros(prev_frame_joints.shape)
-        
-        joint_prop_bboxes_scores = scores  # vector
-        
-        for person in range(new_joints.shape[0]):
-            for joint in range(nise_cfg.DATA.num_joints):
-                joint_pos = prev_frame_joints[person, joint, :]  # x,y
-                if joint_pos[0] < self.img_w and joint_pos[1] < self.img_h:
-                    joint_flow = self.flow_to_current[:, joint_pos[1], joint_pos[0]].cpu()
-                else:
-                    joint_flow = torch.zeros(2)
-                new_joints[person, joint, :] = prev_frame_joints[person, joint, :].float() + joint_flow
-        
-        # for similarity. no need to expand here cause if only prev_joints has the right dimension
-        self.new_joints = new_joints
-        # calc new bboxes from new joints
-        joint_prop_bboxes = joints_to_bboxes(self.new_joints)
-        # add scores
-        joint_prop_bboxes_scores.unsqueeze_(1)
-        self.joint_prop_bboxes = torch.cat([joint_prop_bboxes, joint_prop_bboxes_scores], 1)
-        self.joint_prop_bboxes = expand_vector_to_tensor(self.joint_prop_bboxes)
         self.joints_proped = True
     
     def unify_bbox(self):
@@ -217,7 +213,8 @@ class FrameItem:
             # kakunin! No box at all in this image
             self.NO_BBOXES = True
         
-        if self.is_first:
+        if self.is_first or self.task == 1:
+            # if the first or single frame prediction
             all_bboxes = self.detected_bboxes
         else:
             if not self.joints_proped or not self.human_detected:
@@ -438,36 +435,71 @@ class FrameItem:
 
         :return:
         '''
-        d = {
-            'image': [
-                {
-                    'name': self.img_path,
-                }
-            ],
-            'annorect': [  # i for people
-                {
-                    'score': [self.id_bboxes[i, 4].item()],
-                    'track_id': [self.human_ids[i].item()],
-                    'annopoints': [
-                        {
-                            'x1': [0],
-                            'x2': [0],
-                            'y1': [0],
-                            'y2': [0],
-                            'point': [
-                                {  # j for joints
-                                    'id': [j],
-                                    'x': [self.joints[i, j, 0].item() * self.ori_img_w / self.img_w],
-                                    'y': [self.joints[i, j, 1].item() * self.ori_img_h / self.img_h],
-                                    'score': [-1]  # what score????
-                                } for j in range(nise_cfg.DATA.num_joints)
-                            ]
-                        }
-                    ]
-                } for i in range(self.human_ids.shape[0])
+        if self.task == 1:
             
-            ]
-            # 'imgnum'
-        }
+            d = {
+                'image': [
+                    {
+                        'name': self.img_path,
+                    }
+                ],
+                'annorect': [  # i for people
+                    {
+                        'score': [-1],
+                        'track_id': [0],
+                        'annopoints': [
+                            {
+                                'x1': [0],
+                                'x2': [0],
+                                'y1': [0],
+                                'y2': [0],
+                                'point': [
+                                    {  # j for joints
+                                        'id': [j],
+                                        'x': [self.joints[i, j, 0].item() * self.ori_img_w / self.img_w],
+                                        'y': [self.joints[i, j, 1].item() * self.ori_img_h / self.img_h],
+                                        'score': [-1]  # what score????
+                                    } for j in range(nise_cfg.DATA.num_joints)
+                                ]
+                            }
+                        ]
+                    } for i in range(self.unified_bboxes.shape[0])
+                
+                ]
+                # 'imgnum'
+            }
+        
+        else:
+            d = {
+                'image': [
+                    {
+                        'name': self.img_path,
+                    }
+                ],
+                'annorect': [  # i for people
+                    {
+                        'score': [self.id_bboxes[i, 4].item()],
+                        'track_id': [self.human_ids[i].item()],
+                        'annopoints': [
+                            {
+                                'x1': [0],
+                                'x2': [0],
+                                'y1': [0],
+                                'y2': [0],
+                                'point': [
+                                    {  # j for joints
+                                        'id': [j],
+                                        'x': [self.joints[i, j, 0].item() * self.ori_img_w / self.img_w],
+                                        'y': [self.joints[i, j, 1].item() * self.ori_img_h / self.img_h],
+                                        'score': [-1]  # what score????
+                                    } for j in range(nise_cfg.DATA.num_joints)
+                                ]
+                            }
+                        ]
+                    } for i in range(self.human_ids.shape[0])
+                
+                ]
+                # 'imgnum'
+            }
         
         return d
