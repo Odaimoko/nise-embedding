@@ -15,8 +15,9 @@ def nise_pred_task_3_debug(gt_anno_dir, json_save_dir, vis_dataset, hunam_detect
     anno_file_names = get_type_from_dir(
         gt_anno_dir, ['.json'])
     anno_file_names = sorted(anno_file_names)
-    for file_name in anno_file_names[10:20]:
-        if not '00098' in file_name:  # the first images contains no people, cant deal with this now so ignore this.
+    mkdir(json_save_dir)
+    for file_name in anno_file_names:
+        if not '17839_mpii' in file_name:  # the first images contains no people, cant deal with this now so ignore this.
             continue
         p = PurePosixPath(file_name)
         json_path = os.path.join(json_save_dir, p.parts[-1])

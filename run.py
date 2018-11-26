@@ -37,7 +37,7 @@ if nise_cfg.DEBUG.load_human_det_model:
  
 nise_args = get_nise_arg_parser()
 setattr(nise_args, 'simple_model_file', simple_args.simple_model_file)
-nise_pred_task_3_debug(nise_cfg.PATH.GT_TRAIN_ANNOTATION_DIR,
-                       nise_cfg.PATH.JSON_SAVE_DIR, human_det_dataset, maskRCNN,
+nise_pred_task_3_debug(nise_cfg.PATH.GT_VAL_ANNOTATION_DIR,
+                       os.path.join(nise_cfg.PATH.JSON_SAVE_DIR,nise_cfg.PATH.GT_VAL_ANNOTATION_DIR), human_det_dataset, maskRCNN,
                        simple_joint_est_model, flow_model)
 # train_est_on_posetrack(simple_args,simple_cfg, simple_joint_est_model, None)

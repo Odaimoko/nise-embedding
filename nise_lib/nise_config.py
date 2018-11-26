@@ -106,7 +106,7 @@ class NiseConfig:
             self.JSON_SAVE_DIR = 'pred_json/'
             self.POSETRACK_ROOT = 'data/pt17/'
             self.GT_TRAIN_ANNOTATION_DIR = os.path.join(self.POSETRACK_ROOT, 'train_anno_json/')
-            self.GT_VAL_ANNOTATION_DIR = os.path.join(self.POSETRACK_ROOT, '/val_anno_json/')
+            self.GT_VAL_ANNOTATION_DIR = os.path.join(self.POSETRACK_ROOT, 'valid_anno_json/')
     
     def __init__(self):
         #

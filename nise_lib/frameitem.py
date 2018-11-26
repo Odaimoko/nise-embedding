@@ -71,8 +71,6 @@ class FrameItem:
         
         self.human_ids = None
         
-        self.has_no_human = False
-        
         # ─── FLAGS FOR CORRENT ORDER ─────────────────────────────────────
         self.human_detected = False
         self.flow_calculated = False
@@ -80,6 +78,8 @@ class FrameItem:
         self.bboxes_unified = False
         self.joints_detected = False
         self.id_assigned = False
+        
+        self.NO_BBOXES = False
     
     def detect_human(self, detector):
         '''
@@ -126,17 +126,31 @@ class FrameItem:
             raise ValueError('Flow not calculated yet.')
         """ - choose prev joints pos, add flow to determine pos in the next frame; generate new bbox - """
         
+        def set_empty_joint():
+            self.joint_prop_bboxes = torch.tensor([])
+            self.new_joints = torch.tensor([])
+            self.joints_proped = True
+        
         # preprocess
         prev_frame = Q[-1]
+        if prev_frame.joints.numel() == 0:
+            # if no joints to propagate
+            set_empty_joint()
+            return
+        
         if nise_cfg.ALG.JOINT_PROP_WITH_FILTERED_HUMAN:
             prev_filtered_box, filtered_idx = prev_frame.get_filtered_bboxes()
+            if prev_filtered_box.numel() == 0:
+                set_empty_joint()
+                return
+            
             prev_frame_joints = prev_frame.joints[filtered_idx]
             scores = prev_frame.id_bboxes[:, -1]
-        
         else:  # use all prev joints rather than filtered, or should we?
             prev_frame_joints = prev_frame.joints
             scores = prev_frame.unified_bboxes[:, -1]
         prev_frame_joints = expand_vector_to_tensor(prev_frame_joints, 3)
+        
         if not ((prev_frame_joints.shape[2] == nise_cfg.DATA.num_joints and prev_frame_joints.shape[0] == 2) or (
                 prev_frame_joints.shape[2] == 2 and prev_frame_joints.shape[1] == nise_cfg.DATA.num_joints)):
             raise ValueError(
@@ -207,8 +221,10 @@ class FrameItem:
         
         if all_bboxes.numel() == 0:
             # no box
-            self.unified_bboxes = all_bboxes
+            self.unified_bboxes = torch.tensor([])
             self.bboxes_unified = True
+            # kakunin! No box at all in this image
+            self.NO_BBOXES = True
             return
         
         scores = all_bboxes[:, 4]  # vector
@@ -225,9 +241,9 @@ class FrameItem:
     def get_filtered_bboxes(self):
         if not self.bboxes_unified:
             raise ValueError("Should unify bboxes first")
-        if self.unified_bboxes.numel() == 0:
+        if self.NO_BBOXES:
             # if no bboxes at all
-            return self.unified_bboxes, None
+            return torch.tensor(self.unified_bboxes), None
         filtered, valid_score_idx = filter_bbox_with_scores(self.unified_bboxes)
         final_valid_idx = valid_score_idx
         return filtered, final_valid_idx
@@ -290,40 +306,51 @@ class FrameItem:
         
         if self.is_first:
             # if it's the first frame, just assign every, starting from 1
+            # no problem when no people detected
             self.human_ids = torch.tensor(range(1, self.id_bboxes.shape[0] + 1)).long()
             FrameItem.max_id = self.id_bboxes.shape[0]  # not +1
-        else:
+        elif not self.NO_BBOXES:
+            # if no boxes no need for matching, and none for the next frame
+            
             if get_dist_mat is None: raise NotImplementedError('Should pass a matrix function function in')
+            
             # proped from prev frame. since we want prev ids, we should get filter ones.
             if nise_cfg.ALG.JOINT_PROP_WITH_FILTERED_HUMAN:  # if filtered when proped, no need to do it here
                 prev_joints = self.new_joints.squeeze()  # squeeze is not for the first dim
             else:
                 prev_boxes_filtered, prev_boxes_idx = Q[-1].get_filtered_bboxes()
                 prev_joints = self.new_joints[prev_boxes_idx].squeeze()  # squeeze is not for the first dim
-            
+            # ─── MATCHING ──────────────────────────────
             prev_joints = expand_vector_to_tensor(prev_joints, 3)  # unsqueeze if accidental injury happens
             prev_ids = Q[-1].human_ids
             assert (prev_joints.shape[0] == len(prev_ids))
-            id_joints = self.joints[self.id_idx_in_unified, :, :]
-            id_joints = expand_vector_to_tensor(id_joints, 3)  # in case only one person is in this image
-            dist_mat = get_dist_mat(id_joints, prev_joints)
-            # to use munkres package, we need int. munkres minimize cost, so use negative version
-            scaled_distance_matrix = -nise_cfg.ALG._OKS_MULTIPLIER * dist_mat
-            # but if converted to numpy, will have precision problem
-            scaled_distance_matrix = scaled_distance_matrix.numpy()
-            mask = (scaled_distance_matrix <= -1e-9).astype(np.float32)
-            scaled_distance_matrix *= mask
-            indexes = FrameItem.mkrs.compute(scaled_distance_matrix.tolist())
-            # print_matrix(scaled_distance_matrix, msg = 'Maximize total cost...')
-            for cur, prev in indexes:
-                # value = dist_mat[cur][prev]
-                # debug_print('(%d, %d) -> %f' % (cur, prev, value))
-                self.human_ids[cur] = prev_ids[prev]
-            for i in range(self.human_ids.shape[0]):
-                if self.human_ids[i] == 0:  # unassigned
-                    self.human_ids[i] = FrameItem.max_id + 1
-                    FrameItem.max_id += 1
-            debug_print('ID Assigned')
+            
+            if len(prev_ids) == 0:
+                # if no person in the previous frame, consecutively
+                self.human_ids = torch.tensor(
+                    range(FrameItem.max_id + 1, FrameItem.max_id + self.id_bboxes.shape[0] + 1)).long()
+                FrameItem.max_id = FrameItem.max_id + self.id_bboxes.shape[0]  # not +1
+            else:
+                id_joints = self.joints[self.id_idx_in_unified, :, :]
+                id_joints = expand_vector_to_tensor(id_joints, 3)  # in case only one person is in this image
+                dist_mat = get_dist_mat(id_joints, prev_joints)
+                # to use munkres package, we need int. munkres minimize cost, so use negative version
+                scaled_distance_matrix = -nise_cfg.ALG._OKS_MULTIPLIER * dist_mat
+                # but if converted to numpy, will have precision problem
+                scaled_distance_matrix = scaled_distance_matrix.numpy()
+                mask = (scaled_distance_matrix <= -1e-9).astype(np.float32)
+                scaled_distance_matrix *= mask
+                indexes = FrameItem.mkrs.compute(scaled_distance_matrix.tolist())
+                # print_matrix(scaled_distance_matrix, msg = 'Maximize total cost...')
+                for cur, prev in indexes:
+                    # value = dist_mat[cur][prev]
+                    # debug_print('(%d, %d) -> %f' % (cur, prev, value))
+                    self.human_ids[cur] = prev_ids[prev]
+                for i in range(self.human_ids.shape[0]):
+                    if self.human_ids[i] == 0:  # unassigned
+                        self.human_ids[i] = FrameItem.max_id + 1
+                        FrameItem.max_id += 1
+        debug_print('ID Assigned')
         self.id_assigned = True
     
     def _resize_x(self, x):
@@ -372,7 +399,7 @@ class FrameItem:
         )
         
         # SHOW JOINTS
-        if self.joints.numel()==0:
+        if self.joints.numel() == 0:
             # No joints to draw
             return
         joints_to_show = self.joints[self.id_idx_in_unified]
