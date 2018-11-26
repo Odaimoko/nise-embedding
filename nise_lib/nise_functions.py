@@ -39,6 +39,8 @@ def get_nise_arg_parser():
                         help = 'path to save checkpoint (default: checkpoint)')
     parser.add_argument('--resume', default = '', type = str, metavar = 'PATH',
                         help = 'path to latest checkpoint')
+    parser.add_argument('--nise_mode', default = 'valid', type = str, metavar = 'STR',
+                        help = '[valid/train]')
     args, rest = parser.parse_known_args()
     return args
 

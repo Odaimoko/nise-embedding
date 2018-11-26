@@ -26,11 +26,12 @@ class FrameItem:
          One image or a batch of images?
     '''
     
-    def __init__(self, img_path, is_first = False):
+    def __init__(self, img_path, task = 2, is_first = False):
         '''
 
         :param is_first: is this frame the first of the sequence
         '''
+        self.task = task
         self.is_first = is_first
         self.img_path = img_path
         self.img_name = PurePosixPath(img_path).stem
@@ -209,6 +210,13 @@ class FrameItem:
     
     def unify_bbox(self):
         """ - merge bbox; nms; """
+        
+        def set_empty_unified_bbox():
+            
+            self.unified_bboxes = torch.tensor([])
+            # kakunin! No box at all in this image
+            self.NO_BBOXES = True
+        
         if self.is_first:
             all_bboxes = self.detected_bboxes
         else:
@@ -217,25 +225,26 @@ class FrameItem:
                     'Should run human detection and joints propagation first')
             num_classes = 2  # bg and human
             all_bboxes = torch.cat([self.detected_bboxes, self.joint_prop_bboxes])  # x 5
+        
         num_people = all_bboxes.shape[0]
         
         if all_bboxes.numel() == 0:
-            # no box
-            self.unified_bboxes = torch.tensor([])
-            self.bboxes_unified = True
-            # kakunin! No box at all in this image
-            self.NO_BBOXES = True
-            return
-        
-        scores = all_bboxes[:, 4]  # vector
-        scores = torch.stack([torch.zeros(num_people), scores], 1)  # num_people x 2
-        cls_all_bboxes = torch.cat([torch.zeros(num_people, 4), all_bboxes[:, :4]], 1)  # num people x 8
-        scores, boxes, cls_boxes = box_results_with_nms_and_limit(scores, cls_all_bboxes, 2)
-        self.unified_bboxes = to_torch(cls_boxes[1])  # 0 for bg, num_nmsed x 5
-        # Althought we dont filter out boxes with low score, we leave out those with small areas
-        if nise_cfg.ALG.FILTER_BBOX_WITH_SMALL_AREA:
-            self.unified_bboxes, _ = filter_bbox_with_area(self.unified_bboxes)
-        self.unified_bboxes = expand_vector_to_tensor(self.unified_bboxes)
+            # no box, set to 0 otherwise error will occur in the next line,
+            # in scores = all_bboxes[:, 4]  # vector
+            set_empty_unified_bbox()
+        else:
+            scores = all_bboxes[:, 4]  # vector
+            scores = torch.stack([torch.zeros(num_people), scores], 1)  # num_people x 2
+            cls_all_bboxes = torch.cat([torch.zeros(num_people, 4), all_bboxes[:, :4]], 1)  # num people x 8
+            scores, boxes, cls_boxes = box_results_with_nms_and_limit(scores, cls_all_bboxes, 2)
+            self.unified_bboxes = to_torch(cls_boxes[1])  # 0 for bg, num_nmsed x 5
+            # Althought we dont filter out boxes with low score, we leave out those with small areas
+            # QQ 这里这样正确吗，需不需要filter？thres参数又是怎么样？
+            if nise_cfg.ALG.FILTER_BBOX_WITH_SMALL_AREA:
+                self.unified_bboxes, _ = filter_bbox_with_area(self.unified_bboxes)
+            self.unified_bboxes = expand_vector_to_tensor(self.unified_bboxes)
+            if self.unified_bboxes.numel() == 0:
+                set_empty_unified_bbox()
         self.bboxes_unified = True
     
     def get_filtered_bboxes(self):
