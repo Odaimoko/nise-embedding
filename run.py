@@ -5,6 +5,7 @@
 # ────────────────────────────────────────────────────────────────────────────
 
 import visdom
+from pathlib import PurePosixPath
 # local packages
 import nise_lib._init_paths
 from flownet_utils import tools
@@ -14,7 +15,7 @@ from nise_lib.core import *
 from tron_lib.core.config import cfg as tron_cfg
 from simple_lib.core.config import config as simple_cfg
 
-viz = visdom.Visdom(env = 'run-with-flownet')
+# viz = visdom.Visdom(env = 'run-with-flownet')
 make_nise_dirs()
 
 batch_size = 8
@@ -34,10 +35,18 @@ if nise_cfg.DEBUG.load_joint_est_model:
 if nise_cfg.DEBUG.load_human_det_model:
     human_detect_args = human_detect_parse_args()
     maskRCNN, human_det_dataset = load_human_detect_model(human_detect_args, tron_cfg)
- 
+
 nise_args = get_nise_arg_parser()
 setattr(nise_args, 'simple_model_file', simple_args.simple_model_file)
-nise_pred_task_3_debug(nise_cfg.PATH.GT_VAL_ANNOTATION_DIR,
-                       os.path.join(nise_cfg.PATH.JSON_SAVE_DIR,nise_cfg.PATH.GT_VAL_ANNOTATION_DIR), human_det_dataset, maskRCNN,
+if nise_args.nise_mode=='valid':
+    dataset_path = nise_cfg.PATH.GT_VAL_ANNOTATION_DIR
+elif nise_args.nise_mode=='train':
+    dataset_path=nise_cfg.PATH.GT_TRAIN_ANNOTATION_DIR
+
+
+nise_pred_task_3_debug(dataset_path,
+                       os.path.join(nise_cfg.PATH.JSON_SAVE_DIR,
+                                    PurePosixPath(dataset_path).name + '_pred'), human_det_dataset,
+                       maskRCNN,
                        simple_joint_est_model, flow_model)
 # train_est_on_posetrack(simple_args,simple_cfg, simple_joint_est_model, None)
