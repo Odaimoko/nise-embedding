@@ -4,7 +4,9 @@
 
 # experiment
 
-Single-frame pose estimation training log. The person is cropped using gt, and the  accuracy is calculated according to single person.
+Single-frame pose estimation training log. 
+
+The person is cropped using gt, and the  accuracy is calculated according to single person.
 
 ```
 Epoch 0
@@ -41,14 +43,28 @@ Epoch 19
 
 
 
-Using Model from epoch 18, use it on pt17 validation for PT task 2 & 3 (multi-frame pose est and tracking)
+person detector: [Detectron](https://github.com/roytseng-tw/Detectron.pytorch#supported-network-modules), config `my_e2e_mask_rcnn_X-101-64x4d-FPN_1x`, which has the highest boxes AP in the general fasterRCNN/Mask RCNN family. The modification is only to turn off mask. 
+
+```
+$ diff my_e2e_mask_rcnn_X-101-64x4d-FPN_1x.yaml ../Detectron.pytorch/tron_configs/baselines/e2e_mask_rcnn_X-101-64x4d-FPN_1x.yaml
+5c5
+<   MASK_ON: False # turn off mask
+---
+>   MASK_ON: True
+```
+
+
+
+Using Model from epoch 19, use it on pt17 validation for PT task 2 & 3 (multi-frame pose est)
 
 ```
 & Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
 & 12.6 & 11.8 &  7.1 &  4.1 &  7.7 &  3.8 &  1.8 &  7.4 \\
 ```
 
-For task 1
+
+
+For task 1, no joint propagation used.
 
 ```
 
@@ -62,6 +78,10 @@ Average Precision (AP) metric:
 & Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
 & 14.0 & 13.6 &  8.8 &  5.1 & 10.2 &  5.7 &  3.3 &  9.0 \\
 ```
+
+接口问题
+
+固定 gt 的 bbox，est joints
 
 
 

@@ -111,3 +111,5 @@ venv.bak/
 mkrs_try.py
 run_with_flownet_debugging_backup.py
 f.json
+pred_json/val_gt_task1-using-gtbbox/.DS_Store
+pred_json/.DS_Store

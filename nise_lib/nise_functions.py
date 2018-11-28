@@ -563,10 +563,11 @@ def imcrop(img, bbox):
 # ─── BOX UTILS ──────────────────────────────────────────────────────────────────
 
 
-def joints_to_bboxes(new_joints):
+def joints_to_bboxes(new_joints, clamp_size = ()):
     '''
 
     :param new_joints:  num_people x num_joints x 2
+    :param clamp_size: if none, dont clamp; if 2-element list,(w,h)
     :return:
     '''
     min_xs, _ = torch.min(new_joints[:, :, 0], 1)
@@ -582,10 +583,11 @@ def joints_to_bboxes(new_joints):
     max_xs += ws
     min_ys -= hs
     max_ys += hs
-    min_xs.clamp_(0, nise_cfg.DATA.flow_input_size[0])
-    max_xs.clamp_(0, nise_cfg.DATA.flow_input_size[0])
-    min_ys.clamp_(0, nise_cfg.DATA.flow_input_size[1])
-    max_ys.clamp_(0, nise_cfg.DATA.flow_input_size[1])
+    if clamp_size:
+        min_xs.clamp_(0, clamp_size[0])
+        max_xs.clamp_(0, clamp_size[0])
+        min_ys.clamp_(0, clamp_size[1])
+        max_ys.clamp_(0, clamp_size[1])
     
     joint_prop_bboxes = torch.stack([
         min_xs, min_ys, max_xs, max_ys
@@ -710,6 +712,39 @@ def get_type_from_dir(dirpath, type_list):
         if pathlib.PurePosixPath(f).suffix.lower() in type_list:
             files.append(os.path.join(dirpath, f))
     return files
+
+
+def get_meta_from_annorects(annorects):
+    all_joints = []
+    all_bbox = []
+    for i in range(len(annorects)):
+        rect = annorects[i]
+        
+        joints_3d = np.zeros((nise_cfg.DATA.num_joints, 2), dtype = np.float)
+        points = rect['annopoints']
+        # there's a person, but no annotations
+        if points is None or len(points) <= 0:  # 因为有些图并没有annotation
+            continue
+        else:
+            points = points[0]['point']
+        for pt_info in points:
+            # analogous to coco.py  # matlab based on 1.
+            i_pt = pt_info['id'][0]
+            joints_3d[i_pt, 0] = pt_info['x'][0] - 1
+            joints_3d[i_pt, 1] = pt_info['y'][0] - 1
+            
+            # t_vis = pt_info['is_visible'][0]
+            # if t_vis > 1: t_vis = 1
+            # joints_3d_vis[i_pt, 0] = t_vis
+            # joints_3d_vis[i_pt, 1] = t_vis
+            # joints_3d_vis[i_pt, 2] = 0
+        # head_bbox = [rect['x1'][0], rect['y1'][0], rect['x2'][0], rect['y2'][0]]
+        # head_bbox = np.array(head_bbox)
+        all_joints.append(joints_3d)
+    
+    joints = torch.tensor(all_joints).float()
+    
+    return joints
 
 
 if __name__ == '__main__':

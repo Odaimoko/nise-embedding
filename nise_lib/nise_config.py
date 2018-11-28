@@ -102,11 +102,15 @@ class NiseConfig:
         def __init__(self):
             self.SEQ_DIR = 'data/pt17/images/bonn/000001_bonn/'
             self.JOINTS_DIR = 'images_joint/'
-            self.IMAGES_OUT_DIR = 'images_out'
+            self.IMAGES_OUT_DIR = 'images_out/'
             self.JSON_SAVE_DIR = 'pred_json/'
             self.POSETRACK_ROOT = 'data/pt17/'
             self.GT_TRAIN_ANNOTATION_DIR = os.path.join(self.POSETRACK_ROOT, 'train_anno_json/')
             self.GT_VAL_ANNOTATION_DIR = os.path.join(self.POSETRACK_ROOT, 'valid_anno_json/')
+    
+    class _TEST:
+        def __init__(self):
+            self.USE_GT_VALID_BOX = True
     
     def __init__(self):
         #
@@ -127,6 +131,8 @@ class NiseConfig:
         self.ALG = NiseConfig._ALG()
         
         self.PATH = NiseConfig._PATH()
+        
+        self.TEST=NiseConfig._TEST()
 
 
 cfg = NiseConfig()

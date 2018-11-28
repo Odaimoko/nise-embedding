@@ -31,7 +31,7 @@ class FrameItem:
 
         :param is_first: is this frame the first of the sequence
         '''
-        self.task = task # 1 for single-frame, 2 for multi-frame and tracking
+        self.task = task  # 1 for single-frame, 2 for multi-frame and tracking
         self.is_first = is_first
         self.img_path = img_path
         self.img_name = PurePosixPath(img_path).stem
@@ -82,25 +82,37 @@ class FrameItem:
         
         self.NO_BBOXES = False
     
-    def detect_human(self, detector):
+    def detect_human(self, detector, gt_joints = None):
         '''
         """ - detect person: do we use all the results? - """
 
         :param detector:
         :return: human is represented as tensor of size num_people x 4. The result is NMSed.
         '''
-        # no problem for RGB BGR, since the example from detectron use this in this way
-        # self.img is a tensor with size C x H x W, but detector needs H x W x C and BGR
-        cls_boxes = im_detect_all(detector, self.bgr_img)
-        human_bboxes = torch.from_numpy(cls_boxes[1])  # person is the first class of coco， 0 for background
-        if nise_cfg.ALG.FILTER_HUMAN_WHEN_DETECT:
-            # Dont use all, only high confidence
-            self.detected_bboxes, idx = filter_bbox_with_scores(human_bboxes)
+        
+        if nise_cfg.TEST.USE_GT_VALID_BOX and gt_joints is not None:
+            if gt_joints.numel() == 0:
+                self.detected_bboxes = torch.tensor([])
+            else:
+                gt_bbox = joints_to_bboxes(gt_joints, (self.img_w, self.img_h))
+                gt_bbox = expand_vector_to_tensor(gt_bbox)
+                gt_scores = torch.ones([gt_bbox.shape[0]])
+                gt_scores.unsqueeze_(1)
+                self.detected_bboxes = torch.cat([gt_bbox, gt_scores], 1)
+        
         else:
-            self.detected_bboxes = human_bboxes
-        # 有可能出现没检测到的情况，大部分不可能，但是工程起见。
-        # TODO 比如 bonn_mpii_train_5sec\00098_mpii 最前面几个是全黑所以检测不到……emmmm怎么办呢
-        self.detected_bboxes = expand_vector_to_tensor(self.detected_bboxes)
+            # no problem for RGB BGR, since the example from detectron use this in this way
+            # self.img is a tensor with size C x H x W, but detector needs H x W x C and BGR
+            cls_boxes = im_detect_all(detector, self.bgr_img)
+            human_bboxes = torch.from_numpy(cls_boxes[1])  # person is the first class of coco， 0 for background
+            if nise_cfg.ALG.FILTER_HUMAN_WHEN_DETECT:
+                # Dont use all, only high confidence
+                self.detected_bboxes, idx = filter_bbox_with_scores(human_bboxes)
+            else:
+                self.detected_bboxes = human_bboxes
+            # 有可能出现没检测到的情况，大部分不可能，但是工程起见。
+            # TODO 比如 bonn_mpii_train_5sec\00098_mpii 最前面几个是全黑所以检测不到……emmmm怎么办呢
+            self.detected_bboxes = expand_vector_to_tensor(self.detected_bboxes)
         self.human_detected = True
     
     def gen_flow(self, flow_model, prev_frame_img = None):
@@ -196,7 +208,7 @@ class FrameItem:
             # for similarity. no need to expand here cause if only prev_joints has the right dimension
             self.new_joints = new_joints
             # calc new bboxes from new joints
-            joint_prop_bboxes = joints_to_bboxes(self.new_joints)
+            joint_prop_bboxes = joints_to_bboxes(self.new_joints, nise_cfg.DATA.flow_input_size)
             # add scores
             joint_prop_bboxes_scores.unsqueeze_(1)
             self.joint_prop_bboxes = torch.cat([joint_prop_bboxes, joint_prop_bboxes_scores], 1)
@@ -447,10 +459,10 @@ class FrameItem:
                     {
                         'score': [-1],
                         'track_id': [0],
-                                'x1': [0],
-                                'x2': [0],
-                                'y1': [0],
-                                'y2': [0],
+                        'x1': [0],
+                        'x2': [0],
+                        'y1': [0],
+                        'y2': [0],
                         'annopoints': [
                             {
                                 'point': [
@@ -458,7 +470,7 @@ class FrameItem:
                                         'id': [j],
                                         'x': [self.joints[i, j, 0].item() * self.ori_img_w / self.img_w],
                                         'y': [self.joints[i, j, 1].item() * self.ori_img_h / self.img_h],
-                                        'score': [-1]  # what score????
+                                        'score': [1]  # what score????
                                     } for j in range(nise_cfg.DATA.num_joints)
                                 ]
                             }
@@ -480,10 +492,10 @@ class FrameItem:
                     {
                         'score': [self.id_bboxes[i, 4].item()],
                         'track_id': [self.human_ids[i].item()],
-                                'x1': [0],
-                                'x2': [0],
-                                'y1': [0],
-                                'y2': [0],
+                        'x1': [0],
+                        'x2': [0],
+                        'y1': [0],
+                        'y2': [0],
                         'annopoints': [
                             {
                                 'point': [
