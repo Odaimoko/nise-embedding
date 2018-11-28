@@ -567,11 +567,21 @@ def joints_to_bboxes(new_joints, joint_vis = None, clamp_size = ()):
     '''
 
     :param new_joints:  num_people x num_joints x 2
+    :param joint_vis: if some joint for a person is invisible, the coord will be 0, dont include it in min. max is not affected
     :param clamp_size: if none, dont clamp; if 2-element list,(w,h)
     :return:
     '''
-    min_xs, _ = torch.min(new_joints[:, :, 0], 1)
-    min_ys, _ = torch.min(new_joints[:, :, 1], 1)
+    # copy
+    new_joints = torch.tensor(new_joints)
+    num_people, num_joints, _ = new_joints.shape
+    if joint_vis is None:
+        joint_vis = torch.ones(num_people, num_joints)
+    joint_invis = joint_vis == 0
+    for_min = torch.zeros(num_people, num_joints)
+    for_min[joint_invis] = 9999
+    # for_max = torch.zeros(num_people, num_joints)
+    min_xs, _ = torch.min(new_joints[:, :, 0] + for_min, 1)
+    min_ys, _ = torch.min(new_joints[:, :, 1] + for_min, 1)
     max_xs, _ = torch.max(new_joints[:, :, 0], 1)
     max_ys, _ = torch.max(new_joints[:, :, 1], 1)
     # extend by a centain factor
