@@ -31,7 +31,7 @@ class FrameItem:
 
         :param is_first: is this frame the first of the sequence
         '''
-        self.task = task
+        self.task = task # 1 for single-frame, 2 for multi-frame and tracking
         self.is_first = is_first
         self.img_path = img_path
         self.img_name = PurePosixPath(img_path).stem
@@ -378,7 +378,7 @@ class FrameItem:
         return resized_joints
     
     def visualize(self, dataset):
-        if self.id_assigned is False:
+        if self.id_assigned is False and self.task != 1:
             raise ValueError('Should assign id first.')
         class_boxes = [[]] * 81
         # filter for showing joints
@@ -447,12 +447,12 @@ class FrameItem:
                     {
                         'score': [-1],
                         'track_id': [0],
-                        'annopoints': [
-                            {
                                 'x1': [0],
                                 'x2': [0],
                                 'y1': [0],
                                 'y2': [0],
+                        'annopoints': [
+                            {
                                 'point': [
                                     {  # j for joints
                                         'id': [j],
@@ -480,12 +480,12 @@ class FrameItem:
                     {
                         'score': [self.id_bboxes[i, 4].item()],
                         'track_id': [self.human_ids[i].item()],
-                        'annopoints': [
-                            {
                                 'x1': [0],
                                 'x2': [0],
                                 'y1': [0],
                                 'y2': [0],
+                        'annopoints': [
+                            {
                                 'point': [
                                     {  # j for joints
                                         'id': [j],
