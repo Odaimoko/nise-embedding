@@ -563,7 +563,7 @@ def imcrop(img, bbox):
 # ─── BOX UTILS ──────────────────────────────────────────────────────────────────
 
 
-def joints_to_bboxes(new_joints, clamp_size = ()):
+def joints_to_bboxes(new_joints, joint_vis = None, clamp_size = ()):
     '''
 
     :param new_joints:  num_people x num_joints x 2
@@ -714,13 +714,13 @@ def get_type_from_dir(dirpath, type_list):
     return files
 
 
-def get_meta_from_annorects(annorects):
+def get_joints_from_annorects(annorects):
     all_joints = []
-    all_bbox = []
     for i in range(len(annorects)):
         rect = annorects[i]
         
-        joints_3d = np.zeros((nise_cfg.DATA.num_joints, 2), dtype = np.float)
+        joints_3d = np.zeros((nise_cfg.DATA.num_joints, 3), dtype = np.float)
+        # joints_3d_vis = np.zeros((nise_cfg.DATA.num_joints, 1), dtype = np.float)
         points = rect['annopoints']
         # there's a person, but no annotations
         if points is None or len(points) <= 0:  # 因为有些图并没有annotation
@@ -733,11 +733,9 @@ def get_meta_from_annorects(annorects):
             joints_3d[i_pt, 0] = pt_info['x'][0] - 1
             joints_3d[i_pt, 1] = pt_info['y'][0] - 1
             
-            # t_vis = pt_info['is_visible'][0]
-            # if t_vis > 1: t_vis = 1
-            # joints_3d_vis[i_pt, 0] = t_vis
-            # joints_3d_vis[i_pt, 1] = t_vis
-            # joints_3d_vis[i_pt, 2] = 0
+            t_vis = pt_info['is_visible'][0]
+            if t_vis > 1: t_vis = 1
+            joints_3d[i_pt, 2] = t_vis
         # head_bbox = [rect['x1'][0], rect['y1'][0], rect['x2'][0], rect['y2'][0]]
         # head_bbox = np.array(head_bbox)
         all_joints.append(joints_3d)

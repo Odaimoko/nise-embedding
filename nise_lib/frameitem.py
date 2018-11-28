@@ -46,10 +46,15 @@ class FrameItem:
         # target torch.Size([8, 2, 384, 1024]) maybe offsets
         
         """
-        self.bgr_img = scipy.misc.imresize(  # h and w is reversed
-            self.original_img,
-            (nise_cfg.DATA.flow_input_size[1], nise_cfg.DATA.flow_input_size[0])
-        )
+        if nise_cfg.TEST.USE_GT_VALID_BOX:
+            # dont change image size ok?
+            self.bgr_img = self.original_img
+        else:
+            self.bgr_img = scipy.misc.imresize(  # h and w is reversed
+                self.original_img,
+                (nise_cfg.DATA.flow_input_size[1], nise_cfg.DATA.flow_input_size[0])
+            )
+        
         # only used in computation of center and scale
         self.img_h, self.img_w, _ = self.bgr_img.shape
         self.img_ratio = self.img_w * 1.0 / self.img_h
@@ -94,7 +99,7 @@ class FrameItem:
             if gt_joints.numel() == 0:
                 self.detected_bboxes = torch.tensor([])
             else:
-                gt_bbox = joints_to_bboxes(gt_joints, (self.img_w, self.img_h))
+                gt_bbox = joints_to_bboxes(gt_joints[:, :2], gt_joints[:, 2](self.img_w, self.img_h))
                 gt_bbox = expand_vector_to_tensor(gt_bbox)
                 gt_scores = torch.ones([gt_bbox.shape[0]])
                 gt_scores.unsqueeze_(1)
@@ -281,18 +286,16 @@ class FrameItem:
             center, scale = box2cs(bb, self.img_ratio)  # TODO: is this right?
             rotation = 0
             # from simple/JointDataset.py
-            trans = get_affine_transform(center, scale, rotation, nise_cfg.DATA.human_bbox_size)
+            trans = get_affine_transform(center, scale, rotation, simple_cfg.MODEL.IMAGE_SIZE)
+            # In simple_cfg, 0 is h/1 for w. in warpAffine should be (w,h)
+            # but when visualization, it seems that the reverse way is correct??
+            # 哦是因为192是宽256是高
             resized_human = cv2.warpAffine(
                 self.bgr_img,  # hw3
                 trans,
-                (int(nise_cfg.DATA.human_bbox_size[0]),
-                 int(nise_cfg.DATA.human_bbox_size[1])),
+                (int(simple_cfg.MODEL.IMAGE_SIZE[0]), int(simple_cfg.MODEL.IMAGE_SIZE[1])),
                 flags = cv2.INTER_LINEAR)
             
-            # cropped_human = imcrop(self.bgr_img, bb.long().numpy())  # np hwc, bgr
-            # cropped_human = np.array(cropped_human[:, :, ::-1])  # np hwc, rgb
-            # debug_print('resizing ', self.img_name, '\'s', i)
-            # resized_human = resize(im_to_torch(cropped_human), *nise_cfg.DATA.human_bbox_size)  # tensor, chw, rgb
             resized_human = im_to_torch(resized_human)
             resized_human.unsqueeze_(0)  # make it batch so we can use detector
             joint_hmap = joint_detector(resized_human)
@@ -457,12 +460,12 @@ class FrameItem:
                 ],
                 'annorect': [  # i for people
                     {
-                        'score': [-1],
-                        'track_id': [0],
                         'x1': [0],
                         'x2': [0],
                         'y1': [0],
                         'y2': [0],
+                        'score': [-1],
+                        'track_id': [0],
                         'annopoints': [
                             {
                                 'point': [

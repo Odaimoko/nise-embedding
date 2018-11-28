@@ -64,7 +64,6 @@ class NiseConfig:
             #  should ask author
             self.flow_input_size = (1024, 576)
             # should initialize from simple_cfg
-            self.human_bbox_size = (256, 192)
     
     class _DEBUG:
         def __init__(self):
