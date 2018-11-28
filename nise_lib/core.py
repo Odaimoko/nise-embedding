@@ -18,9 +18,9 @@ def nise_pred_task_1_debug(gt_anno_dir, json_save_dir, vis_dataset, hunam_detect
     mkdir(json_save_dir)
     for i, file_name in enumerate(anno_file_names):
         print(i, file_name)
-        if not '1001' in file_name:  # the first images contains no people, cant deal with this now so ignore this.
-            continue
-        # if i > 0: continue
+        # if not '1001' in file_name:  # the first images contains no people, cant deal with this now so ignore this.
+        #     continue
+        if i <= 5: continue
         p = PurePosixPath(file_name)
         json_path = os.path.join(json_save_dir, p.parts[-1])
         with open(file_name, 'r') as f:

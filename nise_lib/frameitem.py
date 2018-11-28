@@ -99,7 +99,7 @@ class FrameItem:
             if gt_joints.numel() == 0:
                 self.detected_bboxes = torch.tensor([])
             else:
-                gt_bbox = joints_to_bboxes(gt_joints[:, :2], gt_joints[:, 2](self.img_w, self.img_h))
+                gt_bbox = joints_to_bboxes(gt_joints[:,:, :2], gt_joints[:,:, 2],(self.img_w, self.img_h))
                 gt_bbox = expand_vector_to_tensor(gt_bbox)
                 gt_scores = torch.ones([gt_bbox.shape[0]])
                 gt_scores.unsqueeze_(1)

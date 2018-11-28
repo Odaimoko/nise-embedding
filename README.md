@@ -85,3 +85,26 @@ Average Precision (AP) metric:
 
 
 
+## 问题记录
+
+### 2018-11-28
+
+005067。以下是第一张图对被遮蔽的三人进行est的结果，似乎人的box拉长了就无法est。
+
+![00000001](assets/00000001.jpg)
+
+![00000001_id_04](assets/00000001_id_04.jpg)
+
+![00000001_id_05](assets/00000001_id_05.jpg)
+
+![00000001_id_06](assets/00000001_id_06.jpg)
+
+对应的single person情况是
+
+![val_124_gt](assets/val_124_gt.jpg)
+
+![val_124_pred](assets/val_124_pred.jpg)
+
+![val_125_gt](assets/val_125_gt.jpg)
+
+![val_125_pred](assets/val_125_pred.jpg)

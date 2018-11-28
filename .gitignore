@@ -1,9 +1,4 @@
-# Oda's
-.idea/
-ae_lib/
-*.jpg
-*.pdf
-*.json
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -113,4 +108,11 @@ run_with_flownet_debugging_backup.py
 f.json
 pred_json/val_gt_task1-using-gtbbox/.DS_Store
 pred_json/.DS_Store
-00000001.psd
+00000001.psd# Oda's
+.idea/
+ae_lib/
+*.jpg
+*.psd
+*.pdf
+*.json
+!assets/*
