@@ -16,7 +16,6 @@ from tron_lib.core.config import cfg as tron_cfg
 from simple_lib.core.config import config as simple_cfg
 
 # viz = visdom.Visdom(env = 'run-with-flownet')
-make_nise_dirs()
 
 batch_size = 8
 # ─── FROM FLOWNET 2.0 ───────────────────────────────────────────────────────────
@@ -38,11 +37,14 @@ if nise_cfg.DEBUG.load_human_det_model:
 
 nise_args = get_nise_arg_parser()
 setattr(nise_args, 'simple_model_file', simple_args.simple_model_file)
-if nise_args.nise_mode=='valid':
+if nise_args.nise_mode == 'valid':
     dataset_path = nise_cfg.PATH.GT_VAL_ANNOTATION_DIR
-elif nise_args.nise_mode=='train':
-    dataset_path=nise_cfg.PATH.GT_TRAIN_ANNOTATION_DIR
+elif nise_args.nise_mode == 'train':
+    dataset_path = nise_cfg.PATH.GT_TRAIN_ANNOTATION_DIR
 
+nise_cfg.PATH.IMAGES_OUT_DIR += nise_args.nise_mode
+nise_cfg.PATH.JOINTS_DIR += nise_args.nise_mode
+make_nise_dirs()
 
 nise_pred_task_1_debug(dataset_path,
                        os.path.join(nise_cfg.PATH.JSON_SAVE_DIR,
