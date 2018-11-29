@@ -41,6 +41,14 @@ Epoch 19
 2018-11-22 00:27:51,211 | 256x192_pose_resnet_50_d256d256d256 | 93.126 | 92.207 | 87.140 | 80.737 | 86.607 | 83.415 | 79.079 | 87.151 | 30.606 |
 ```
 
+For model in epoch 18, if turn off FLIP_TEST, PCKh is 
+
+| Head   | Shoulder | Elbow  | Wrist  | Hip    | Knee   | Ankle  | Mean   | Mean@0.1 |
+| ---- | ------ | -------- | ------ | ------ | ------ | ------ | ------ | ------ | -------- |
+| 93.252 | 92.587   | 88.018 | 81.944 | 87.558 | 84.431 | 79.833 | 87.867 | 29.610   |
+
+Turn on is the same???? IDK
+
 
 
 person detector: [Detectron](https://github.com/roytseng-tw/Detectron.pytorch#supported-network-modules), config `my_e2e_mask_rcnn_X-101-64x4d-FPN_1x`, which has the highest boxes AP in the general fasterRCNN/Mask RCNN family. The modification is only to turn off mask. 
@@ -99,7 +107,7 @@ Average Precision (AP) metric:
 
 ![00000001_id_06](assets/00000001_id_06.jpg)
 
-对应的single person情况是
+对应的single person情况是（以下是gt/predictation成对）
 
 ![val_124_gt](assets/val_124_gt.jpg)
 
@@ -108,3 +116,21 @@ Average Precision (AP) metric:
 ![val_125_gt](assets/val_125_gt.jpg)
 
 ![val_125_pred](assets/val_125_pred.jpg)
+
+为什么single 要优质一些？是因为box好一些吗？去看box。
+
+## 2018-11-29
+
+解决2018-11-28的问题，重新计算了 center 和 scale
+
+```
+For task 1
+('# gt frames  :', 66558)
+('# pred frames:', 66558)
+Evaluation of per-frame multi-person pose estimation
+('saving results to', './out/total_AP_metrics.json')
+Average Precision (AP) metric:
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 67.8 & 63.4 & 48.2 & 36.0 & 54.8 & 44.2 & 37.1 & 51.4 \\
+```
+
