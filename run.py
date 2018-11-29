@@ -46,9 +46,20 @@ nise_cfg.PATH.IMAGES_OUT_DIR += nise_args.nise_mode
 nise_cfg.PATH.JOINTS_DIR += nise_args.nise_mode
 make_nise_dirs()
 
-nise_pred_task_1_debug(dataset_path,
-                       os.path.join(nise_cfg.PATH.JSON_SAVE_DIR,
-                                    PurePosixPath(dataset_path).name + '_pred'), human_det_dataset,
-                       maskRCNN,
-                       simple_joint_est_model, flow_model)
+if nise_args.nise_task == '1':
+    
+    nise_pred_task_1_debug(dataset_path,
+                           os.path.join(nise_cfg.PATH.JSON_SAVE_DIR,
+                                        PurePosixPath(dataset_path).name + '_pred_task_' + nise_args.nise_task),
+                           human_det_dataset,
+                           maskRCNN,
+                           simple_joint_est_model, flow_model)
+elif nise_args.nise_task == '2':
+    
+    nise_pred_task_3_debug(dataset_path,
+                           os.path.join(nise_cfg.PATH.JSON_SAVE_DIR,
+                                        PurePosixPath(dataset_path).name + '_pred_task_' + nise_args.nise_task),
+                           human_det_dataset,
+                           maskRCNN,
+                           simple_joint_est_model, flow_model)
 # train_est_on_posetrack(simple_args,simple_cfg, simple_joint_est_model, None)
