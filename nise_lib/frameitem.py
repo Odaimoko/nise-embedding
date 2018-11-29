@@ -9,7 +9,7 @@ import time
 from nise_lib.nise_functions import *
 from nise_lib.nise_debugging_func import *
 from nise_lib.nise_config import cfg as nise_cfg
-from nise_utils.simple_vis import save_batch_image_with_joints
+from nise_utils.simple_vis import save_batch_image_with_joints, get_batch_image_with_joints
 import tron_lib.utils.vis as vis_utils
 from tron_lib.core.test_for_pt import im_detect_all, box_results_with_nms_and_limit
 from simple_lib.core.inference import get_final_preds
@@ -46,7 +46,7 @@ class FrameItem:
         # target torch.Size([8, 2, 384, 1024]) maybe offsets
         
         """
-        if nise_cfg.TEST.USE_GT_VALID_BOX:
+        if nise_cfg.TEST.USE_GT_VALID_BOX and self.task == 1:
             # dont change image size ok?
             self.bgr_img = self.original_img
         else:
@@ -57,7 +57,10 @@ class FrameItem:
         
         # only used in computation of center and scale
         self.img_h, self.img_w, _ = self.bgr_img.shape
-        self.img_ratio = self.img_w * 1.0 / self.img_h
+        # NG, should be model size
+        # self.img_ratio = self.img_w * 1.0 / self.img_h
+        # 依然是W/H， 回忆model第一个192是宽。
+        self.img_ratio = simple_cfg.MODEL.IMAGE_SIZE[0] / simple_cfg.MODEL.IMAGE_SIZE[1]
         # self.rgb_img = load_image(self.img_name)  # with original size? YES   ~~no, resize to some fixed size~~
         
         # tensor num_person x num_joints x 2
@@ -99,7 +102,7 @@ class FrameItem:
             if gt_joints.numel() == 0:
                 self.detected_bboxes = torch.tensor([])
             else:
-                gt_bbox = joints_to_bboxes(gt_joints[:,:, :2], gt_joints[:,:, 2],(self.img_w, self.img_h))
+                gt_bbox = joints_to_bboxes(gt_joints[:, :, :2], gt_joints[:, :, 2], (self.img_w, self.img_h))
                 gt_bbox = expand_vector_to_tensor(gt_bbox)
                 gt_scores = torch.ones([gt_bbox.shape[0]])
                 gt_scores.unsqueeze_(1)
@@ -204,7 +207,8 @@ class FrameItem:
             for person in range(new_joints.shape[0]):
                 for joint in range(nise_cfg.DATA.num_joints):
                     joint_pos = prev_frame_joints[person, joint, :]  # x,y
-                    if joint_pos[0] < self.img_w and joint_pos[1] < self.img_h:
+                    if joint_pos[0] < self.img_w and joint_pos[1] < self.img_h \
+                            and joint_pos[0] >= 0 and joint_pos[1] >= 0:
                         joint_flow = self.flow_to_current[:, joint_pos[1], joint_pos[0]].cpu()
                     else:
                         joint_flow = torch.zeros(2)
@@ -273,6 +277,12 @@ class FrameItem:
     
     def est_joints(self, joint_detector):
         """detect current image's bboxes' joints pos using human-pose-estimation - """
+        
+        p = PurePosixPath(self.img_path)
+        
+        out_dir = os.path.join(nise_cfg.PATH.JOINTS_DIR + "_single", p.parts[-2] + '_task_' + str(self.task))
+        mkdir(out_dir)
+        torch_img = im_to_torch(self.bgr_img).unsqueeze(0)
         if not self.bboxes_unified and not self.is_first:
             # if first, no unified box because no flow to prop, so dont raise
             raise ValueError('Should unify bboxes first')
@@ -284,19 +294,21 @@ class FrameItem:
             # debug_print(i, bb)
             
             center, scale = box2cs(bb, self.img_ratio)  # TODO: is this right?
+            # scale = scale / 2
             rotation = 0
             # from simple/JointDataset.py
             trans = get_affine_transform(center, scale, rotation, simple_cfg.MODEL.IMAGE_SIZE)
             # In simple_cfg, 0 is h/1 for w. in warpAffine should be (w,h)
             # but when visualization, it seems that the reverse way is correct??
             # 哦是因为192是宽256是高
-            resized_human = cv2.warpAffine(
+            resized_human_np = cv2.warpAffine(
                 self.bgr_img,  # hw3
                 trans,
                 (int(simple_cfg.MODEL.IMAGE_SIZE[0]), int(simple_cfg.MODEL.IMAGE_SIZE[1])),
                 flags = cv2.INTER_LINEAR)
-            
-            resized_human = im_to_torch(resized_human)
+            # 'images_joint/valid/015860_mpii_single_person/00000001_0.jpg'
+            cv2.imwrite(os.path.join(out_dir, p.stem + "_" + str(i) + '.jpg'), resized_human_np)
+            resized_human = im_to_torch(resized_human_np)
             resized_human.unsqueeze_(0)  # make it batch so we can use detector
             joint_hmap = joint_detector(resized_human)
             # scale = np.ones([2])  # the scale above is like a 大傻逼
@@ -307,6 +319,15 @@ class FrameItem:
                 c_unsqueezed, s_unsqueezed)  # bs x 16 x 2,  bs x 16 x 1
             # NG ! NG !
             self.joints[i, :, :] = to_torch(preds).squeeze()
+            
+            img_with_joints = get_batch_image_with_joints(torch_img, to_torch(preds), torch.ones(1, 15, 1))
+            resized_human_np_with_joints = cv2.warpAffine(
+                img_with_joints,  # hw3
+                trans,
+                (int(simple_cfg.MODEL.IMAGE_SIZE[0]), int(simple_cfg.MODEL.IMAGE_SIZE[1])),
+                flags = cv2.INTER_LINEAR)
+            cv2.imwrite(os.path.join(out_dir, p.stem + "_" + "{:02d}".format(i) + '.jpg'),
+                        resized_human_np_with_joints)
         self.joints = expand_vector_to_tensor(self.joints, 3)
         
         self.joints_detected = True
@@ -400,7 +421,7 @@ class FrameItem:
         class_boxes[1] = self.id_bboxes
         training_start_time = time.strftime("%H-%M-%S", time.localtime())
         p = PurePosixPath(self.img_path)
-        out_dir = os.path.join(nise_cfg.PATH.IMAGES_OUT_DIR, p.parts[-2])
+        out_dir = os.path.join(nise_cfg.PATH.IMAGES_OUT_DIR, p.parts[-2] + '_task_' + str(self.task))
         mkdir(out_dir)
         
         vis_utils.vis_one_image_for_pt(
@@ -427,7 +448,7 @@ class FrameItem:
         joints_to_show = self._resize_joints(joints_to_show)
         num_people, num_joints, _ = joints_to_show.shape
         
-        out_dir = os.path.join(nise_cfg.PATH.JOINTS_DIR, p.parts[-2])
+        out_dir = os.path.join(nise_cfg.PATH.JOINTS_DIR, p.parts[-2] + '_task_' + str(self.task))
         mkdir(out_dir)
         for i in range(num_people):
             joints_i = joints_to_show[i, ...]  # 16 x 2
