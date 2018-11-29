@@ -41,6 +41,8 @@ def get_nise_arg_parser():
                         help = 'path to latest checkpoint')
     parser.add_argument('--nise_mode', default = 'valid', type = str, metavar = 'STR',
                         help = '[valid/train]')
+    parser.add_argument('--nise_task', default = '1', type = str, metavar = 'N',
+                        help = '[1/2]')
     args, rest = parser.parse_known_args()
     return args
 
@@ -621,16 +623,16 @@ def box2cs(box, ratio):
     return xywh2cs(x, y, w, h, ratio)
 
 
-def xywh2cs(x, y, w, h, origianl_img_aspect_ratio):
+def xywh2cs(x, y, w, h, training_bbox_aspect_ratio):
     pixel_std = 200
     center = np.zeros((2), dtype = np.float32)
     center[0] = x + w * 0.5
     center[1] = y + h * 0.5
     
-    if w > origianl_img_aspect_ratio * h:
-        h = w * 1.0 / origianl_img_aspect_ratio
-    elif w < origianl_img_aspect_ratio * h:
-        w = h * origianl_img_aspect_ratio
+    if w > training_bbox_aspect_ratio * h:
+        h = w * 1.0 / training_bbox_aspect_ratio
+    elif w < training_bbox_aspect_ratio * h:
+        w = h * training_bbox_aspect_ratio
     scale = np.array(
         [w * 1.0 / pixel_std, h * 1.0 / pixel_std],
         dtype = np.float32)

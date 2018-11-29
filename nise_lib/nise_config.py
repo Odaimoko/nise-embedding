@@ -67,7 +67,7 @@ class NiseConfig:
     
     class _DEBUG:
         def __init__(self):
-            self.PRINT = True
+            self.PRINT = False
             self.DEVELOPING = True
             self.load_flow_model = True
             self.FLOW = False
@@ -109,8 +109,8 @@ class NiseConfig:
     
     class _TEST:
         def __init__(self):
-            self.USE_GT_VALID_BOX = True
-    
+            self.USE_GT_VALID_BOX = False
+     
     def __init__(self):
         #
         # ─── TRAINING ───────────────────────────────────────────────────────────────────
