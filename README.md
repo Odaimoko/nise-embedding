@@ -134,3 +134,18 @@ Average Precision (AP) metric:
 & 67.8 & 63.4 & 48.2 & 36.0 & 54.8 & 44.2 & 37.1 & 51.4 \\
 ```
 
+新的问题出现了，就算input的大小、图像和单人关节预测一样，但是结果不一样？
+
+[val_2565_pred](assets/val_2565_pred-1543543057015.jpg)
+
+94-gt
+
+![val_94_gt](assets/val_94_gt.jpg)
+
+94-pred
+
+![val_94_pred](assets/val_94_pred.jpg)
+
+multi的时候如下。可以看到predict的0和5重合了，而上面的0是在左脚（虽然说也错了）
+
+![00000001_01](assets/00000001_01.jpg)
