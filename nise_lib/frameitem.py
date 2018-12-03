@@ -66,6 +66,7 @@ class FrameItem:
         # tensor num_person x num_joints x 2
         # should be LongTensor since we are going to use them as index. same length with unified_bbox
         self.joints = torch.tensor([])
+        self.joints_score = torch.tensor([])
         # tensor
         self.new_joints = torch.tensor([])  # for similarity
         # tensor, in the resized img for flow.
@@ -138,7 +139,7 @@ class FrameItem:
     
     def joint_prop(self, Q):
         '''
-
+         WHAT IS PROP BOX SCORE???
         :param prev_frame_joints: 2 x num_people x num_joints
         :return:
         '''
@@ -280,13 +281,15 @@ class FrameItem:
         
         p = PurePosixPath(self.img_path)
         
-        out_dir = os.path.join(nise_cfg.PATH.JOINTS_DIR + "_single", p.parts[-2] + '_task_' + str(self.task))
+        out_dir = os.path.join(nise_cfg.PATH.JOINTS_DIR + "_single" + (
+            '_gt' if nise_cfg.TEST.USE_GT_VALID_BOX else ''), p.parts[-2] + '_task_' + str(self.task))
         mkdir(out_dir)
         torch_img = im_to_torch(self.bgr_img).unsqueeze(0)
         if not self.bboxes_unified and not self.is_first:
             # if first, no unified box because no flow to prop, so dont raise
             raise ValueError('Should unify bboxes first')
         self.joints = torch.zeros(self.unified_bboxes.shape[0], nise_cfg.DATA.num_joints, 2)  # FloatTensor
+        self.joints_score = torch.zeros(self.unified_bboxes.shape[0], nise_cfg.DATA.num_joints)  # FloatTensor
         # if no human boxes, self.joints is tensor([])
         joint_detector.eval()
         for i in range(self.unified_bboxes.shape[0]):
@@ -307,18 +310,18 @@ class FrameItem:
                 (int(simple_cfg.MODEL.IMAGE_SIZE[0]), int(simple_cfg.MODEL.IMAGE_SIZE[1])),
                 flags = cv2.INTER_LINEAR)
             # 'images_joint/valid/015860_mpii_single_person/00000001_0.jpg'
-            cv2.imwrite(os.path.join(out_dir, p.stem + "_" + str(i) + '.jpg'), resized_human_np)
             resized_human = im_to_torch(resized_human_np)
             resized_human.unsqueeze_(0)  # make it batch so we can use detector
             joint_hmap = joint_detector(resized_human)
             # scale = np.ones([2])  # the scale above is like a 大傻逼
             # make it batch so we can get right preds
             c_unsqueezed, s_unsqueezed = np.expand_dims(center, 0), np.expand_dims(scale, 0)
-            preds, _ = get_final_preds(
+            preds, max_val = get_final_preds(
                 simple_cfg, joint_hmap.detach().cpu().numpy(),
                 c_unsqueezed, s_unsqueezed)  # bs x 16 x 2,  bs x 16 x 1
             # NG ! NG !
             self.joints[i, :, :] = to_torch(preds).squeeze()
+            self.joints_score[i,:] = to_torch(max_val).squeeze()
             
             img_with_joints = get_batch_image_with_joints(torch_img, to_torch(preds), torch.ones(1, 15, 1))
             resized_human_np_with_joints = cv2.warpAffine(
@@ -421,7 +424,8 @@ class FrameItem:
         class_boxes[1] = self.id_bboxes
         training_start_time = time.strftime("%H-%M-%S", time.localtime())
         p = PurePosixPath(self.img_path)
-        out_dir = os.path.join(nise_cfg.PATH.IMAGES_OUT_DIR, p.parts[-2] + '_task_' + str(self.task))
+        out_dir = os.path.join(nise_cfg.PATH.IMAGES_OUT_DIR + (
+            '_gt' if nise_cfg.TEST.USE_GT_VALID_BOX else ''), p.parts[-2] + '_task_' + str(self.task))
         mkdir(out_dir)
         
         vis_utils.vis_one_image_for_pt(
@@ -441,14 +445,15 @@ class FrameItem:
         )
         
         # SHOW JOINTS
-        if self.joints.numel() == 0:
-            # No joints to draw
+        if self.joints.numel() == 0 or self.id_idx_in_unified.numel() == 0:
+            # Essentially no joints or no joints after filtering
             return
         joints_to_show = self.joints[self.id_idx_in_unified]
         joints_to_show = self._resize_joints(joints_to_show)
         num_people, num_joints, _ = joints_to_show.shape
         
-        out_dir = os.path.join(nise_cfg.PATH.JOINTS_DIR, p.parts[-2] + '_task_' + str(self.task))
+        out_dir = os.path.join(nise_cfg.PATH.JOINTS_DIR + (
+            '_gt' if nise_cfg.TEST.USE_GT_VALID_BOX else ''), p.parts[-2] + '_task_' + str(self.task))
         mkdir(out_dir)
         for i in range(num_people):
             joints_i = joints_to_show[i, ...]  # 16 x 2
@@ -494,7 +499,7 @@ class FrameItem:
                                         'id': [j],
                                         'x': [self.joints[i, j, 0].item() * self.ori_img_w / self.img_w],
                                         'y': [self.joints[i, j, 1].item() * self.ori_img_h / self.img_h],
-                                        'score': [1]  # what score????
+                                        'score': [self.joints_score[i,j].item()]  # what score????
                                     } for j in range(nise_cfg.DATA.num_joints)
                                 ]
                             }

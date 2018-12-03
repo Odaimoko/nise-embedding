@@ -87,9 +87,9 @@ Average Precision (AP) metric:
 & 14.0 & 13.6 &  8.8 &  5.1 & 10.2 &  5.7 &  3.3 &  9.0 \\
 ```
 
-接口问题
+- [ ] 接口问题
 
-固定 gt 的 bbox，est joints
+- [x] 固定 gt 的 bbox，est joints
 
 
 
@@ -121,7 +121,7 @@ Average Precision (AP) metric:
 
 ## 2018-11-29
 
-解决2018-11-28的问题，重新计算了 center 和 scale
+解决2018-11-28的问题，重新计算了 center 和 scale，用gtbbox的话:
 
 ```
 For task 1
@@ -146,6 +146,35 @@ Average Precision (AP) metric:
 
 ![val_94_pred](assets/val_94_pred.jpg)
 
-multi的时候如下。可以看到predict的0和5重合了，而上面的0是在左脚（虽然说也错了）
+multi的时候如下。可以看到predict的0和5重合了，而上面的0是在左脚（虽然说也错了）.
 
 ![00000001_01](assets/00000001_01.jpg)
+
+
+
+- [ ] detection evaluation
+- [ ] pose evaluation(pckh)
+- [ ] thres 不同 就是 mean ap6
+- [ ] joint 的 score
+
+## 2018-12-01
+
+```
+Namespace(evalPoseEstimation=True, evalPoseTracking=False, groundTruth='/Users/oda/posetrack/nise_embedding/pred_json/val_gt_task1-using-gtbbox/', outputDir='./out', predictions='/Users/oda/posetrack/nise_embedding/pred_json/valid_anno_json_pred_task_1_gt/', saveEvalPerSequence=False)
+Loading data
+# gt frames  : 2607
+# pred frames: 2607
+Evaluation of per-frame multi-person pose estimation
+saving results to ./out/total_AP_metrics.json
+Average Precision (AP) metric:
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 85.5 & 81.8 & 73.6 & 62.1 & 72.9 & 69.1 & 64.5 & 73.6 \\
+```
+
+## 2018-12-03
+
+参数记录：
+
+nms 有两个 thres，1-先 filter 掉低 score 的-0.05，2-两个实例的相似程度-0.3。这是 detectron 的原版参数。
+
+flow网络的 input 参数使用（1024，576）。必须是32的倍数
