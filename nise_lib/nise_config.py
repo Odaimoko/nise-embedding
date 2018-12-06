@@ -67,7 +67,7 @@ class NiseConfig:
     
     class _DEBUG:
         def __init__(self):
-            self.PRINT = False
+            self.PRINT = True
             self.DEVELOPING = True
             self.load_flow_model = True
             self.FLOW = False
@@ -94,8 +94,8 @@ class NiseConfig:
             self.FILTER_HUMAN_WHEN_DETECT = False
             # if not filtered when detected, filter when prop??
             self.JOINT_PROP_WITH_FILTERED_HUMAN = True and not self.FILTER_HUMAN_WHEN_DETECT
-            self.FILTER_BBOX_WITH_SMALL_AREA = True
-            self.ASSGIN_ID_TO_FILTERED_BOX = True
+            self.FILTER_BBOX_WITH_SMALL_AREA = False
+            self.ASSGIN_ID_TO_FILTERED_BOX = False
     
     class _PATH:
         def __init__(self):
