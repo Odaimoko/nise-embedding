@@ -12,15 +12,14 @@ from nise_lib.frameitem import FrameItem
 
 def nise_pred_task_1_debug(gt_anno_dir, json_save_dir, vis_dataset, hunam_detector, joint_estimator, flow_model):
     # PREDICT ON TRAINING SET OF 2017
-    anno_file_names = get_type_from_dir(
-        gt_anno_dir, ['.json'])
+    anno_file_names = get_type_from_dir(gt_anno_dir, ['.json'])
     anno_file_names = sorted(anno_file_names)
     mkdir(json_save_dir)
     for i, file_name in enumerate(anno_file_names):
-        print(i, file_name)
-        # if not '005067_mpii_relpath_5sec_testsub' in file_name:  # the first images contains no people, cant deal with this now so ignore this.
+        debug_print(i, file_name)
+        # if not '14102' in file_name:
         #     continue
-        if i > 1: continue
+        # if i <=5: continue
         p = PurePosixPath(file_name)
         json_path = os.path.join(json_save_dir, p.parts[-1])
         with open(file_name, 'r') as f:
@@ -31,7 +30,7 @@ def nise_pred_task_1_debug(gt_anno_dir, json_save_dir, vis_dataset, hunam_detect
             # frame dict_keys(['image', 'annorect', 'imgnum', 'is_labeled', 'ignore_regions'])
             img_file_path = frame['image'][0]['name']
             img_file_path = os.path.join(nise_cfg.PATH.POSETRACK_ROOT, img_file_path)
-            debug_print(j, img_file_path)
+            debug_print(j, img_file_path, indent = 1)
             annorects = frame['annorect']
             if nise_cfg.TEST.USE_GT_VALID_BOX and \
                     (annorects is not None or len(annorects) != 0):

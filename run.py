@@ -17,23 +17,25 @@ from simple_lib.core.config import config as simple_cfg
 
 # viz = visdom.Visdom(env = 'run-with-flownet')
 
-batch_size = 8
 # ─── FROM FLOWNET 2.0 ───────────────────────────────────────────────────────────
 if nise_cfg.DEBUG.load_flow_model:
     parser = argparse.ArgumentParser()
     flow_init_parser_and_tools(parser, tools)
     flow_args, rest = parser.parse_known_args()
     flow_model = load_flow_model(flow_args, parser, tools)
+    # flow_model = nn.DataParallel(flow_model)
 
 # ─── FROM SIMPLE BASELINE ───────────────────────────────────────────────────────
 if nise_cfg.DEBUG.load_joint_est_model:
     simple_args, simple_joint_est_model = load_simple_model()
+    # simple_joint_est_model = nn.DataParallel(simple_joint_est_model)
     debug_print('Simple pose detector loaded.')
 
 # ─── HUMAN DETECT ───────────────────────────────────────────────────────────────
 if nise_cfg.DEBUG.load_human_det_model:
     human_detect_args = human_detect_parse_args()
     maskRCNN, human_det_dataset = load_human_detect_model(human_detect_args, tron_cfg)
+    # maskRCNN = nn.DataParallel(maskRCNN)
 
 nise_args = get_nise_arg_parser()
 setattr(nise_args, 'simple_model_file', simple_args.simple_model_file)
@@ -50,7 +52,8 @@ if nise_args.nise_task == '1':
     
     nise_pred_task_1_debug(dataset_path,
                            os.path.join(nise_cfg.PATH.JSON_SAVE_DIR,
-                                        PurePosixPath(dataset_path).name + '_pred_task_' + nise_args.nise_task),
+                                        PurePosixPath(dataset_path).name + '_pred_task_' + nise_args.nise_task +
+                                        ('_gt' if nise_cfg.TEST.USE_GT_VALID_BOX else '')),
                            human_det_dataset,
                            maskRCNN,
                            simple_joint_est_model, flow_model)
@@ -62,4 +65,3 @@ elif nise_args.nise_task == '2':
                            human_det_dataset,
                            maskRCNN,
                            simple_joint_est_model, flow_model)
-# train_est_on_posetrack(simple_args,simple_cfg, simple_joint_est_model, None)

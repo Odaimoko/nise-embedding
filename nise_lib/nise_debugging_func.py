@@ -15,26 +15,29 @@ def gen_rand_img(batch_size, num_joints, h, w):
 
 
 def gen_rand_bboxes(num_people, h, w):
-    x1 = torch.randint(low=0, high=int(
-        w/2), size=[num_people, nise_cfg.DATA. num_joints])
-    x2 = torch.randint(low=int(w/2), high=w,
-                       size=[num_people, nise_cfg.DATA. num_joints])
-
-    y1 = torch.randint(low=0, high=int(
-        h/2), size=[num_people, nise_cfg.DATA. num_joints])
-    y2 = torch.randint(low=int(h/2), high=h,
-                       size=[num_people, nise_cfg.DATA. num_joints])
+    x1 = torch.randint(low = 0, high = int(
+        w / 2), size = [num_people, nise_cfg.DATA.num_joints])
+    x2 = torch.randint(low = int(w / 2), high = w,
+                       size = [num_people, nise_cfg.DATA.num_joints])
+    
+    y1 = torch.randint(low = 0, high = int(
+        h / 2), size = [num_people, nise_cfg.DATA.num_joints])
+    y2 = torch.randint(low = int(h / 2), high = h,
+                       size = [num_people, nise_cfg.DATA.num_joints])
     bbox = torch.stack([x1, y1, x2, y2], 3)
     return bbox  # ng
 
+
 def gen_rand_joints(num_people, h, w):
-    x1 = torch.randint(low=0, high=int(
-        w/2), size=[num_people, nise_cfg.DATA. num_joints])
-    y1 = torch.randint(low=0, high=int(
-        h/2), size=[num_people, nise_cfg.DATA. num_joints])
+    x1 = torch.randint(low = 0, high = int(
+        w / 2), size = [num_people, nise_cfg.DATA.num_joints])
+    y1 = torch.randint(low = 0, high = int(
+        h / 2), size = [num_people, nise_cfg.DATA.num_joints])
     joints = torch.stack([x1, y1], 2)
     return joints  # ng
 
-def debug_print(*args,**kwargs):
+
+def debug_print(*args, indent = 0, **kwargs):
+    print(''.join(['\t'] * indent),end='')
     if nise_cfg.DEBUG.PRINT:
-        print(*args,**kwargs)
+        print(*args, **kwargs)

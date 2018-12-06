@@ -644,8 +644,7 @@ def xywh2cs(x, y, w, h, training_bbox_aspect_ratio):
 
 def filter_bbox_with_scores(boxes, thres = nise_cfg.ALG._HUMAN_THRES):
     scores = boxes[:, -1]
-    valid_scores_idx = torch.nonzero(
-        scores >= thres).squeeze_().long()  # in case it's 6 x **1** x 5
+    valid_scores_idx = torch.nonzero(scores >= thres).squeeze_().long()  # in case it's 6 x **1** x 5
     filtered_box = boxes[valid_scores_idx, :]
     return filtered_box, valid_scores_idx
 
