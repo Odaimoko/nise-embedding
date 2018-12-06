@@ -1,0 +1,977 @@
+ssh://zhangxt@10.19.124.24:22/home/zhangxt/anaconda3/bin/python -u /home/zhangxt/disk/posetrack/Detectron.pytorch/tron_tools/test_net.py --dataset coco2017 --cfg tron_configs/baselines/e2e_mask_rcnn_X-101-64x4d-FPN_1x.yaml --load_detectron /home/zhangxt/disk/pretrained/e2e_mask_rcnn_X-101-64x4d-FPN_1x.pkl --output_dir ./test_output-X-101-64x4d-FPN_1x
+INFO test_net.py:  68: Called with args:
+INFO test_net.py:  69: Namespace(cfg_file='tron_configs/baselines/e2e_mask_rcnn_X-101-64x4d-FPN_1x.yaml', dataset='coco2017', load_ckpt=None, load_detectron='/home/zhangxt/disk/pretrained/e2e_mask_rcnn_X-101-64x4d-FPN_1x.pkl', multi_gpu_testing=False, output_dir='./test_output-X-101-64x4d-FPN_1x', range=None, set_cfgs=[], vis=False)
+INFO test_net.py: 100: Testing with config:
+INFO test_net.py: 101: {'BBOX_XFORM_CLIP': 4.135166556742356,
+ 'CROP_RESIZE_WITH_MAX_POOL': True,
+ 'CUDA': False,
+ 'DATA_DIR': '/home/zhangxt/disk/posetrack/Detectron.pytorch/data',
+ 'DATA_LOADER': {'NUM_THREADS': 4},
+ 'DEBUG': False,
+ 'DEDUP_BOXES': 0.0625,
+ 'EPS': 1e-14,
+ 'EXPECTED_RESULTS': [],
+ 'EXPECTED_RESULTS_ATOL': 0.005,
+ 'EXPECTED_RESULTS_EMAIL': '',
+ 'EXPECTED_RESULTS_RTOL': 0.1,
+ 'FAST_RCNN': {'CONV_HEAD_DIM': 256,
+               'MLP_HEAD_DIM': 1024,
+               'NUM_STACKED_CONVS': 4,
+               'ROI_BOX_HEAD': 'fast_rcnn_heads.roi_2mlp_head',
+               'ROI_XFORM_METHOD': 'RoIAlign',
+               'ROI_XFORM_RESOLUTION': 7,
+               'ROI_XFORM_SAMPLING_RATIO': 2},
+ 'FPN': {'COARSEST_STRIDE': 32,
+         'DIM': 256,
+         'EXTRA_CONV_LEVELS': False,
+         'FPN_ON': True,
+         'MULTILEVEL_ROIS': True,
+         'MULTILEVEL_RPN': True,
+         'ROI_CANONICAL_LEVEL': 4,
+         'ROI_CANONICAL_SCALE': 224,
+         'ROI_MAX_LEVEL': 5,
+         'ROI_MIN_LEVEL': 2,
+         'RPN_ANCHOR_START_SIZE': 32,
+         'RPN_ASPECT_RATIOS': (0.5, 1, 2),
+         'RPN_COLLECT_SCALE': 1,
+         'RPN_MAX_LEVEL': 6,
+         'RPN_MIN_LEVEL': 2,
+         'USE_GN': False,
+         'ZERO_INIT_LATERAL': False},
+ 'GROUP_NORM': {'DIM_PER_GP': -1, 'EPSILON': 1e-05, 'NUM_GROUPS': 32},
+ 'KRCNN': {'CONV_HEAD_DIM': 256,
+           'CONV_HEAD_KERNEL': 3,
+           'CONV_INIT': 'GaussianFill',
+           'DECONV_DIM': 256,
+           'DECONV_KERNEL': 4,
+           'DILATION': 1,
+           'HEATMAP_SIZE': -1,
+           'INFERENCE_MIN_SIZE': 0,
+           'KEYPOINT_CONFIDENCE': 'bbox',
+           'LOSS_WEIGHT': 1.0,
+           'MIN_KEYPOINT_COUNT_FOR_VALID_MINIBATCH': 20,
+           'NMS_OKS': False,
+           'NORMALIZE_BY_VISIBLE_KEYPOINTS': True,
+           'NUM_KEYPOINTS': -1,
+           'NUM_STACKED_CONVS': 8,
+           'ROI_KEYPOINTS_HEAD': '',
+           'ROI_XFORM_METHOD': 'RoIAlign',
+           'ROI_XFORM_RESOLUTION': 7,
+           'ROI_XFORM_SAMPLING_RATIO': 0,
+           'UP_SCALE': -1,
+           'USE_DECONV': False,
+           'USE_DECONV_OUTPUT': False},
+ 'MATLAB': 'matlab',
+ 'MODEL': {'BBOX_REG_WEIGHTS': (10.0, 10.0, 5.0, 5.0),
+           'CLS_AGNOSTIC_BBOX_REG': False,
+           'CONV_BODY': 'FPN.fpn_ResNet101_conv5_body',
+           'FASTER_RCNN': True,
+           'KEYPOINTS_ON': False,
+           'LOAD_IMAGENET_PRETRAINED_WEIGHTS': True,
+           'MASK_ON': True,
+           'NUM_CLASSES': 81,
+           'RPN_ONLY': False,
+           'SHARE_RES5': False,
+           'TYPE': 'generalized_rcnn',
+           'UNSUPERVISED_POSE': False},
+ 'MRCNN': {'CLS_SPECIFIC_MASK': True,
+           'CONV_INIT': 'MSRAFill',
+           'DILATION': 1,
+           'DIM_REDUCED': 256,
+           'MEMORY_EFFICIENT_LOSS': True,
+           'RESOLUTION': 28,
+           'ROI_MASK_HEAD': 'mask_rcnn_heads.mask_rcnn_fcn_head_v1up4convs',
+           'ROI_XFORM_METHOD': 'RoIAlign',
+           'ROI_XFORM_RESOLUTION': 14,
+           'ROI_XFORM_SAMPLING_RATIO': 2,
+           'THRESH_BINARIZE': 0.5,
+           'UPSAMPLE_RATIO': 1,
+           'USE_FC_OUTPUT': False,
+           'WEIGHT_LOSS_MASK': 1.0},
+ 'NUM_GPUS': 8,
+ 'OUTPUT_DIR': 'Outputs',
+ 'PIXEL_MEANS': array([[[102.9801, 115.9465, 122.7717]]]),
+ 'POOLING_MODE': 'crop',
+ 'POOLING_SIZE': 7,
+ 'PYTORCH_VERSION_LESS_THAN_040': False,
+ 'RESNETS': {'FREEZE_AT': 2,
+             'IMAGENET_PRETRAINED_WEIGHTS': 'data/pretrained_model/X-101-64x4d.pkl',
+             'NUM_GROUPS': 64,
+             'RES5_DILATION': 1,
+             'SHORTCUT_FUNC': 'basic_bn_shortcut',
+             'STEM_FUNC': 'basic_bn_stem',
+             'STRIDE_1X1': False,
+             'TRANS_FUNC': 'bottleneck_transformation',
+             'USE_GN': False,
+             'WIDTH_PER_GROUP': 4},
+ 'RETINANET': {'ANCHOR_SCALE': 4,
+               'ASPECT_RATIOS': (0.5, 1.0, 2.0),
+               'BBOX_REG_BETA': 0.11,
+               'BBOX_REG_WEIGHT': 1.0,
+               'CLASS_SPECIFIC_BBOX': False,
+               'INFERENCE_TH': 0.05,
+               'LOSS_ALPHA': 0.25,
+               'LOSS_GAMMA': 2.0,
+               'NEGATIVE_OVERLAP': 0.4,
+               'NUM_CONVS': 4,
+               'POSITIVE_OVERLAP': 0.5,
+               'PRE_NMS_TOP_N': 1000,
+               'PRIOR_PROB': 0.01,
+               'RETINANET_ON': False,
+               'SCALES_PER_OCTAVE': 3,
+               'SHARE_CLS_BBOX_TOWER': False,
+               'SOFTMAX': False},
+ 'RFCN': {'PS_GRID_SIZE': 3},
+ 'RNG_SEED': 3,
+ 'ROOT_DIR': '/home/zhangxt/disk/posetrack/Detectron.pytorch',
+ 'RPN': {'ASPECT_RATIOS': (0.5, 1, 2),
+         'CLS_ACTIVATION': 'sigmoid',
+         'OUT_DIM': 512,
+         'OUT_DIM_AS_IN_DIM': True,
+         'RPN_ON': True,
+         'SIZES': (64, 128, 256, 512),
+         'STRIDE': 16},
+ 'SOLVER': {'BASE_LR': 0.01,
+            'BIAS_DOUBLE_LR': True,
+            'BIAS_WEIGHT_DECAY': False,
+            'GAMMA': 0.1,
+            'LOG_LR_CHANGE_THRESHOLD': 1.1,
+            'LRS': [],
+            'LR_POLICY': 'steps_with_decay',
+            'MAX_ITER': 180000,
+            'MOMENTUM': 0.9,
+            'SCALE_MOMENTUM': True,
+            'SCALE_MOMENTUM_THRESHOLD': 1.1,
+            'STEPS': [0, 120000, 160000],
+            'STEP_SIZE': 30000,
+            'TYPE': 'SGD',
+            'WARM_UP_FACTOR': 0.3333333333333333,
+            'WARM_UP_ITERS': 500,
+            'WARM_UP_METHOD': 'linear',
+            'WEIGHT_DECAY': 0.0001,
+            'WEIGHT_DECAY_GN': 0.0},
+ 'TEST': {'BBOX_AUG': {'AREA_TH_HI': 32400,
+                       'AREA_TH_LO': 2500,
+                       'ASPECT_RATIOS': (),
+                       'ASPECT_RATIO_H_FLIP': False,
+                       'COORD_HEUR': 'UNION',
+                       'ENABLED': False,
+                       'H_FLIP': False,
+                       'MAX_SIZE': 4000,
+                       'SCALES': (),
+                       'SCALE_H_FLIP': False,
+                       'SCALE_SIZE_DEP': False,
+                       'SCORE_HEUR': 'UNION'},
+          'BBOX_REG': True,
+          'BBOX_VOTE': {'ENABLED': False,
+                        'SCORING_METHOD': 'ID',
+                        'SCORING_METHOD_BETA': 1.0,
+                        'VOTE_TH': 0.8},
+          'COMPETITION_MODE': True,
+          'DATASETS': ('coco_2017_val',),
+          'DETECTIONS_PER_IM': 100,
+          'FORCE_JSON_DATASET_EVAL': False,
+          'KPS_AUG': {'AREA_TH': 32400,
+                      'ASPECT_RATIOS': (),
+                      'ASPECT_RATIO_H_FLIP': False,
+                      'ENABLED': False,
+                      'HEUR': 'HM_AVG',
+                      'H_FLIP': False,
+                      'MAX_SIZE': 4000,
+                      'SCALES': (),
+                      'SCALE_H_FLIP': False,
+                      'SCALE_SIZE_DEP': False},
+          'MASK_AUG': {'AREA_TH': 32400,
+                       'ASPECT_RATIOS': (),
+                       'ASPECT_RATIO_H_FLIP': False,
+                       'ENABLED': False,
+                       'HEUR': 'SOFT_AVG',
+                       'H_FLIP': False,
+                       'MAX_SIZE': 4000,
+                       'SCALES': (),
+                       'SCALE_H_FLIP': False,
+                       'SCALE_SIZE_DEP': False},
+          'MAX_SIZE': 1333,
+          'NMS': 0.5,
+          'PRECOMPUTED_PROPOSALS': False,
+          'PROPOSAL_FILES': (),
+          'PROPOSAL_LIMIT': 2000,
+          'RPN_MIN_SIZE': 0,
+          'RPN_NMS_THRESH': 0.7,
+          'RPN_POST_NMS_TOP_N': 1000,
+          'RPN_PRE_NMS_TOP_N': 1000,
+          'SCALE': 800,
+          'SCORE_THRESH': 0.05,
+          'SOFT_NMS': {'ENABLED': False, 'METHOD': 'linear', 'SIGMA': 0.5}},
+ 'TRAIN': {'ASPECT_CROPPING': False,
+           'ASPECT_GROUPING': True,
+           'ASPECT_HI': 2,
+           'ASPECT_LO': 0.5,
+           'BATCH_SIZE_PER_IM': 512,
+           'BBOX_INSIDE_WEIGHTS': (1.0, 1.0, 1.0, 1.0),
+           'BBOX_NORMALIZE_MEANS': (0.0, 0.0, 0.0, 0.0),
+           'BBOX_NORMALIZE_STDS': (0.1, 0.1, 0.2, 0.2),
+           'BBOX_NORMALIZE_TARGETS': True,
+           'BBOX_NORMALIZE_TARGETS_PRECOMPUTED': False,
+           'BBOX_THRESH': 0.5,
+           'BG_THRESH_HI': 0.5,
+           'BG_THRESH_LO': 0.0,
+           'CROWD_FILTER_THRESH': 0.7,
+           'DATASETS': (),
+           'FG_FRACTION': 0.25,
+           'FG_THRESH': 0.5,
+           'FREEZE_CONV_BODY': False,
+           'GT_MIN_AREA': -1,
+           'IMS_PER_BATCH': 1,
+           'MAX_SIZE': 1333,
+           'PROPOSAL_FILES': (),
+           'RPN_BATCH_SIZE_PER_IM': 256,
+           'RPN_FG_FRACTION': 0.5,
+           'RPN_MIN_SIZE': 0,
+           'RPN_NEGATIVE_OVERLAP': 0.3,
+           'RPN_NMS_THRESH': 0.7,
+           'RPN_POSITIVE_OVERLAP': 0.7,
+           'RPN_POST_NMS_TOP_N': 2000,
+           'RPN_PRE_NMS_TOP_N': 2000,
+           'RPN_STRADDLE_THRESH': 0,
+           'SCALES': (800,),
+           'SNAPSHOT_ITERS': 20000,
+           'USE_FLIPPED': True},
+ 'VIS': False,
+ 'VIS_TH': 0.9}
+loading annotations into memory...
+Done (t=0.65s)
+creating index...
+index created!
+loading annotations into memory...
+Done (t=0.62s)
+creating index...
+index created!
+INFO test_engine.py: 337: loading detectron weights /home/zhangxt/disk/pretrained/e2e_mask_rcnn_X-101-64x4d-FPN_1x.pkl
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1/5000 1.236s + 0.049s (eta: 1:47:01)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 11/5000 0.407s + 0.020s (eta: 0:35:31)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 21/5000 0.366s + 0.017s (eta: 0:31:47)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 31/5000 0.357s + 0.018s (eta: 0:30:59)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 41/5000 0.352s + 0.019s (eta: 0:30:39)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 51/5000 0.349s + 0.021s (eta: 0:30:28)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 61/5000 0.348s + 0.020s (eta: 0:30:17)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 71/5000 0.345s + 0.019s (eta: 0:29:54)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 81/5000 0.343s + 0.019s (eta: 0:29:39)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 91/5000 0.340s + 0.020s (eta: 0:29:27)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 101/5000 0.338s + 0.020s (eta: 0:29:14)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 111/5000 0.336s + 0.020s (eta: 0:28:59)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 121/5000 0.336s + 0.020s (eta: 0:28:56)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 131/5000 0.336s + 0.020s (eta: 0:28:51)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 141/5000 0.336s + 0.021s (eta: 0:28:51)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 151/5000 0.335s + 0.021s (eta: 0:28:45)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 161/5000 0.335s + 0.020s (eta: 0:28:40)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 171/5000 0.334s + 0.020s (eta: 0:28:28)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 181/5000 0.333s + 0.020s (eta: 0:28:23)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 191/5000 0.334s + 0.020s (eta: 0:28:22)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 201/5000 0.333s + 0.020s (eta: 0:28:13)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 211/5000 0.333s + 0.020s (eta: 0:28:07)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 221/5000 0.332s + 0.020s (eta: 0:28:01)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 231/5000 0.332s + 0.019s (eta: 0:27:54)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 241/5000 0.332s + 0.020s (eta: 0:27:52)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 251/5000 0.332s + 0.019s (eta: 0:27:48)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 261/5000 0.332s + 0.020s (eta: 0:27:47)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 271/5000 0.331s + 0.020s (eta: 0:27:39)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 281/5000 0.331s + 0.020s (eta: 0:27:34)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 291/5000 0.331s + 0.020s (eta: 0:27:33)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 301/5000 0.331s + 0.020s (eta: 0:27:28)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 311/5000 0.331s + 0.020s (eta: 0:27:24)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 321/5000 0.331s + 0.020s (eta: 0:27:21)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 331/5000 0.332s + 0.020s (eta: 0:27:21)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 341/5000 0.332s + 0.020s (eta: 0:27:20)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 351/5000 0.332s + 0.020s (eta: 0:27:17)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 361/5000 0.332s + 0.020s (eta: 0:27:15)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 371/5000 0.333s + 0.020s (eta: 0:27:13)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 381/5000 0.333s + 0.020s (eta: 0:27:08)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 391/5000 0.332s + 0.020s (eta: 0:27:03)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 401/5000 0.332s + 0.020s (eta: 0:26:59)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 411/5000 0.333s + 0.020s (eta: 0:26:57)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 421/5000 0.333s + 0.020s (eta: 0:26:54)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 431/5000 0.333s + 0.020s (eta: 0:26:52)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 441/5000 0.333s + 0.020s (eta: 0:26:49)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 451/5000 0.333s + 0.020s (eta: 0:26:46)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 461/5000 0.334s + 0.020s (eta: 0:26:43)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 471/5000 0.334s + 0.020s (eta: 0:26:41)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 481/5000 0.334s + 0.020s (eta: 0:26:39)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 491/5000 0.335s + 0.020s (eta: 0:26:40)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 501/5000 0.335s + 0.020s (eta: 0:26:36)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 511/5000 0.335s + 0.020s (eta: 0:26:33)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 521/5000 0.335s + 0.020s (eta: 0:26:30)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 531/5000 0.335s + 0.020s (eta: 0:26:28)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 541/5000 0.335s + 0.021s (eta: 0:26:25)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 551/5000 0.335s + 0.021s (eta: 0:26:21)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 561/5000 0.335s + 0.021s (eta: 0:26:19)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 571/5000 0.335s + 0.021s (eta: 0:26:15)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 581/5000 0.335s + 0.021s (eta: 0:26:12)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 591/5000 0.335s + 0.021s (eta: 0:26:08)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 601/5000 0.335s + 0.021s (eta: 0:26:03)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 611/5000 0.335s + 0.021s (eta: 0:26:00)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 621/5000 0.335s + 0.021s (eta: 0:25:58)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 631/5000 0.335s + 0.021s (eta: 0:25:54)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 641/5000 0.335s + 0.021s (eta: 0:25:52)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 651/5000 0.335s + 0.021s (eta: 0:25:49)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 661/5000 0.335s + 0.021s (eta: 0:25:46)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 671/5000 0.336s + 0.021s (eta: 0:25:44)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 681/5000 0.336s + 0.021s (eta: 0:25:40)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 691/5000 0.336s + 0.021s (eta: 0:25:35)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 701/5000 0.336s + 0.021s (eta: 0:25:31)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 711/5000 0.336s + 0.021s (eta: 0:25:28)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 721/5000 0.336s + 0.021s (eta: 0:25:26)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 731/5000 0.336s + 0.021s (eta: 0:25:22)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 741/5000 0.336s + 0.021s (eta: 0:25:19)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 751/5000 0.336s + 0.021s (eta: 0:25:15)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 761/5000 0.336s + 0.021s (eta: 0:25:11)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 771/5000 0.336s + 0.021s (eta: 0:25:08)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 781/5000 0.336s + 0.021s (eta: 0:25:04)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 791/5000 0.336s + 0.021s (eta: 0:25:01)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 801/5000 0.336s + 0.021s (eta: 0:24:58)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 811/5000 0.336s + 0.021s (eta: 0:24:54)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 821/5000 0.336s + 0.021s (eta: 0:24:50)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 831/5000 0.336s + 0.020s (eta: 0:24:46)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 841/5000 0.336s + 0.020s (eta: 0:24:43)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 851/5000 0.336s + 0.020s (eta: 0:24:39)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 861/5000 0.336s + 0.020s (eta: 0:24:36)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 871/5000 0.336s + 0.020s (eta: 0:24:32)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 881/5000 0.336s + 0.020s (eta: 0:24:29)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 891/5000 0.336s + 0.020s (eta: 0:24:25)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 901/5000 0.336s + 0.020s (eta: 0:24:21)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 911/5000 0.336s + 0.020s (eta: 0:24:18)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 921/5000 0.336s + 0.020s (eta: 0:24:14)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 931/5000 0.336s + 0.020s (eta: 0:24:10)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 941/5000 0.336s + 0.020s (eta: 0:24:07)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 951/5000 0.337s + 0.020s (eta: 0:24:05)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 961/5000 0.337s + 0.020s (eta: 0:24:02)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 971/5000 0.337s + 0.021s (eta: 0:23:59)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 981/5000 0.337s + 0.021s (eta: 0:23:55)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 991/5000 0.337s + 0.021s (eta: 0:23:52)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1001/5000 0.337s + 0.020s (eta: 0:23:47)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1011/5000 0.337s + 0.020s (eta: 0:23:43)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1021/5000 0.336s + 0.020s (eta: 0:23:40)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1031/5000 0.336s + 0.020s (eta: 0:23:35)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1041/5000 0.336s + 0.020s (eta: 0:23:32)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1051/5000 0.336s + 0.020s (eta: 0:23:29)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1061/5000 0.336s + 0.020s (eta: 0:23:25)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1071/5000 0.337s + 0.020s (eta: 0:23:23)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1081/5000 0.337s + 0.020s (eta: 0:23:19)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1091/5000 0.337s + 0.020s (eta: 0:23:15)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1101/5000 0.337s + 0.020s (eta: 0:23:11)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1111/5000 0.337s + 0.020s (eta: 0:23:08)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1121/5000 0.337s + 0.020s (eta: 0:23:05)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1131/5000 0.337s + 0.020s (eta: 0:23:02)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1141/5000 0.337s + 0.020s (eta: 0:22:59)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1151/5000 0.337s + 0.020s (eta: 0:22:55)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1161/5000 0.337s + 0.020s (eta: 0:22:51)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1171/5000 0.337s + 0.020s (eta: 0:22:48)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1181/5000 0.337s + 0.020s (eta: 0:22:45)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1191/5000 0.337s + 0.020s (eta: 0:22:41)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1201/5000 0.337s + 0.020s (eta: 0:22:38)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1211/5000 0.337s + 0.020s (eta: 0:22:35)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1221/5000 0.337s + 0.021s (eta: 0:22:31)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1231/5000 0.337s + 0.021s (eta: 0:22:28)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1241/5000 0.337s + 0.021s (eta: 0:22:24)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1251/5000 0.337s + 0.021s (eta: 0:22:21)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1261/5000 0.337s + 0.021s (eta: 0:22:17)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1271/5000 0.337s + 0.021s (eta: 0:22:13)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1281/5000 0.337s + 0.021s (eta: 0:22:10)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1291/5000 0.337s + 0.021s (eta: 0:22:06)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1301/5000 0.337s + 0.020s (eta: 0:22:02)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1311/5000 0.337s + 0.020s (eta: 0:21:58)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1321/5000 0.337s + 0.020s (eta: 0:21:54)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1331/5000 0.337s + 0.020s (eta: 0:21:51)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1341/5000 0.337s + 0.020s (eta: 0:21:47)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1351/5000 0.337s + 0.021s (eta: 0:21:44)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1361/5000 0.337s + 0.020s (eta: 0:21:40)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1371/5000 0.337s + 0.020s (eta: 0:21:36)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1381/5000 0.337s + 0.020s (eta: 0:21:32)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1391/5000 0.337s + 0.021s (eta: 0:21:29)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1401/5000 0.337s + 0.021s (eta: 0:21:26)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1411/5000 0.337s + 0.021s (eta: 0:21:22)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1421/5000 0.337s + 0.021s (eta: 0:21:18)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1431/5000 0.337s + 0.021s (eta: 0:21:15)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1441/5000 0.337s + 0.021s (eta: 0:21:11)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1451/5000 0.337s + 0.020s (eta: 0:21:07)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1461/5000 0.337s + 0.020s (eta: 0:21:03)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1471/5000 0.337s + 0.020s (eta: 0:20:59)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1481/5000 0.337s + 0.020s (eta: 0:20:56)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1491/5000 0.337s + 0.020s (eta: 0:20:53)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1501/5000 0.337s + 0.021s (eta: 0:20:49)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1511/5000 0.337s + 0.021s (eta: 0:20:45)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1521/5000 0.337s + 0.021s (eta: 0:20:42)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1531/5000 0.336s + 0.021s (eta: 0:20:38)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1541/5000 0.337s + 0.021s (eta: 0:20:35)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1551/5000 0.337s + 0.021s (eta: 0:20:31)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1561/5000 0.336s + 0.021s (eta: 0:20:27)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1571/5000 0.336s + 0.021s (eta: 0:20:24)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1581/5000 0.336s + 0.021s (eta: 0:20:20)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1591/5000 0.337s + 0.021s (eta: 0:20:17)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1601/5000 0.337s + 0.021s (eta: 0:20:14)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1611/5000 0.336s + 0.021s (eta: 0:20:10)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1621/5000 0.336s + 0.021s (eta: 0:20:06)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1631/5000 0.336s + 0.021s (eta: 0:20:02)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1641/5000 0.336s + 0.021s (eta: 0:19:59)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1651/5000 0.336s + 0.021s (eta: 0:19:55)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1661/5000 0.336s + 0.021s (eta: 0:19:51)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1671/5000 0.336s + 0.021s (eta: 0:19:48)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1681/5000 0.336s + 0.021s (eta: 0:19:44)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1691/5000 0.336s + 0.021s (eta: 0:19:40)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1701/5000 0.336s + 0.021s (eta: 0:19:37)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1711/5000 0.336s + 0.021s (eta: 0:19:34)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1721/5000 0.336s + 0.021s (eta: 0:19:30)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1731/5000 0.336s + 0.021s (eta: 0:19:26)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1741/5000 0.336s + 0.021s (eta: 0:19:23)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1751/5000 0.336s + 0.021s (eta: 0:19:19)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1761/5000 0.336s + 0.021s (eta: 0:19:15)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1771/5000 0.336s + 0.020s (eta: 0:19:11)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1781/5000 0.336s + 0.020s (eta: 0:19:08)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1791/5000 0.336s + 0.020s (eta: 0:19:04)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1801/5000 0.336s + 0.020s (eta: 0:19:00)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1811/5000 0.336s + 0.020s (eta: 0:18:56)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1821/5000 0.336s + 0.020s (eta: 0:18:53)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1831/5000 0.336s + 0.020s (eta: 0:18:49)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1841/5000 0.336s + 0.020s (eta: 0:18:45)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1851/5000 0.336s + 0.020s (eta: 0:18:41)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1861/5000 0.336s + 0.020s (eta: 0:18:38)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1871/5000 0.336s + 0.020s (eta: 0:18:35)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1881/5000 0.336s + 0.020s (eta: 0:18:31)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1891/5000 0.336s + 0.020s (eta: 0:18:27)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1901/5000 0.336s + 0.020s (eta: 0:18:24)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1911/5000 0.336s + 0.020s (eta: 0:18:20)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1921/5000 0.336s + 0.020s (eta: 0:18:16)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1931/5000 0.336s + 0.020s (eta: 0:18:12)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1941/5000 0.336s + 0.020s (eta: 0:18:09)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1951/5000 0.336s + 0.020s (eta: 0:18:05)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1961/5000 0.336s + 0.020s (eta: 0:18:01)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1971/5000 0.336s + 0.020s (eta: 0:17:58)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1981/5000 0.336s + 0.020s (eta: 0:17:54)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 1991/5000 0.336s + 0.020s (eta: 0:17:51)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2001/5000 0.336s + 0.020s (eta: 0:17:47)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2011/5000 0.336s + 0.020s (eta: 0:17:44)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2021/5000 0.336s + 0.020s (eta: 0:17:40)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2031/5000 0.336s + 0.020s (eta: 0:17:36)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2041/5000 0.336s + 0.020s (eta: 0:17:33)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2051/5000 0.336s + 0.020s (eta: 0:17:29)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2061/5000 0.336s + 0.020s (eta: 0:17:26)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2071/5000 0.336s + 0.020s (eta: 0:17:22)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2081/5000 0.336s + 0.020s (eta: 0:17:18)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2091/5000 0.336s + 0.020s (eta: 0:17:15)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2101/5000 0.336s + 0.020s (eta: 0:17:11)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2111/5000 0.336s + 0.020s (eta: 0:17:08)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2121/5000 0.336s + 0.020s (eta: 0:17:04)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2131/5000 0.336s + 0.020s (eta: 0:17:00)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2141/5000 0.336s + 0.020s (eta: 0:16:57)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2151/5000 0.335s + 0.020s (eta: 0:16:53)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2161/5000 0.335s + 0.020s (eta: 0:16:49)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2171/5000 0.335s + 0.020s (eta: 0:16:46)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2181/5000 0.335s + 0.020s (eta: 0:16:42)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2191/5000 0.335s + 0.020s (eta: 0:16:38)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2201/5000 0.335s + 0.020s (eta: 0:16:35)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2211/5000 0.335s + 0.020s (eta: 0:16:31)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2221/5000 0.335s + 0.020s (eta: 0:16:28)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2231/5000 0.335s + 0.020s (eta: 0:16:24)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2241/5000 0.335s + 0.020s (eta: 0:16:20)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2251/5000 0.335s + 0.020s (eta: 0:16:17)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2261/5000 0.335s + 0.020s (eta: 0:16:14)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2271/5000 0.335s + 0.020s (eta: 0:16:10)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2281/5000 0.335s + 0.020s (eta: 0:16:06)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2291/5000 0.335s + 0.020s (eta: 0:16:03)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2301/5000 0.335s + 0.020s (eta: 0:15:59)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2311/5000 0.335s + 0.020s (eta: 0:15:56)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2321/5000 0.335s + 0.020s (eta: 0:15:52)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2331/5000 0.335s + 0.020s (eta: 0:15:48)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2341/5000 0.335s + 0.020s (eta: 0:15:45)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2351/5000 0.335s + 0.020s (eta: 0:15:41)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2361/5000 0.335s + 0.020s (eta: 0:15:38)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2371/5000 0.335s + 0.020s (eta: 0:15:34)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2381/5000 0.335s + 0.020s (eta: 0:15:30)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2391/5000 0.335s + 0.020s (eta: 0:15:27)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2401/5000 0.335s + 0.020s (eta: 0:15:23)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2411/5000 0.335s + 0.020s (eta: 0:15:20)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2421/5000 0.335s + 0.020s (eta: 0:15:17)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2431/5000 0.335s + 0.020s (eta: 0:15:13)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2441/5000 0.335s + 0.020s (eta: 0:15:09)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2451/5000 0.335s + 0.020s (eta: 0:15:06)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2461/5000 0.335s + 0.020s (eta: 0:15:02)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2471/5000 0.335s + 0.020s (eta: 0:14:59)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2481/5000 0.335s + 0.020s (eta: 0:14:55)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2491/5000 0.335s + 0.020s (eta: 0:14:51)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2501/5000 0.335s + 0.020s (eta: 0:14:48)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2511/5000 0.335s + 0.020s (eta: 0:14:44)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2521/5000 0.335s + 0.020s (eta: 0:14:41)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2531/5000 0.335s + 0.020s (eta: 0:14:37)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2541/5000 0.335s + 0.020s (eta: 0:14:34)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2551/5000 0.335s + 0.020s (eta: 0:14:30)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2561/5000 0.335s + 0.020s (eta: 0:14:27)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2571/5000 0.335s + 0.020s (eta: 0:14:23)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2581/5000 0.335s + 0.020s (eta: 0:14:19)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2591/5000 0.335s + 0.020s (eta: 0:14:16)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2601/5000 0.335s + 0.020s (eta: 0:14:12)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2611/5000 0.335s + 0.020s (eta: 0:14:09)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2621/5000 0.335s + 0.020s (eta: 0:14:05)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2631/5000 0.335s + 0.020s (eta: 0:14:02)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2641/5000 0.335s + 0.020s (eta: 0:13:58)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2651/5000 0.335s + 0.020s (eta: 0:13:55)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2661/5000 0.335s + 0.020s (eta: 0:13:51)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2671/5000 0.335s + 0.020s (eta: 0:13:48)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2681/5000 0.335s + 0.020s (eta: 0:13:44)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2691/5000 0.335s + 0.020s (eta: 0:13:41)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2701/5000 0.335s + 0.020s (eta: 0:13:37)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2711/5000 0.335s + 0.020s (eta: 0:13:34)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2721/5000 0.335s + 0.020s (eta: 0:13:30)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2731/5000 0.335s + 0.020s (eta: 0:13:26)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2741/5000 0.335s + 0.020s (eta: 0:13:23)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2751/5000 0.335s + 0.020s (eta: 0:13:19)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2761/5000 0.335s + 0.020s (eta: 0:13:16)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2771/5000 0.335s + 0.020s (eta: 0:13:12)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2781/5000 0.335s + 0.020s (eta: 0:13:09)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2791/5000 0.335s + 0.020s (eta: 0:13:05)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2801/5000 0.335s + 0.020s (eta: 0:13:01)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2811/5000 0.335s + 0.020s (eta: 0:12:58)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2821/5000 0.335s + 0.020s (eta: 0:12:54)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2831/5000 0.335s + 0.020s (eta: 0:12:51)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2841/5000 0.335s + 0.020s (eta: 0:12:47)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2851/5000 0.335s + 0.020s (eta: 0:12:44)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2861/5000 0.335s + 0.020s (eta: 0:12:40)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2871/5000 0.335s + 0.020s (eta: 0:12:36)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2881/5000 0.335s + 0.020s (eta: 0:12:33)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2891/5000 0.335s + 0.020s (eta: 0:12:29)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2901/5000 0.335s + 0.020s (eta: 0:12:26)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2911/5000 0.335s + 0.020s (eta: 0:12:22)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2921/5000 0.335s + 0.020s (eta: 0:12:19)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2931/5000 0.335s + 0.020s (eta: 0:12:15)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2941/5000 0.335s + 0.020s (eta: 0:12:12)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2951/5000 0.335s + 0.020s (eta: 0:12:08)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2961/5000 0.335s + 0.020s (eta: 0:12:04)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2971/5000 0.335s + 0.020s (eta: 0:12:01)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2981/5000 0.335s + 0.020s (eta: 0:11:57)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 2991/5000 0.335s + 0.020s (eta: 0:11:54)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3001/5000 0.335s + 0.020s (eta: 0:11:50)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3011/5000 0.335s + 0.020s (eta: 0:11:46)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3021/5000 0.335s + 0.020s (eta: 0:11:43)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3031/5000 0.335s + 0.020s (eta: 0:11:39)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3041/5000 0.335s + 0.020s (eta: 0:11:36)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3051/5000 0.335s + 0.020s (eta: 0:11:32)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3061/5000 0.335s + 0.020s (eta: 0:11:29)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3071/5000 0.335s + 0.020s (eta: 0:11:25)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3081/5000 0.335s + 0.020s (eta: 0:11:22)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3091/5000 0.335s + 0.020s (eta: 0:11:18)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3101/5000 0.335s + 0.020s (eta: 0:11:14)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3111/5000 0.335s + 0.020s (eta: 0:11:11)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3121/5000 0.335s + 0.020s (eta: 0:11:07)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3131/5000 0.335s + 0.020s (eta: 0:11:04)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3141/5000 0.335s + 0.020s (eta: 0:11:00)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3151/5000 0.335s + 0.020s (eta: 0:10:57)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3161/5000 0.335s + 0.020s (eta: 0:10:53)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3171/5000 0.335s + 0.020s (eta: 0:10:49)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3181/5000 0.335s + 0.020s (eta: 0:10:46)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3191/5000 0.335s + 0.020s (eta: 0:10:42)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3201/5000 0.335s + 0.020s (eta: 0:10:39)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3211/5000 0.335s + 0.020s (eta: 0:10:36)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3221/5000 0.335s + 0.020s (eta: 0:10:32)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3231/5000 0.335s + 0.020s (eta: 0:10:29)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3241/5000 0.335s + 0.020s (eta: 0:10:25)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3251/5000 0.335s + 0.020s (eta: 0:10:21)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3261/5000 0.335s + 0.020s (eta: 0:10:18)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3271/5000 0.335s + 0.020s (eta: 0:10:14)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3281/5000 0.335s + 0.020s (eta: 0:10:11)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3291/5000 0.335s + 0.020s (eta: 0:10:07)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3301/5000 0.335s + 0.020s (eta: 0:10:04)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3311/5000 0.335s + 0.020s (eta: 0:10:00)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3321/5000 0.335s + 0.020s (eta: 0:09:56)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3331/5000 0.335s + 0.020s (eta: 0:09:53)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3341/5000 0.335s + 0.020s (eta: 0:09:49)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3351/5000 0.335s + 0.020s (eta: 0:09:46)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3361/5000 0.335s + 0.020s (eta: 0:09:42)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3371/5000 0.335s + 0.020s (eta: 0:09:39)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3381/5000 0.335s + 0.020s (eta: 0:09:35)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3391/5000 0.335s + 0.020s (eta: 0:09:31)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3401/5000 0.335s + 0.020s (eta: 0:09:28)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3411/5000 0.335s + 0.020s (eta: 0:09:24)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3421/5000 0.335s + 0.020s (eta: 0:09:21)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3431/5000 0.335s + 0.020s (eta: 0:09:17)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3441/5000 0.335s + 0.020s (eta: 0:09:14)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3451/5000 0.335s + 0.020s (eta: 0:09:10)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3461/5000 0.335s + 0.020s (eta: 0:09:07)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3471/5000 0.335s + 0.020s (eta: 0:09:03)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3481/5000 0.335s + 0.020s (eta: 0:08:59)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3491/5000 0.335s + 0.020s (eta: 0:08:56)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3501/5000 0.335s + 0.020s (eta: 0:08:52)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3511/5000 0.335s + 0.020s (eta: 0:08:49)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3521/5000 0.335s + 0.020s (eta: 0:08:45)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3531/5000 0.335s + 0.020s (eta: 0:08:41)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3541/5000 0.335s + 0.020s (eta: 0:08:38)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3551/5000 0.335s + 0.020s (eta: 0:08:34)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3561/5000 0.335s + 0.020s (eta: 0:08:31)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3571/5000 0.335s + 0.020s (eta: 0:08:27)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3581/5000 0.335s + 0.020s (eta: 0:08:24)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3591/5000 0.335s + 0.020s (eta: 0:08:20)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3601/5000 0.335s + 0.020s (eta: 0:08:16)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3611/5000 0.335s + 0.020s (eta: 0:08:13)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3621/5000 0.335s + 0.020s (eta: 0:08:09)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3631/5000 0.335s + 0.020s (eta: 0:08:06)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3641/5000 0.335s + 0.020s (eta: 0:08:02)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3651/5000 0.335s + 0.020s (eta: 0:07:59)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3661/5000 0.335s + 0.020s (eta: 0:07:55)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3671/5000 0.335s + 0.020s (eta: 0:07:52)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3681/5000 0.335s + 0.020s (eta: 0:07:48)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3691/5000 0.335s + 0.020s (eta: 0:07:44)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3701/5000 0.335s + 0.020s (eta: 0:07:41)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3711/5000 0.335s + 0.020s (eta: 0:07:37)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3721/5000 0.335s + 0.020s (eta: 0:07:34)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3731/5000 0.335s + 0.020s (eta: 0:07:30)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3741/5000 0.335s + 0.020s (eta: 0:07:27)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3751/5000 0.335s + 0.020s (eta: 0:07:23)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3761/5000 0.335s + 0.020s (eta: 0:07:20)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3771/5000 0.335s + 0.020s (eta: 0:07:16)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3781/5000 0.335s + 0.020s (eta: 0:07:13)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3791/5000 0.335s + 0.020s (eta: 0:07:09)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3801/5000 0.335s + 0.020s (eta: 0:07:05)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3811/5000 0.335s + 0.020s (eta: 0:07:02)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3821/5000 0.335s + 0.020s (eta: 0:06:58)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3831/5000 0.335s + 0.020s (eta: 0:06:55)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3841/5000 0.335s + 0.020s (eta: 0:06:51)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3851/5000 0.335s + 0.020s (eta: 0:06:48)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3861/5000 0.335s + 0.020s (eta: 0:06:44)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3871/5000 0.335s + 0.020s (eta: 0:06:41)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3881/5000 0.335s + 0.020s (eta: 0:06:37)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3891/5000 0.335s + 0.020s (eta: 0:06:33)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3901/5000 0.335s + 0.020s (eta: 0:06:30)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3911/5000 0.335s + 0.020s (eta: 0:06:26)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3921/5000 0.335s + 0.020s (eta: 0:06:23)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3931/5000 0.335s + 0.020s (eta: 0:06:19)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3941/5000 0.335s + 0.020s (eta: 0:06:16)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3951/5000 0.335s + 0.020s (eta: 0:06:12)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3961/5000 0.335s + 0.020s (eta: 0:06:09)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3971/5000 0.335s + 0.020s (eta: 0:06:05)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3981/5000 0.335s + 0.020s (eta: 0:06:01)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 3991/5000 0.335s + 0.020s (eta: 0:05:58)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4001/5000 0.335s + 0.020s (eta: 0:05:54)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4011/5000 0.335s + 0.020s (eta: 0:05:51)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4021/5000 0.335s + 0.020s (eta: 0:05:47)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4031/5000 0.335s + 0.020s (eta: 0:05:44)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4041/5000 0.335s + 0.020s (eta: 0:05:40)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4051/5000 0.335s + 0.020s (eta: 0:05:37)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4061/5000 0.335s + 0.020s (eta: 0:05:33)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4071/5000 0.335s + 0.020s (eta: 0:05:30)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4081/5000 0.335s + 0.020s (eta: 0:05:26)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4091/5000 0.335s + 0.020s (eta: 0:05:22)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4101/5000 0.335s + 0.020s (eta: 0:05:19)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4111/5000 0.335s + 0.020s (eta: 0:05:15)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4121/5000 0.335s + 0.020s (eta: 0:05:12)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4131/5000 0.335s + 0.020s (eta: 0:05:08)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4141/5000 0.335s + 0.020s (eta: 0:05:05)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4151/5000 0.335s + 0.020s (eta: 0:05:01)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4161/5000 0.335s + 0.020s (eta: 0:04:58)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4171/5000 0.335s + 0.020s (eta: 0:04:54)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4181/5000 0.335s + 0.020s (eta: 0:04:51)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4191/5000 0.335s + 0.020s (eta: 0:04:47)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4201/5000 0.335s + 0.020s (eta: 0:04:43)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4211/5000 0.335s + 0.020s (eta: 0:04:40)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4221/5000 0.335s + 0.020s (eta: 0:04:36)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4231/5000 0.335s + 0.020s (eta: 0:04:33)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4241/5000 0.335s + 0.020s (eta: 0:04:29)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4251/5000 0.335s + 0.020s (eta: 0:04:26)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4261/5000 0.335s + 0.020s (eta: 0:04:22)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4271/5000 0.335s + 0.020s (eta: 0:04:19)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4281/5000 0.335s + 0.020s (eta: 0:04:15)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4291/5000 0.335s + 0.020s (eta: 0:04:11)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4301/5000 0.335s + 0.020s (eta: 0:04:08)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4311/5000 0.335s + 0.020s (eta: 0:04:04)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4321/5000 0.335s + 0.020s (eta: 0:04:01)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4331/5000 0.335s + 0.020s (eta: 0:03:57)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4341/5000 0.335s + 0.020s (eta: 0:03:54)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4351/5000 0.335s + 0.020s (eta: 0:03:50)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4361/5000 0.335s + 0.020s (eta: 0:03:47)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4371/5000 0.335s + 0.020s (eta: 0:03:43)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4381/5000 0.335s + 0.020s (eta: 0:03:39)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4391/5000 0.335s + 0.020s (eta: 0:03:36)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4401/5000 0.335s + 0.020s (eta: 0:03:32)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4411/5000 0.335s + 0.020s (eta: 0:03:29)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4421/5000 0.335s + 0.020s (eta: 0:03:25)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4431/5000 0.335s + 0.020s (eta: 0:03:22)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4441/5000 0.335s + 0.020s (eta: 0:03:18)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4451/5000 0.335s + 0.020s (eta: 0:03:15)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4461/5000 0.335s + 0.020s (eta: 0:03:11)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4471/5000 0.335s + 0.020s (eta: 0:03:07)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4481/5000 0.335s + 0.020s (eta: 0:03:04)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4491/5000 0.335s + 0.020s (eta: 0:03:00)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4501/5000 0.335s + 0.020s (eta: 0:02:57)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4511/5000 0.335s + 0.020s (eta: 0:02:53)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4521/5000 0.335s + 0.020s (eta: 0:02:50)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4531/5000 0.335s + 0.020s (eta: 0:02:46)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4541/5000 0.335s + 0.020s (eta: 0:02:43)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4551/5000 0.335s + 0.020s (eta: 0:02:39)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4561/5000 0.335s + 0.020s (eta: 0:02:36)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4571/5000 0.335s + 0.020s (eta: 0:02:32)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4581/5000 0.335s + 0.020s (eta: 0:02:28)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4591/5000 0.335s + 0.020s (eta: 0:02:25)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4601/5000 0.335s + 0.020s (eta: 0:02:21)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4611/5000 0.335s + 0.020s (eta: 0:02:18)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4621/5000 0.335s + 0.020s (eta: 0:02:14)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4631/5000 0.335s + 0.020s (eta: 0:02:11)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4641/5000 0.335s + 0.020s (eta: 0:02:07)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4651/5000 0.335s + 0.020s (eta: 0:02:04)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4661/5000 0.335s + 0.020s (eta: 0:02:00)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4671/5000 0.335s + 0.020s (eta: 0:01:56)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4681/5000 0.335s + 0.020s (eta: 0:01:53)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4691/5000 0.335s + 0.020s (eta: 0:01:49)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4701/5000 0.335s + 0.020s (eta: 0:01:46)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4711/5000 0.335s + 0.020s (eta: 0:01:42)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4721/5000 0.335s + 0.020s (eta: 0:01:39)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4731/5000 0.335s + 0.020s (eta: 0:01:35)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4741/5000 0.335s + 0.020s (eta: 0:01:32)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4751/5000 0.335s + 0.020s (eta: 0:01:28)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4761/5000 0.335s + 0.020s (eta: 0:01:24)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4771/5000 0.335s + 0.020s (eta: 0:01:21)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4781/5000 0.335s + 0.020s (eta: 0:01:17)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4791/5000 0.335s + 0.020s (eta: 0:01:14)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4801/5000 0.335s + 0.020s (eta: 0:01:10)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4811/5000 0.335s + 0.020s (eta: 0:01:07)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4821/5000 0.335s + 0.020s (eta: 0:01:03)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4831/5000 0.335s + 0.020s (eta: 0:01:00)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4841/5000 0.335s + 0.020s (eta: 0:00:56)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4851/5000 0.335s + 0.020s (eta: 0:00:52)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4861/5000 0.335s + 0.020s (eta: 0:00:49)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4871/5000 0.335s + 0.020s (eta: 0:00:45)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4881/5000 0.335s + 0.020s (eta: 0:00:42)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4891/5000 0.335s + 0.020s (eta: 0:00:38)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4901/5000 0.335s + 0.020s (eta: 0:00:35)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4911/5000 0.335s + 0.020s (eta: 0:00:31)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4921/5000 0.335s + 0.020s (eta: 0:00:28)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4931/5000 0.335s + 0.020s (eta: 0:00:24)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4941/5000 0.335s + 0.020s (eta: 0:00:20)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4951/5000 0.335s + 0.020s (eta: 0:00:17)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4961/5000 0.335s + 0.020s (eta: 0:00:13)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4971/5000 0.335s + 0.020s (eta: 0:00:10)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4981/5000 0.335s + 0.020s (eta: 0:00:06)
+INFO test_engine.py: 283: im_detect: range [1, 5000] of 5000: 4991/5000 0.335s + 0.020s (eta: 0:00:03)
+INFO test_engine.py: 316: Wrote detections to: /home/zhangxt/disk/posetrack/Detectron.pytorch/test_output-X-101-64x4d-FPN_1x/detections.pkl
+INFO test_engine.py: 163: Total inference time: 1814.983s
+INFO task_evaluation.py:  75: Evaluating detections
+INFO json_dataset_evaluator.py: 162: Writing bbox results json to: /home/zhangxt/disk/posetrack/Detectron.pytorch/test_output-X-101-64x4d-FPN_1x/bbox_coco_2017_val_results.json
+Loading and preparing results...
+DONE (t=1.24s)
+creating index...
+index created!
+Running per image evaluation...
+Evaluate annotation type *bbox*
+DONE (t=31.39s).
+Accumulating evaluation results...
+DONE (t=4.55s).
+INFO json_dataset_evaluator.py: 222: ~~~~ Mean and per-category AP @ IoU=[0.50,0.95] ~~~~
+INFO json_dataset_evaluator.py: 223: 42.4
+INFO json_dataset_evaluator.py: 231: 55.7
+INFO json_dataset_evaluator.py: 231: 32.0
+INFO json_dataset_evaluator.py: 231: 44.8
+INFO json_dataset_evaluator.py: 231: 43.9
+INFO json_dataset_evaluator.py: 231: 62.8
+INFO json_dataset_evaluator.py: 231: 65.5
+INFO json_dataset_evaluator.py: 231: 63.4
+INFO json_dataset_evaluator.py: 231: 35.4
+INFO json_dataset_evaluator.py: 231: 28.2
+INFO json_dataset_evaluator.py: 231: 29.4
+INFO json_dataset_evaluator.py: 231: 65.1
+INFO json_dataset_evaluator.py: 231: 65.3
+INFO json_dataset_evaluator.py: 231: 47.5
+INFO json_dataset_evaluator.py: 231: 25.7
+INFO json_dataset_evaluator.py: 231: 38.2
+INFO json_dataset_evaluator.py: 231: 67.0
+INFO json_dataset_evaluator.py: 231: 63.2
+INFO json_dataset_evaluator.py: 231: 59.0
+INFO json_dataset_evaluator.py: 231: 52.7
+INFO json_dataset_evaluator.py: 231: 56.9
+INFO json_dataset_evaluator.py: 231: 61.3
+INFO json_dataset_evaluator.py: 231: 68.2
+INFO json_dataset_evaluator.py: 231: 66.9
+INFO json_dataset_evaluator.py: 231: 64.9
+INFO json_dataset_evaluator.py: 231: 18.5
+INFO json_dataset_evaluator.py: 231: 40.4
+INFO json_dataset_evaluator.py: 231: 16.2
+INFO json_dataset_evaluator.py: 231: 35.9
+INFO json_dataset_evaluator.py: 231: 41.4
+INFO json_dataset_evaluator.py: 231: 67.0
+INFO json_dataset_evaluator.py: 231: 25.4
+INFO json_dataset_evaluator.py: 231: 37.4
+INFO json_dataset_evaluator.py: 231: 48.9
+INFO json_dataset_evaluator.py: 231: 43.8
+INFO json_dataset_evaluator.py: 231: 29.4
+INFO json_dataset_evaluator.py: 231: 40.1
+INFO json_dataset_evaluator.py: 231: 52.5
+INFO json_dataset_evaluator.py: 231: 38.5
+INFO json_dataset_evaluator.py: 231: 47.9
+INFO json_dataset_evaluator.py: 231: 41.7
+INFO json_dataset_evaluator.py: 231: 35.7
+INFO json_dataset_evaluator.py: 231: 43.5
+INFO json_dataset_evaluator.py: 231: 38.5
+INFO json_dataset_evaluator.py: 231: 21.1
+INFO json_dataset_evaluator.py: 231: 17.7
+INFO json_dataset_evaluator.py: 231: 41.6
+INFO json_dataset_evaluator.py: 231: 24.8
+INFO json_dataset_evaluator.py: 231: 22.7
+INFO json_dataset_evaluator.py: 231: 34.9
+INFO json_dataset_evaluator.py: 231: 33.2
+INFO json_dataset_evaluator.py: 231: 24.5
+INFO json_dataset_evaluator.py: 231: 22.7
+INFO json_dataset_evaluator.py: 231: 34.0
+INFO json_dataset_evaluator.py: 231: 51.3
+INFO json_dataset_evaluator.py: 231: 46.1
+INFO json_dataset_evaluator.py: 231: 37.4
+INFO json_dataset_evaluator.py: 231: 29.3
+INFO json_dataset_evaluator.py: 231: 40.7
+INFO json_dataset_evaluator.py: 231: 29.2
+INFO json_dataset_evaluator.py: 231: 41.1
+INFO json_dataset_evaluator.py: 231: 26.5
+INFO json_dataset_evaluator.py: 231: 61.3
+INFO json_dataset_evaluator.py: 231: 58.4
+INFO json_dataset_evaluator.py: 231: 60.2
+INFO json_dataset_evaluator.py: 231: 60.7
+INFO json_dataset_evaluator.py: 231: 33.5
+INFO json_dataset_evaluator.py: 231: 52.0
+INFO json_dataset_evaluator.py: 231: 36.9
+INFO json_dataset_evaluator.py: 231: 55.3
+INFO json_dataset_evaluator.py: 231: 34.3
+INFO json_dataset_evaluator.py: 231: 42.7
+INFO json_dataset_evaluator.py: 231: 38.8
+INFO json_dataset_evaluator.py: 231: 54.2
+INFO json_dataset_evaluator.py: 231: 17.1
+INFO json_dataset_evaluator.py: 231: 52.1
+INFO json_dataset_evaluator.py: 231: 38.8
+INFO json_dataset_evaluator.py: 231: 30.0
+INFO json_dataset_evaluator.py: 231: 48.4
+INFO json_dataset_evaluator.py: 231: 7.6
+INFO json_dataset_evaluator.py: 231: 24.3
+INFO json_dataset_evaluator.py: 232: ~~~~ Summary metrics ~~~~
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = 0.424
+ Average Precision  (AP) @[ IoU=0.50      | area=   all | maxDets=100 ] = 0.643
+ Average Precision  (AP) @[ IoU=0.75      | area=   all | maxDets=100 ] = 0.465
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area= small | maxDets=100 ] = 0.255
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area=medium | maxDets=100 ] = 0.467
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area= large | maxDets=100 ] = 0.546
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=  1 ] = 0.338
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets= 10 ] = 0.528
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = 0.553
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area= small | maxDets=100 ] = 0.360
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets=100 ] = 0.594
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets=100 ] = 0.697
+INFO json_dataset_evaluator.py: 199: Wrote json eval results to: ./test_output-X-101-64x4d-FPN_1x/detection_results.pkl
+INFO task_evaluation.py:  61: Evaluating bounding boxes is done!
+INFO task_evaluation.py: 104: Evaluating segmentations
+INFO json_dataset_evaluator.py:  83: Writing segmentation results json to: /home/zhangxt/disk/posetrack/Detectron.pytorch/test_output-X-101-64x4d-FPN_1x/segmentations_coco_2017_val_results.json
+Loading and preparing results...
+DONE (t=3.00s)
+creating index...
+index created!
+Running per image evaluation...
+Evaluate annotation type *segm*
+DONE (t=35.42s).
+Accumulating evaluation results...
+DONE (t=4.54s).
+INFO json_dataset_evaluator.py: 222: ~~~~ Mean and per-category AP @ IoU=[0.50,0.95] ~~~~
+INFO json_dataset_evaluator.py: 223: 37.5
+INFO json_dataset_evaluator.py: 231: 45.7
+INFO json_dataset_evaluator.py: 231: 17.6
+INFO json_dataset_evaluator.py: 231: 39.3
+INFO json_dataset_evaluator.py: 231: 34.5
+INFO json_dataset_evaluator.py: 231: 49.2
+INFO json_dataset_evaluator.py: 231: 64.1
+INFO json_dataset_evaluator.py: 231: 62.7
+INFO json_dataset_evaluator.py: 231: 35.3
+INFO json_dataset_evaluator.py: 231: 23.9
+INFO json_dataset_evaluator.py: 231: 26.0
+INFO json_dataset_evaluator.py: 231: 61.1
+INFO json_dataset_evaluator.py: 231: 64.2
+INFO json_dataset_evaluator.py: 231: 48.2
+INFO json_dataset_evaluator.py: 231: 18.6
+INFO json_dataset_evaluator.py: 231: 29.8
+INFO json_dataset_evaluator.py: 231: 67.5
+INFO json_dataset_evaluator.py: 231: 60.2
+INFO json_dataset_evaluator.py: 231: 42.4
+INFO json_dataset_evaluator.py: 231: 46.6
+INFO json_dataset_evaluator.py: 231: 46.6
+INFO json_dataset_evaluator.py: 231: 56.1
+INFO json_dataset_evaluator.py: 231: 68.6
+INFO json_dataset_evaluator.py: 231: 55.9
+INFO json_dataset_evaluator.py: 231: 49.7
+INFO json_dataset_evaluator.py: 231: 16.8
+INFO json_dataset_evaluator.py: 231: 46.7
+INFO json_dataset_evaluator.py: 231: 15.4
+INFO json_dataset_evaluator.py: 231: 31.5
+INFO json_dataset_evaluator.py: 231: 41.7
+INFO json_dataset_evaluator.py: 231: 63.0
+INFO json_dataset_evaluator.py: 231: 3.1
+INFO json_dataset_evaluator.py: 231: 23.0
+INFO json_dataset_evaluator.py: 231: 42.2
+INFO json_dataset_evaluator.py: 231: 27.8
+INFO json_dataset_evaluator.py: 231: 22.6
+INFO json_dataset_evaluator.py: 231: 38.4
+INFO json_dataset_evaluator.py: 231: 32.5
+INFO json_dataset_evaluator.py: 231: 31.8
+INFO json_dataset_evaluator.py: 231: 53.4
+INFO json_dataset_evaluator.py: 231: 37.4
+INFO json_dataset_evaluator.py: 231: 31.1
+INFO json_dataset_evaluator.py: 231: 42.5
+INFO json_dataset_evaluator.py: 231: 17.9
+INFO json_dataset_evaluator.py: 231: 14.1
+INFO json_dataset_evaluator.py: 231: 11.3
+INFO json_dataset_evaluator.py: 231: 38.2
+INFO json_dataset_evaluator.py: 231: 19.9
+INFO json_dataset_evaluator.py: 231: 21.1
+INFO json_dataset_evaluator.py: 231: 37.1
+INFO json_dataset_evaluator.py: 231: 32.1
+INFO json_dataset_evaluator.py: 231: 23.1
+INFO json_dataset_evaluator.py: 231: 19.5
+INFO json_dataset_evaluator.py: 231: 25.3
+INFO json_dataset_evaluator.py: 231: 50.5
+INFO json_dataset_evaluator.py: 231: 45.6
+INFO json_dataset_evaluator.py: 231: 38.9
+INFO json_dataset_evaluator.py: 231: 19.5
+INFO json_dataset_evaluator.py: 231: 35.0
+INFO json_dataset_evaluator.py: 231: 23.2
+INFO json_dataset_evaluator.py: 231: 33.2
+INFO json_dataset_evaluator.py: 231: 14.3
+INFO json_dataset_evaluator.py: 231: 60.4
+INFO json_dataset_evaluator.py: 231: 59.2
+INFO json_dataset_evaluator.py: 231: 60.2
+INFO json_dataset_evaluator.py: 231: 60.6
+INFO json_dataset_evaluator.py: 231: 29.4
+INFO json_dataset_evaluator.py: 231: 52.5
+INFO json_dataset_evaluator.py: 231: 32.6
+INFO json_dataset_evaluator.py: 231: 56.9
+INFO json_dataset_evaluator.py: 231: 32.3
+INFO json_dataset_evaluator.py: 231: 44.4
+INFO json_dataset_evaluator.py: 231: 36.6
+INFO json_dataset_evaluator.py: 231: 56.3
+INFO json_dataset_evaluator.py: 231: 10.2
+INFO json_dataset_evaluator.py: 231: 51.4
+INFO json_dataset_evaluator.py: 231: 36.1
+INFO json_dataset_evaluator.py: 231: 23.2
+INFO json_dataset_evaluator.py: 231: 46.4
+INFO json_dataset_evaluator.py: 231: 2.6
+INFO json_dataset_evaluator.py: 231: 17.2
+INFO json_dataset_evaluator.py: 232: ~~~~ Summary metrics ~~~~
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = 0.375
+ Average Precision  (AP) @[ IoU=0.50      | area=   all | maxDets=100 ] = 0.606
+ Average Precision  (AP) @[ IoU=0.75      | area=   all | maxDets=100 ] = 0.399
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area= small | maxDets=100 ] = 0.177
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area=medium | maxDets=100 ] = 0.410
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area= large | maxDets=100 ] = 0.554
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=  1 ] = 0.311
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets= 10 ] = 0.474
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = 0.493
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area= small | maxDets=100 ] = 0.288
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets=100 ] = 0.537
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets=100 ] = 0.664
+INFO json_dataset_evaluator.py: 122: Wrote json eval results to: ./test_output-X-101-64x4d-FPN_1x/segmentation_results.pkl
+INFO task_evaluation.py:  65: Evaluating segmentations is done!
+INFO task_evaluation.py: 180: copypaste: Dataset: coco_2017_val
+INFO task_evaluation.py: 182: copypaste: Task: box
+INFO task_evaluation.py: 185: copypaste: AP,AP50,AP75,APs,APm,APl
+INFO task_evaluation.py: 186: copypaste: 0.4239,0.6430,0.4645,0.2550,0.4667,0.5460
+INFO task_evaluation.py: 182: copypaste: Task: mask
+INFO task_evaluation.py: 185: copypaste: AP,AP50,AP75,APs,APm,APl
+INFO task_evaluation.py: 186: copypaste: 0.3753,0.6063,0.3989,0.1769,0.4095,0.5537
+
+Process finished with exit code 0
