@@ -120,7 +120,7 @@ class FrameItem:
             else:
                 self.detected_bboxes = human_bboxes
             # 有可能出现没检测到的情况，大部分不可能，但是工程起见。
-            # TODO 比如 bonn_mpii_train_5sec\00098_mpii 最前面几个是全黑所以检测不到……emmmm怎么办呢
+            # 2TODO 比如 bonn_mpii_train_5sec\00098_mpii 最前面几个是全黑所以检测不到……emmmm怎么办呢
             self.detected_bboxes = expand_vector_to_tensor(self.detected_bboxes)
         self.human_detected = True
     
@@ -257,7 +257,7 @@ class FrameItem:
             cls_all_bboxes = torch.cat([torch.zeros(num_people, 4), all_bboxes[:, :4]], 1)  # num people x 8
             scores, boxes, cls_boxes = box_results_with_nms_and_limit(scores, cls_all_bboxes, 2)
             self.unified_bboxes = to_torch(cls_boxes[1])  # 0 for bg, num_nmsed x 5
-            # Althought we dont filter out boxes with low score, we leave out those with small areas
+            # Although we dont filter out boxes with low score, we leave out those with small areas
             # QQ 这里这样正确吗，需不需要filter？thres参数又是怎么样？
             if nise_cfg.ALG.FILTER_BBOX_WITH_SMALL_AREA:
                 self.unified_bboxes, _ = filter_bbox_with_area(self.unified_bboxes)
@@ -294,10 +294,10 @@ class FrameItem:
         joint_detector.eval()
         for i in range(self.unified_bboxes.shape[0]):
             bb = self.unified_bboxes[i, :4]  # no score
+            human_score = self.unified_bboxes[i, 4]
             # debug_print(i, bb)
             
-            center, scale = box2cs(bb, self.img_ratio)  # TODO: is this right?
-            # scale = scale / 2
+            center, scale = box2cs(bb, self.img_ratio)  # 2TODO: is this right?
             rotation = 0
             # from simple/JointDataset.py
             trans = get_affine_transform(center, scale, rotation, simple_cfg.MODEL.IMAGE_SIZE)
@@ -313,16 +313,17 @@ class FrameItem:
             resized_human = im_to_torch(resized_human_np)
             resized_human.unsqueeze_(0)  # make it batch so we can use detector
             joint_hmap = joint_detector(resized_human)
-            # scale = np.ones([2])  # the scale above is like a 大傻逼
+            
             # make it batch so we can get right preds
             c_unsqueezed, s_unsqueezed = np.expand_dims(center, 0), np.expand_dims(scale, 0)
             preds, max_val = get_final_preds(
                 simple_cfg, joint_hmap.detach().cpu().numpy(),
                 c_unsqueezed, s_unsqueezed)  # bs x 16 x 2,  bs x 16 x 1
-            # NG ! NG !
-            self.joints[i, :, :] = to_torch(preds).squeeze()
-            self.joints_score[i,:] = to_torch(max_val).squeeze()
             
+            self.joints[i, :, :] = to_torch(preds).squeeze()
+            self.joints_score[i, :] = to_torch(max_val).squeeze() * human_score
+            
+            # vis
             img_with_joints = get_batch_image_with_joints(torch_img, to_torch(preds), torch.ones(1, 15, 1))
             resized_human_np_with_joints = cv2.warpAffine(
                 img_with_joints,  # hw3
@@ -499,7 +500,7 @@ class FrameItem:
                                         'id': [j],
                                         'x': [self.joints[i, j, 0].item() * self.ori_img_w / self.img_w],
                                         'y': [self.joints[i, j, 1].item() * self.ori_img_h / self.img_h],
-                                        'score': [self.joints_score[i,j].item()]  # what score????
+                                        'score': [self.joints_score[i, j].item()]  # what score????
                                     } for j in range(nise_cfg.DATA.num_joints)
                                 ]
                             }
