@@ -5,6 +5,7 @@ import sys
 
 import numpy as np
 
+
 def get_nise_arg_parser():
     parser = argparse.ArgumentParser(description = 'PyTorch CPN Training')
     parser.add_argument('-j', '--workers', default = 4, type = int, metavar = 'N',
@@ -77,7 +78,7 @@ class NiseConfig:
             self.SIMPLE = False
             
             self.FRAME = True
-            
+            self.EST_IN_FRAME = True
             self.VIS_HUMAN_THRES = 0.6
     
     class _ALG:
@@ -93,9 +94,15 @@ class NiseConfig:
             # if want more joint prop boxes, set this to false
             self.FILTER_HUMAN_WHEN_DETECT = False
             # if not filtered when detected, filter when prop??
-            self.JOINT_PROP_WITH_FILTERED_HUMAN = True and not self.FILTER_HUMAN_WHEN_DETECT
+            self.JOINT_PROP_WITH_FILTERED_HUMAN = False
             self.FILTER_BBOX_WITH_SMALL_AREA = False
             self.ASSGIN_ID_TO_FILTERED_BOX = False
+            self.USE_ALL_PROPED_BOX = True
+            # padding image s.t. w/h to be multiple of 32
+            self.FLOW_MULTIPLE = 2 ** 6
+            self.FLOW_PADDING_END = 0
+            self.FLOW_MODE = self.FLOW_PADDING_END
+            self.SIMILARITY_TYPE = 0
     
     class _PATH:
         def __init__(self):
@@ -110,7 +117,7 @@ class NiseConfig:
     class _TEST:
         def __init__(self):
             self.USE_GT_VALID_BOX = False
-     
+    
     def __init__(self):
         #
         # ─── TRAINING ───────────────────────────────────────────────────────────────────
@@ -131,7 +138,7 @@ class NiseConfig:
         
         self.PATH = NiseConfig._PATH()
         
-        self.TEST=NiseConfig._TEST()
+        self.TEST = NiseConfig._TEST()
 
 
 cfg = NiseConfig()

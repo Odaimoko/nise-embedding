@@ -39,6 +39,8 @@ class FrameItem:
         # flow uses rgb
         self.original_img = cv2.imread(self.img_path)  # with original size? YES
         self.ori_img_h, self.ori_img_w, _ = self.original_img.shape
+        # 依然是W/H， 回忆model第一个192是宽。
+        self.img_ratio = simple_cfg.MODEL.IMAGE_SIZE[0] / simple_cfg.MODEL.IMAGE_SIZE[1]
         
         """ - Normalize person crop to some size to fit flow input
         
@@ -48,20 +50,29 @@ class FrameItem:
         """
         if nise_cfg.TEST.USE_GT_VALID_BOX and self.task == 1:
             # dont change image size ok?
-            self.bgr_img = self.original_img
+            self.flow_img = self.original_img
         else:
-            self.bgr_img = scipy.misc.imresize(  # h and w is reversed
-                self.original_img,
-                (nise_cfg.DATA.flow_input_size[1], nise_cfg.DATA.flow_input_size[0])
-            )
+            if nise_cfg.ALG.FLOW_PADDING_END:
+                multiple = nise_cfg.ALG.FLOW_MULTIPLE
+                h, w, _ = self.original_img.shape
+                extra_right = (multiple - (w % multiple)) % multiple
+                extra_bottom = (multiple - (h % multiple)) % multiple
+                
+                self.flow_img = np.pad(self.original_img, ((0, extra_bottom), (0, extra_right), (0, 0)),
+                                       mode = 'constant', constant_values = 0)
+            else:
+                self.flow_img = scipy.misc.imresize(  # h and w is reversed
+                    self.original_img,
+                    (nise_cfg.DATA.flow_input_size[1], nise_cfg.DATA.flow_input_size[0])
+                )
+        
+        if nise_cfg.ALG.FLOW_MODE == nise_cfg.ALG.FLOW_PADDING_END:
+            self.img_outside_flow = self.original_img
+        else:
+            self.img_outside_flow = self.flow_img
         
         # only used in computation of center and scale
-        self.img_h, self.img_w, _ = self.bgr_img.shape
-        # NG, should be model size
-        # self.img_ratio = self.img_w * 1.0 / self.img_h
-        # 依然是W/H， 回忆model第一个192是宽。
-        self.img_ratio = simple_cfg.MODEL.IMAGE_SIZE[0] / simple_cfg.MODEL.IMAGE_SIZE[1]
-        # self.rgb_img = load_image(self.img_name)  # with original size? YES   ~~no, resize to some fixed size~~
+        self.img_h, self.img_w, _ = self.img_outside_flow.shape
         
         # tensor num_person x num_joints x 2
         # should be LongTensor since we are going to use them as index. same length with unified_bbox
@@ -112,7 +123,7 @@ class FrameItem:
         else:
             # no problem for RGB BGR, since the example from detectron use this in this way
             # self.img is a tensor with size C x H x W, but detector needs H x W x C and BGR
-            cls_boxes = im_detect_all(detector, self.bgr_img)
+            cls_boxes = im_detect_all(detector, self.original_img)
             human_bboxes = torch.from_numpy(cls_boxes[1])  # person is the first class of coco， 0 for background
             if nise_cfg.ALG.FILTER_HUMAN_WHEN_DETECT:
                 # Dont use all, only high confidence
@@ -129,12 +140,13 @@ class FrameItem:
         if self.is_first:  # if this is first frame
             return
         """ - Now we have some images Q and current img, calculate FLow using previous and current one - """
-        resized_img = self.bgr_img[:, :, ::-1]  # to rgb
+        resized_img = self.flow_img[:, :, ::-1]  # to rgb
         resized_prev = prev_frame_img[:, :, ::-1]
         resized_img = im_to_torch(resized_img)
         resized_prev = im_to_torch(resized_prev)
         ti = torch.stack([resized_prev, resized_img], 1)
         self.flow_to_current = pred_flow(ti, flow_model)
+        self.flow_to_current = self.flow_to_current[:, :self.ori_img_h, :self.ori_img_w]
         self.flow_calculated = True
     
     def joint_prop(self, Q):
@@ -281,10 +293,10 @@ class FrameItem:
         
         p = PurePosixPath(self.img_path)
         
-        out_dir = os.path.join(nise_cfg.PATH.JOINTS_DIR + "_single" + (
-            '_gt' if nise_cfg.TEST.USE_GT_VALID_BOX else ''), p.parts[-2] + '_task_' + str(self.task))
+        out_dir = os.path.join(nise_cfg.PATH.JOINTS_DIR + '_task_' + str(self.task) + "_single" + (
+            '_gt' if nise_cfg.TEST.USE_GT_VALID_BOX else ''), p.parts[-2])
         mkdir(out_dir)
-        torch_img = im_to_torch(self.bgr_img).unsqueeze(0)
+        torch_img = im_to_torch(self.img_outside_flow).unsqueeze(0)
         if not self.bboxes_unified and not self.is_first:
             # if first, no unified box because no flow to prop, so dont raise
             raise ValueError('Should unify bboxes first')
@@ -305,10 +317,13 @@ class FrameItem:
             # but when visualization, it seems that the reverse way is correct??
             # 哦是因为192是宽256是高
             resized_human_np = cv2.warpAffine(
-                self.bgr_img,  # hw3
+                self.img_outside_flow,  # hw3
                 trans,
                 (int(simple_cfg.MODEL.IMAGE_SIZE[0]), int(simple_cfg.MODEL.IMAGE_SIZE[1])),
                 flags = cv2.INTER_LINEAR)
+            if nise_cfg.DEBUG.EST_IN_FRAME == True:
+                cv2.imwrite(os.path.join(out_dir, p.stem + "_nojoints_" + str(i) + '.jpg'), resized_human_np)
+
             # 'images_joint/valid/015860_mpii_single_person/00000001_0.jpg'
             resized_human = im_to_torch(resized_human_np)
             resized_human.unsqueeze_(0)  # make it batch so we can use detector
@@ -324,6 +339,7 @@ class FrameItem:
             self.joints_score[i, :] = to_torch(max_val).squeeze() * human_score
             
             # vis
+            debug_print(i, indent = 1)
             img_with_joints = get_batch_image_with_joints(torch_img, to_torch(preds), torch.ones(1, 15, 1))
             resized_human_np_with_joints = cv2.warpAffine(
                 img_with_joints,  # hw3
@@ -344,11 +360,12 @@ class FrameItem:
         if nise_cfg.ALG.ASSGIN_ID_TO_FILTERED_BOX:
             self.id_bboxes, self.id_idx_in_unified = self.get_filtered_bboxes()
             self.id_bboxes = expand_vector_to_tensor(self.id_bboxes)  # in case only one person ,then we have 5 index
-            self.human_ids = torch.zeros(self.id_bboxes.shape[0]).long()
         else:
             self.id_bboxes = self.unified_bboxes
             self.id_bboxes = expand_vector_to_tensor(self.id_bboxes)
             self.id_idx_in_unified = torch.tensor(range(self.unified_bboxes.shape[0])).long()
+        
+        self.human_ids = torch.zeros(self.id_bboxes.shape[0]).long()
         
         if self.is_first:
             # if it's the first frame, just assign every, starting from 1
@@ -361,7 +378,8 @@ class FrameItem:
             if get_dist_mat is None: raise NotImplementedError('Should pass a matrix function function in')
             
             # proped from prev frame. since we want prev ids, we should get filter ones.
-            if nise_cfg.ALG.JOINT_PROP_WITH_FILTERED_HUMAN:  # if filtered when proped, no need to do it here
+            if nise_cfg.ALG.USE_ALL_PROPED_BOX or \
+                    nise_cfg.ALG.JOINT_PROP_WITH_FILTERED_HUMAN:
                 prev_joints = self.new_joints.squeeze()  # squeeze is not for the first dim
             else:
                 prev_boxes_filtered, prev_boxes_idx = Q[-1].get_filtered_bboxes()
@@ -425,12 +443,12 @@ class FrameItem:
         class_boxes[1] = self.id_bboxes
         training_start_time = time.strftime("%H-%M-%S", time.localtime())
         p = PurePosixPath(self.img_path)
-        out_dir = os.path.join(nise_cfg.PATH.IMAGES_OUT_DIR + (
-            '_gt' if nise_cfg.TEST.USE_GT_VALID_BOX else ''), p.parts[-2] + '_task_' + str(self.task))
+        out_dir = os.path.join(nise_cfg.PATH.IMAGES_OUT_DIR + '_task_' + str(self.task) + (
+            '_gt' if nise_cfg.TEST.USE_GT_VALID_BOX else ''), p.parts[-2])
         mkdir(out_dir)
         
         vis_utils.vis_one_image_for_pt(
-            self.bgr_img[:, :, ::-1],  # BGR -> RGB for visualization
+            self.img_outside_flow[:, :, ::-1],  # BGR -> RGB for visualization
             self.img_name,
             out_dir,
             class_boxes,
@@ -453,8 +471,8 @@ class FrameItem:
         joints_to_show = self._resize_joints(joints_to_show)
         num_people, num_joints, _ = joints_to_show.shape
         
-        out_dir = os.path.join(nise_cfg.PATH.JOINTS_DIR + (
-            '_gt' if nise_cfg.TEST.USE_GT_VALID_BOX else ''), p.parts[-2] + '_task_' + str(self.task))
+        out_dir = os.path.join(nise_cfg.PATH.JOINTS_DIR + '_task_' + str(self.task) + (
+            '_gt' if nise_cfg.TEST.USE_GT_VALID_BOX else ''), p.parts[-2])
         mkdir(out_dir)
         for i in range(num_people):
             joints_i = joints_to_show[i, ...]  # 16 x 2
