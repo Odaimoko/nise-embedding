@@ -1,6 +1,8 @@
 import os
 import colorama
 import argparse
+import pathlib
+from functools import wraps
 
 # local packages
 import nise_lib._init_paths
@@ -13,6 +15,7 @@ from nise_utils.imutils import *
 from simple_lib.core.config import config as simple_cfg
 from simple_lib.core.config import update_config
 from simple_models.pose_resnet import get_pose_net
+import time
 
 # ─── LOAD MODEL ─────────────────────────────────────────────────────────────────
 
@@ -22,7 +25,6 @@ import tron_lib.nn as mynn
 from tron_lib.utils.detectron_weight_helper import load_detectron_weight
 import tron_lib.utils.net as net_utils
 import tron_lib.datasets.dummy_datasets as datasets
-import pathlib
 
 
 def get_nise_arg_parser():
@@ -755,6 +757,23 @@ def get_joints_from_annorects(annorects):
     
     return joints
 
+
+# DECORATORS
+def log_time(*text, record = None):
+    def real_deco(func):
+        @wraps(func)
+        def impl(*args, **kw):
+            start = time.clock()
+            func(*args, **kw)
+            end = time.clock()
+            r = print if not record else record  # 如果没有record，默认print
+            t = (func.__name__,) if not text else text
+            # print(r, t)
+            r(*t, "花费时间", end - start, "秒")
+        
+        return impl
+    
+    return real_deco
 
 if __name__ == '__main__':
     # test oks distance
