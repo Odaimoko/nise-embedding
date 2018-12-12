@@ -5,7 +5,7 @@ import argparse
 import pathlib
 from functools import wraps
 from easydict import EasyDict as edict
-from nise_lib.nise_config import nise_cfg
+from nise_lib.nise_config import nise_cfg,nise_logger
 import time
 
 # local packages
@@ -642,7 +642,7 @@ def log_time(*text, record = None):
             start = time.time()
             func(*args, **kw)
             end = time.time()
-            r(*t, '%.3f s.' % (end - start,))
+            r(*t, '%.3f s.' % (end - start,),printer = nise_logger.status)
             # r(' Start time: %.3f s. End time: %.3f s'%(start, end))
         
         return impl

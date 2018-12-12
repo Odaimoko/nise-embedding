@@ -38,8 +38,8 @@ def gen_rand_joints(num_people, h, w):
     return joints  # ng
 
 
-def debug_print(*args, indent = 0):
+def debug_print(*args, indent = 0, printer = nise_logger.info):
     args = [str(a) for a in args]
     msg = ''.join(['\t'] * indent) + ' '.join(args)
     if nise_cfg.DEBUG.PRINT:
-        nise_logger.info(msg)
+        printer(msg)
