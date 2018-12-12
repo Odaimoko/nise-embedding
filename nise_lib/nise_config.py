@@ -66,17 +66,19 @@ def set_path_from_nise_cfg(nise_cfg):
         nise_cfg.TEST.MODE,
         'task',
         str(nise_cfg.TEST.TASK),
-        'gt' if nise_cfg.TEST.USE_GT_VALID_BOX else '',
+        'gt' if nise_cfg.TEST.USE_GT_VALID_BOX else 'detect',
         'propthres',
         str(nise_cfg.ALG.PROP_HUMAN_THRES),
-        # '_'.join(['RANGE',
-        #           str(nise_cfg.TEST.FROM),
-        #           str(nise_cfg.TEST.TO)] if not nise_cfg.TEST.ONLY_TEST else nise_cfg.TEST.ONLY_TEST)
+        'propfiltered' if nise_cfg.ALG.JOINT_PROP_WITH_FILTERED_HUMAN else 'propall',
     ])
+    suffix_range = '_'.join(['RANGE',
+                             str(nise_cfg.TEST.FROM),
+                             str(nise_cfg.TEST.TO)] if not nise_cfg.TEST.ONLY_TEST else nise_cfg.TEST.ONLY_TEST)
+    suffix_with_range = '_'.join([suffix, suffix_range])
     nise_cfg.PATH.JSON_SAVE_DIR = os.path.join(nise_cfg.PATH.JSON_SAVE_DIR, suffix)
-    nise_cfg.PATH.JOINTS_DIR = os.path.join(nise_cfg.PATH.JOINTS_DIR, suffix)
-    nise_cfg.PATH.IMAGES_OUT_DIR = os.path.join(nise_cfg.PATH.IMAGES_OUT_DIR, suffix)
-    return suffix
+    nise_cfg.PATH.JOINTS_DIR = os.path.join(nise_cfg.PATH.JOINTS_DIR, suffix_with_range)
+    nise_cfg.PATH.IMAGES_OUT_DIR = os.path.join(nise_cfg.PATH.IMAGES_OUT_DIR, suffix_with_range)
+    return suffix_with_range
 
 
 def create_nise_logger(nise_cfg, cfg_name, phase = 'train'):
@@ -99,7 +101,7 @@ def create_nise_logger(nise_cfg, cfg_name, phase = 'train'):
     ])
     cfg_name = os.path.basename(cfg_name)
     
-    final_output_dir = root_output_dir / model / cfg_name
+    final_output_dir = root_output_dir / cfg_name
     
     print('creating {}'.format(final_output_dir))
     final_output_dir.mkdir(parents = True, exist_ok = True)

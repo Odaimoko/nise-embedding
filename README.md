@@ -70,7 +70,41 @@ config 开始制作。
 
 定义优先度： args>py>nise\_cfg。但似乎可以融合——args 和 py。唯一传入 args 的是py 文件的路径。
 
-我对param 和 cfg 的区别： param 没有默认值，cfg 有。
+我对param 和 cfg 的区别： param 没有默认值，cfg 有。所以 param 用来命名 LOG 等输出的文件。
+
+DONE。
+
+为了找出为什么奇奇怪怪莫名其妙就增加了mAP， 重新 debug。
+
+放出之前的前六
+
+```
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 82.6 & 76.7 & 60.2 & 40.8 & 63.3 & 47.9 & 35.8 & 59.8 \\
+```
+
+开启了 prop
+
+```
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 82.3 & 77.3 & 61.6 & 42.6 & 63.6 & 48.4 & 36.4 & 60.5 \\
+```
+
+不开 prop
+
+```
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 82.3 & 77.3 & 61.6 & 42.6 & 63.6 & 48.4 & 36.4 & 60.5 \\
+```
+
+全部的不开 prop
+
+```
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 79.8 & 78.5 & 70.7 & 59.2 & 70.1 & 65.5 & 58.3 & 69.6 \\
+```
+
+也就是说回不去了？
 
 ## 2018-12-11
 
@@ -181,6 +215,20 @@ task 1& propthres=1
 ```
 & Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
 & 79.8 & 78.5 & 70.7 & 59.2 & 70.1 & 65.5 & 58.3 & 69.6 \\
+```
+
+0.9
+
+```
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 71.0 & 70.5 & 63.4 & 53.3 & 63.8 & 60.7 & 53.5 & 62.9 \\
+```
+
+propthres=0.5
+
+```
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 71.0 & 70.5 & 63.4 & 53.3 & 63.8 & 60.7 & 53.5 & 62.9 \\
 ```
 
 

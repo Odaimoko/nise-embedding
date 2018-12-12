@@ -1,0 +1,8 @@
+ALG: {PROP_HUMAN_THRES: 0.9}
+TEST:
+  FROM: 3
+  MODE: valid
+  ONLY_TEST: []
+  TASK: 2
+  TO: 4
+  USE_GT_VALID_BOX: false

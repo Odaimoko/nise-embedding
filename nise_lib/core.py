@@ -18,7 +18,7 @@ def is_skip_video(nise_cfg, i, file_name):
             s = False
             break
     if s == True:
-        if i >= nise_cfg.TEST.FROM or i < nise_cfg.TEST.TO:
+        if i >= nise_cfg.TEST.FROM and i < nise_cfg.TEST.TO:
             s = False
     return s
 
@@ -154,13 +154,3 @@ def nise_pred_task_3(gt_anno_dir, json_save_dir, vis_dataset, hunam_detector, jo
         with open(json_path, 'w') as f:
             json.dump({'annolist': pred_frames}, f)
 
-# def train_est_on_posetrack(args,config, est_model, loader, ):
-#     ''''''
-#     # args already reset
-#     # cudnn related setting
-#     cudnn.benchmark = config.CUDNN.BENCHMARK
-#     cudnn.deterministic = config.CUDNN.DETERMINISTIC
-#     cudnn.enabled = config.CUDNN.ENABLED
-#
-#     if est_model==None:
-#         """train from scratch"""
