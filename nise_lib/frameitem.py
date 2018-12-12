@@ -245,26 +245,26 @@ class FrameItem:
             joint_prop_bboxes_scores.unsqueeze_(1)
             self.joint_prop_bboxes = torch.cat([joint_prop_bboxes, joint_prop_bboxes_scores], 1)
             self.joint_prop_bboxes = expand_vector_to_tensor(self.joint_prop_bboxes)
-            
-            p = PurePosixPath(self.img_path)
-            out_dir = os.path.join(nise_cfg.PATH.JOINTS_DIR + '_flowproped_' + str(self.task) + (
-                '_gt' if nise_cfg.TEST.USE_GT_VALID_BOX else ''), p.parts[-2])
-            mkdir(out_dir)
-            num_people, num_joints, _ = self.new_joints.shape
-            for i in range(num_people):
-                # debug_print('drawing flow proped', i, self.joint_prop_bboxes[i], indent = 1)
-                joints_i = self.new_joints[i, ...]  # 16 x 2
-                prev_joints_i = prev_frame_joints[i, ...].float()
-                joints_to_draw_i = torch.stack([joints_i, prev_joints_i], 0)
-                joint_visible = torch.ones([2, num_joints, 1])
-                nise_batch_joints = torch.cat([joints_to_draw_i, joint_visible], 2)  # 16 x 3
-                
-                save_single_whole_image_with_joints(
-                    im_to_torch(self.original_img).unsqueeze(0),
-                    nise_batch_joints,
-                    os.path.join(out_dir, self.img_name + "_id_" + "{:02d}".format(i) + ".jpg"),
-                    boxes = self.joint_prop_bboxes[i].unsqueeze(0)
-                )
+            if nise_cfg.DEBUG.VISUALIZE:
+                p = PurePosixPath(self.img_path)
+                out_dir = os.path.join(nise_cfg.PATH.JOINTS_DIR + '_flowproped_' + str(self.task) + (
+                    '_gt' if nise_cfg.TEST.USE_GT_VALID_BOX else ''), p.parts[-2])
+                mkdir(out_dir)
+                num_people, num_joints, _ = self.new_joints.shape
+                for i in range(num_people):
+                    # debug_print('drawing flow proped', i, self.joint_prop_bboxes[i], indent = 1)
+                    joints_i = self.new_joints[i, ...]  # 16 x 2
+                    prev_joints_i = prev_frame_joints[i, ...].float()
+                    joints_to_draw_i = torch.stack([joints_i, prev_joints_i], 0)
+                    joint_visible = torch.ones([2, num_joints, 1])
+                    nise_batch_joints = torch.cat([joints_to_draw_i, joint_visible], 2)  # 16 x 3
+                    
+                    save_single_whole_image_with_joints(
+                        im_to_torch(self.original_img).unsqueeze(0),
+                        nise_batch_joints,
+                        os.path.join(out_dir, self.img_name + "_id_" + "{:02d}".format(i) + ".jpg"),
+                        boxes = self.joint_prop_bboxes[i].unsqueeze(0)
+                    )
         debug_print('Proped', self.joint_prop_bboxes.shape[0], 'boxes', indent = 1)
         self.joints_proped = True
     
@@ -372,16 +372,17 @@ class FrameItem:
             self.joints[i, :, :] = to_torch(preds).squeeze()
             self.joints_score[i, :] = to_torch(max_val).squeeze() * human_score
             
-            # vis
-            # debug_print(i, indent = 1)
-            img_with_joints = get_batch_image_with_joints(torch_img, to_torch(preds), torch.ones(1, 15, 1))
-            resized_human_np_with_joints = cv2.warpAffine(
-                img_with_joints,  # hw3
-                trans,
-                (int(simple_cfg.MODEL.IMAGE_SIZE[0]), int(simple_cfg.MODEL.IMAGE_SIZE[1])),
-                flags = cv2.INTER_LINEAR)
-            cv2.imwrite(os.path.join(out_dir, p.stem + "_" + "{:02d}".format(i) + '.jpg'),
-                        resized_human_np_with_joints)
+            if nise_cfg.DEBUG.VISUALIZE:
+                # vis
+                # debug_print(i, indent = 1)
+                img_with_joints = get_batch_image_with_joints(torch_img, to_torch(preds), torch.ones(1, 15, 1))
+                resized_human_np_with_joints = cv2.warpAffine(
+                    img_with_joints,  # hw3
+                    trans,
+                    (int(simple_cfg.MODEL.IMAGE_SIZE[0]), int(simple_cfg.MODEL.IMAGE_SIZE[1])),
+                    flags = cv2.INTER_LINEAR)
+                cv2.imwrite(os.path.join(out_dir, p.stem + "_" + "{:02d}".format(i) + '.jpg'),
+                            resized_human_np_with_joints)
         self.joints = expand_vector_to_tensor(self.joints, 3)
         
         self.joints_detected = True

@@ -17,9 +17,9 @@ def nise_pred_task_1_debug(gt_anno_dir, json_save_dir, vis_dataset, hunam_detect
     mkdir(json_save_dir)
     for i, file_name in enumerate(anno_file_names):
         debug_print(i, file_name)
-        if not '16662' in file_name:
-            continue
-        # if i > 5: continue
+        # if not '16662' in file_name:
+        #     continue
+        if i <= 5: continue
         p = PurePosixPath(file_name)
         json_path = os.path.join(json_save_dir, p.parts[-1])
         with open(file_name, 'r') as f:
@@ -65,7 +65,7 @@ def nise_pred_task_3_debug(gt_anno_dir, json_save_dir, vis_dataset, hunam_detect
         print(i, file_name)
         # if not '16662' in file_name:
         #     continue
-        # if i > 5: continue
+        if i <= 33: continue
         p = PurePosixPath(file_name)
         json_path = os.path.join(json_save_dir, p.parts[-1])
         with open(file_name, 'r') as f:

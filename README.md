@@ -7,18 +7,47 @@ Milestones
 # TODOLIST
 
 + [x] 接口问题
+
 + [x] 固定 gt 的 bbox，est joints（2018-12-03）
+
 + [ ] ~~找到 single frame 的问题，查看输出的图像。~~
+
 + [x] 2018-12-06：joint 最终分数=human detection*joint
+
 + [ ] 训练之前 freeze 一下
+
 + [x] flow 用 pad 达到 32的倍数
+
   + [ ] （其他的方式）
+
 + [ ] joint prop 的 score 怎么确定
 + [ ] 达到pt17的state-of-the-art
 + [ ] 使用data parallel 加速，现在太慢了。
   + [ ] detect可以parallel
   + [ ] flow可以？
   + [ ] 
+
++ [ ] 达到pt17的state-of-the-art
+
++ [ ] 使用data parallel 加速，现在太慢了。
+
+  + [ ] 2018-12-11：看了时间之后，发现并没有什么可以减少时间的？可能在 jointprop 和 est的时候整个batch 一起走。
+
+  + [ ] 	Detected 8 boxes
+    	人检测…… 1.136 s.
+    	生成flow…… 0.121 s.
+    	Proped 5 boxes
+    	Joint prop…… 0.512 s.
+    	Before NMS: 13 people. 	After NMS: 8 people
+    	NMS…… 0.000 s.
+    	关节预测…… 0.483 s.
+    	ID分配…… 0.001 s
+
+  + [ ] detect可以parallel？好像不行。
+
+  + [ ] flow可以？flow 的 model 可以接受 batch 的输入，大小为 $bs\times channels\times 2\times h\times w$。但如果要这一步并行化，就要加载进所有的图片？或者也可以设置一个生成 flow 的 batchsize， 毕竟这个是 root。$2$指的是 flow 需要两张图片，如果要并行就需要$[[1,2],[2,3],[3,4]]$。
+
++ [x] 宁可花多一点时间去做正确，也不要回头来 debug。
 
 # experiment
 
@@ -38,12 +67,163 @@ $ diff my_e2e_mask_rcnn_X-101-64x4d-FPN_1x.yaml ../Detectron.pytorch/tron_config
 
 
 
+## 2018-12-11
+
+debug flow 中。
+
+只打印 flow 的box 不够 debug， 还需要什么吗？我想要检测 prop 出来 box 
+
+- [ ] 是否实现正确。打印原来的 joint， 新的 joint，新的 box，如何？
+- [ ] 是否能够nms 除去
+
+### 加入了16662的 prop
+
+16662的现象：因为本身人物比较清晰，prop 出来更多的是 false positive。现在想多做实验看是不是 fp 太多的问题，用提高 thres 来减少 prop。
+
+prop 不筛
+
+```
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 14.2 & 15.8 & 11.7 &  7.6 & 13.4 &  8.3 &  7.2 & 11.4 \\
+```
+
+prop 时候用0.5筛掉
+
+```
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 27.3 & 34.0 & 25.5 & 18.7 & 26.0 & 25.3 & 25.7 & 26.1 \\
+```
+
+prop-0.9
+
+```
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 24.9 & 32.9 & 22.9 & 14.8 & 22.2 & 20.2 & 18.9 & 22.6 \\
+```
+
+prop 1-怎么比本身还高了？
+
+```
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 70.3 & 79.7 & 56.9 & 48.2 & 56.9 & 67.5 & 50.6 & 62.0 \\
+```
+
+et1
+
+```
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 82.3 & 77.3 & 61.6 & 42.6 & 63.6 & 48.4 & 36.4 & 60.5 \\
+```
+
+原因找到了：task1用的是`unified_bbox`，而 task2用的是`id_bboxes`，因为`id_bboxes`相当于 filter（以 humanthres） 过后的结果，所以可能 tp 和 fp 都减小了。
+
+
+
+现在将 id 改成 unified，因为此时根本不要过滤。
+
+et1（新跑的，怎么又上去了？）但至少和 prop1一样了。
+
+```
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 69.2 & 82.3 & 60.4 & 51.0 & 61.7 & 76.6 & 52.4 & 65.1 \\
+```
+
+prop 1-怎么又比本身还高了？
+
+```
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 69.2 & 82.3 & 60.4 & 51.0 & 61.7 & 76.6 & 52.4 & 65.1 \\
+```
+
+prop-0.9
+
+```
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 67.9 & 76.7 & 54.3 & 50.3 & 59.5 & 70.2 & 45.3 & 61.1 \\
+```
+
+prop 0.5
+
+```
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 67.2 & 75.8 & 53.7 & 49.6 & 59.2 & 70.6 & 45.6 & 60.7 \\
+```
+
+prop 0
+
+```
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 66.7 & 75.3 & 53.5 & 49.2 & 58.6 & 69.8 & 44.5 & 60.1 \\
+```
+
+
+
+### 前六个
+
+et1和2018-12-10一样
+
+prop thres=1，和 et1一样。很好。
+
+```
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 82.3 & 77.3 & 61.6 & 42.6 & 63.6 & 48.4 & 36.4 & 60.5 \\
+```
+
+### 全部的
+
+task 1& propthres=1
+
+```
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 79.8 & 78.5 & 70.7 & 59.2 & 70.1 & 65.5 & 58.3 & 69.6 \\
+```
+
+
+
 ## 2018-12-10
 
 分段进行debug（如果有bug）
 
-- [ ] 打印flow的joint和box
+- [x] 打印flow的joint和box
 - [ ] 我觉得flow出来的box分数不应该直接用原生的。这样的话，如果一个错误的box分数很高，再也没有方法把他去除掉。它就会一直被prop下去。
+
+
+
+![image-20181210181037151](assets/image-20181210181037151.png)
+
+这个关系到我对过滤的理解。我一开始觉得 detection 和 prop 等价，但实际上还是应该想 prop 只是用来补足 detection 的不足。detection 如果过滤了，fp 和 tp 都可能减少；但是 prop 补足的应该只能是那些概率高的。
+
+【task 1 - 前六】如果 detect 之后立马 filter 并且在 prop 的时候 filter
+
+```
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 85.3 & 79.8 & 64.0 & 44.6 & 65.3 & 50.1 & 37.8 & 62.6 \\
+```
+
+如果只在 detect 时候 filter（task-1）
+
+```
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 82.3 & 77.3 & 61.6 & 42.6 & 63.6 & 48.4 & 36.4 & 60.5 \\
+```
+
+只在prop 的时候过滤
+
+```
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 82.3 & 77.3 & 61.6 & 42.6 & 63.6 & 48.4 & 36.4 & 60.5 \\
+```
+
+如果都不开
+
+```
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 82.3 & 77.3 & 61.6 & 42.6 & 63.6 & 48.4 & 36.4 & 60.5 \\
+```
+
+没用？
+
+而且不是吧为什么就成了60.5，之前还是59.8（在12-6），哪里改了？
 
 ## 2018-12-06
 
@@ -104,6 +284,8 @@ $$
 原因不明，可能是因为flow太奇怪了？
 
 不是，是因为有的box其实prob不高也拿去predict了，挨着边缘而joint预测的结果在圈外，所以joint就会负数，那么prop的时候其实有问题。之前没有意识到这个，因为tensor可以用负数索引。
+
+解决。
 
 ## 2018-12-04
 
