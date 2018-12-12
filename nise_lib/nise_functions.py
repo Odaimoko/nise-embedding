@@ -759,21 +759,22 @@ def get_joints_from_annorects(annorects):
 
 
 # DECORATORS
+
 def log_time(*text, record = None):
     def real_deco(func):
         @wraps(func)
         def impl(*args, **kw):
-            start = time.clock()
-            func(*args, **kw)
-            end = time.clock()
             r = print if not record else record  # 如果没有record，默认print
             t = (func.__name__,) if not text else text
-            # print(r, t)
-            r(*t, "花费时间", end - start, "秒")
-        
+            start = time.time()
+            func(*args, **kw)
+            end = time.time()
+            r(*t, '%.3f s.' % (end - start, ))
+            # r(' Start time: %.3f s. End time: %.3f s'%(start, end))
         return impl
     
     return real_deco
+
 
 if __name__ == '__main__':
     # test oks distance

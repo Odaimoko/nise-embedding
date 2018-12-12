@@ -17,9 +17,9 @@ def nise_pred_task_1_debug(gt_anno_dir, json_save_dir, vis_dataset, hunam_detect
     mkdir(json_save_dir)
     for i, file_name in enumerate(anno_file_names):
         debug_print(i, file_name)
-        # if not '14102' in file_name:
+        # if not '16662' in file_name:
         #     continue
-        # if i <=5: continue
+        if i <= 5: continue
         p = PurePosixPath(file_name)
         json_path = os.path.join(json_save_dir, p.parts[-1])
         with open(file_name, 'r') as f:
@@ -43,14 +43,16 @@ def nise_pred_task_1_debug(gt_anno_dir, json_save_dir, vis_dataset, hunam_detect
             fi.detect_human(hunam_detector, gt_joints)
             fi.unify_bbox()
             fi.est_joints(joint_estimator)
-            fi.assign_id(Q)
-            
-            fi.visualize(dataset = vis_dataset)
+
+            if nise_cfg.DEBUG.VISUALIZE:
+                fi.assign_id_task_1_2(Q)
+                fi.visualize(dataset = vis_dataset)
             pred_frames.append(fi.to_dict())
             Q.append(fi)
         
         with open(json_path, 'w') as f:
             json.dump({'annolist': pred_frames}, f)
+            debug_print('json saved:', json_path)
 
 
 def nise_pred_task_3_debug(gt_anno_dir, json_save_dir, vis_dataset, hunam_detector, joint_estimator, flow_model):
@@ -61,41 +63,44 @@ def nise_pred_task_3_debug(gt_anno_dir, json_save_dir, vis_dataset, hunam_detect
     mkdir(json_save_dir)
     for i, file_name in enumerate(anno_file_names):
         print(i, file_name)
-        if not '001735_mpii' in file_name:  # the first images contains no people, cant deal with this now so ignore this.
-            continue
-        # if i > 3: continue
+        # if not '16662' in file_name:
+        #     continue
+        if i <= 33: continue
         p = PurePosixPath(file_name)
         json_path = os.path.join(json_save_dir, p.parts[-1])
         with open(file_name, 'r') as f:
             gt = json.load(f)['annolist']
         pred_frames = []
         Q = deque(maxlen = nise_cfg.ALG._DEQUE_CAPACITY)
-        for i, frame in enumerate(gt):
+        for j, frame in enumerate(gt):
             # frame dict_keys(['image', 'annorect', 'imgnum', 'is_labeled', 'ignore_regions'])
             img_file_path = frame['image'][0]['name']
             img_file_path = os.path.join(nise_cfg.PATH.POSETRACK_ROOT, img_file_path)
-            debug_print(img_file_path)
-            if i == 0:  # first frame doesnt have flow, joint prop
+            debug_print(j,img_file_path, indent = 1)
+            if j == 0:  # first frame doesnt have flow, joint prop
                 fi = FrameItem(img_file_path, is_first = True)
                 fi.detect_human(hunam_detector)
                 fi.unify_bbox()
                 fi.est_joints(joint_estimator)
-                fi.assign_id(Q)
-                fi.visualize(dataset = vis_dataset)
+                fi.assign_id_task_1_2(Q)
+                if nise_cfg.DEBUG.VISUALIZE:
+                    fi.visualize(dataset = vis_dataset)
             else:
                 fi = FrameItem(img_file_path)
                 fi.detect_human(hunam_detector)
-                fi.gen_flow(flow_model, Q[-1].bgr_img)
+                fi.gen_flow(flow_model, Q[-1].flow_img)
                 fi.joint_prop(Q)
                 fi.unify_bbox()
                 fi.est_joints(joint_estimator)
-                fi.assign_id(Q, get_joints_oks_mtx)
-                fi.visualize(vis_dataset)
+                fi.assign_id_task_1_2(Q, get_joints_oks_mtx)
+                if nise_cfg.DEBUG.VISUALIZE:
+                    fi.visualize(vis_dataset)
             pred_frames.append(fi.to_dict())
             Q.append(fi)
         
         with open(json_path, 'w') as f:
             json.dump({'annolist': pred_frames}, f)
+            debug_print('json saved:', json_path)
 
 
 def nise_pred_task_3(gt_anno_dir, json_save_dir, vis_dataset, hunam_detector, joint_estimator, flow_model):
@@ -121,7 +126,7 @@ def nise_pred_task_3(gt_anno_dir, json_save_dir, vis_dataset, hunam_detector, jo
                 fi.detect_human(hunam_detector)
                 fi.unify_bbox()
                 fi.est_joints(joint_estimator)
-                fi.assign_id(Q)
+                fi.assign_id_task_1_2(Q)
                 fi.visualize(dataset = vis_dataset)
             else:
                 fi = FrameItem(img_file_path)
@@ -130,7 +135,7 @@ def nise_pred_task_3(gt_anno_dir, json_save_dir, vis_dataset, hunam_detector, jo
                 fi.joint_prop(Q)
                 fi.unify_bbox()
                 fi.est_joints(joint_estimator)
-                fi.assign_id(Q, get_joints_oks_mtx)
+                fi.assign_id_task_1_2(Q, get_joints_oks_mtx)
                 fi.visualize(vis_dataset)
             pred_frames.append(fi.to_dict())
             Q.append(fi)
