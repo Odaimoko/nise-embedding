@@ -61,7 +61,8 @@ elif nise_args.nise_task == '2':
     
     nise_pred_task_3_debug(dataset_path,
                            os.path.join(nise_cfg.PATH.JSON_SAVE_DIR,
-                                        PurePosixPath(dataset_path).name + '_pred_task_' + nise_args.nise_task),
+                                        PurePosixPath(dataset_path).name + '_pred_task_' + nise_args.nise_task)
+                           + '_propthres_' + str(nise_cfg.ALG._PROP_HUMAN_THRES),
                            human_det_dataset,
                            maskRCNN,
                            simple_joint_est_model, flow_model)
