@@ -6,17 +6,23 @@
 
 import visdom
 from pathlib import PurePosixPath
+import pprint
+
 # local packages
 import nise_lib._init_paths
 from flownet_utils import tools
+from nise_lib.nise_config import nise_cfg,nise_logger
 from nise_lib.nise_functions import *
 from nise_lib.nise_debugging_func import *
 from nise_lib.core import *
 from tron_lib.core.config import cfg as tron_cfg
 from simple_lib.core.config import config as simple_cfg
 
-# viz = visdom.Visdom(env = 'run-with-flownet')
+pp = pprint.PrettyPrinter(indent = 2)
+debug_print(pp.pformat(nise_cfg))
 
+
+# viz = visdom.Visdom(env = 'run-with-flownet')
 # ─── FROM FLOWNET 2.0 ───────────────────────────────────────────────────────────
 if nise_cfg.DEBUG.load_flow_model:
     parser = argparse.ArgumentParser()
@@ -37,32 +43,24 @@ if nise_cfg.DEBUG.load_human_det_model:
     maskRCNN, human_det_dataset = load_human_detect_model(human_detect_args, tron_cfg)
     # maskRCNN = nn.DataParallel(maskRCNN)
 
-nise_args = get_nise_arg_parser()
-setattr(nise_args, 'simple_model_file', simple_args.simple_model_file)
-if nise_args.nise_mode == 'valid':
-    dataset_path = nise_cfg.PATH.GT_VAL_ANNOTATION_DIR
-elif nise_args.nise_mode == 'train':
-    dataset_path = nise_cfg.PATH.GT_TRAIN_ANNOTATION_DIR
-
-nise_cfg.PATH.IMAGES_OUT_DIR += nise_args.nise_mode
-nise_cfg.PATH.JOINTS_DIR += nise_args.nise_mode
 make_nise_dirs()
 
-if nise_args.nise_task == '1':
+if nise_cfg.TEST.MODE == 'valid':
+    dataset_path = nise_cfg.PATH.GT_VAL_ANNOTATION_DIR
+elif nise_cfg.TEST.MODE == 'train':
+    dataset_path = nise_cfg.PATH.GT_TRAIN_ANNOTATION_DIR
+
+if nise_cfg.TEST.TASK == 1:
     
     nise_pred_task_1_debug(dataset_path,
-                           os.path.join(nise_cfg.PATH.JSON_SAVE_DIR,
-                                        PurePosixPath(dataset_path).name + '_pred_task_' + nise_args.nise_task +
-                                        ('_gt' if nise_cfg.TEST.USE_GT_VALID_BOX else '')),
+                           nise_cfg.PATH.JSON_SAVE_DIR,
                            human_det_dataset,
                            maskRCNN,
                            simple_joint_est_model, flow_model)
-elif nise_args.nise_task == '2':
+elif nise_cfg.TEST.TASK == 2:
     
     nise_pred_task_3_debug(dataset_path,
-                           os.path.join(nise_cfg.PATH.JSON_SAVE_DIR,
-                                        PurePosixPath(dataset_path).name + '_pred_task_' + nise_args.nise_task)
-                           + '_propthres_' + str(nise_cfg.ALG._PROP_HUMAN_THRES),
+                           nise_cfg.PATH.JSON_SAVE_DIR,
                            human_det_dataset,
                            maskRCNN,
                            simple_joint_est_model, flow_model)

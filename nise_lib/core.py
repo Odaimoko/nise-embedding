@@ -4,10 +4,23 @@ import torch.backends.cudnn as cudnn
 
 from nise_lib.nise_functions import *
 from nise_lib.nise_debugging_func import *
-from nise_lib.nise_config import cfg as nise_cfg
 import json
 from pathlib import PurePosixPath
 from nise_lib.frameitem import FrameItem
+
+from nise_lib.nise_config import nise_cfg
+
+
+def is_skip_video(nise_cfg, i, file_name):
+    s = True
+    for fn in nise_cfg.TEST.ONLY_TEST:
+        if fn in file_name:
+            s = False
+            break
+    if s == True:
+        if i >= nise_cfg.TEST.FROM or i < nise_cfg.TEST.TO:
+            s = False
+    return s
 
 
 def nise_pred_task_1_debug(gt_anno_dir, json_save_dir, vis_dataset, hunam_detector, joint_estimator, flow_model):
@@ -16,10 +29,9 @@ def nise_pred_task_1_debug(gt_anno_dir, json_save_dir, vis_dataset, hunam_detect
     anno_file_names = sorted(anno_file_names)
     mkdir(json_save_dir)
     for i, file_name in enumerate(anno_file_names):
+        
         debug_print(i, file_name)
-        # if not '16662' in file_name:
-        #     continue
-        if i <= 5: continue
+        if is_skip_video(nise_cfg, i, file_name): continue
         p = PurePosixPath(file_name)
         json_path = os.path.join(json_save_dir, p.parts[-1])
         with open(file_name, 'r') as f:
@@ -43,7 +55,7 @@ def nise_pred_task_1_debug(gt_anno_dir, json_save_dir, vis_dataset, hunam_detect
             fi.detect_human(hunam_detector, gt_joints)
             fi.unify_bbox()
             fi.est_joints(joint_estimator)
-
+            
             if nise_cfg.DEBUG.VISUALIZE:
                 fi.assign_id_task_1_2(Q)
                 fi.visualize(dataset = vis_dataset)
@@ -62,10 +74,9 @@ def nise_pred_task_3_debug(gt_anno_dir, json_save_dir, vis_dataset, hunam_detect
     anno_file_names = sorted(anno_file_names)
     mkdir(json_save_dir)
     for i, file_name in enumerate(anno_file_names):
-        print(i, file_name)
-        # if not '16662' in file_name:
-        #     continue
-        if i <= 33: continue
+        debug_print(i, file_name)
+        if is_skip_video(nise_cfg, i, file_name): continue
+
         p = PurePosixPath(file_name)
         json_path = os.path.join(json_save_dir, p.parts[-1])
         with open(file_name, 'r') as f:
@@ -76,7 +87,7 @@ def nise_pred_task_3_debug(gt_anno_dir, json_save_dir, vis_dataset, hunam_detect
             # frame dict_keys(['image', 'annorect', 'imgnum', 'is_labeled', 'ignore_regions'])
             img_file_path = frame['image'][0]['name']
             img_file_path = os.path.join(nise_cfg.PATH.POSETRACK_ROOT, img_file_path)
-            debug_print(j,img_file_path, indent = 1)
+            debug_print(j, img_file_path, indent = 1)
             if j == 0:  # first frame doesnt have flow, joint prop
                 fi = FrameItem(img_file_path, is_first = True)
                 fi.detect_human(hunam_detector)
