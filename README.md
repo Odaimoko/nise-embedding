@@ -21,11 +21,6 @@ Milestones
   + [ ] （其他的方式）
 
 + [ ] joint prop 的 score 怎么确定
-+ [ ] 达到pt17的state-of-the-art
-+ [ ] 使用data parallel 加速，现在太慢了。
-  + [ ] detect可以parallel
-  + [ ] flow可以？
-  + [ ] 
 
 + [ ] 达到pt17的state-of-the-art
 
@@ -33,15 +28,15 @@ Milestones
 
   + [ ] 2018-12-11：看了时间之后，发现并没有什么可以减少时间的？可能在 jointprop 和 est的时候整个batch 一起走。
 
-  + [ ] 	Detected 8 boxes
-    	人检测…… 1.136 s.
-    	生成flow…… 0.121 s.
-    	Proped 5 boxes
-    	Joint prop…… 0.512 s.
-    	Before NMS: 13 people. 	After NMS: 8 people
-    	NMS…… 0.000 s.
-    	关节预测…… 0.483 s.
-    	ID分配…… 0.001 s
+  + [ ] Detected 8 boxes.发现主要是存储图像花时间了。
+        人检测…… 1.136 s.
+      	 	生成flow…… 0.121 s.
+      	 	Proped 5 boxes
+      	 	Joint prop…… 0.512 s.
+      	 	Before NMS: 13 people. 	After NMS: 8 people
+      	 	NMS…… 0.000 s.
+      	 	关节预测…… 0.483 s.
+      	 	ID分配…… 0.001 s
 
   + [ ] detect可以parallel？好像不行。
 
@@ -67,6 +62,14 @@ $ diff my_e2e_mask_rcnn_X-101-64x4d-FPN_1x.yaml ../Detectron.pytorch/tron_config
 
 
 
+## 2018-12-12
+
+config 开始制作。
+
+思路：直接使用 py 作为配置文件。现在有三个东西，一是`nise_lib/nise_config`，二是命令行里的`args`，三是这个`配置文件`。
+
+定义优先度： $args>py>nise\_cfg​$。但似乎可以融合——args 和 py。
+
 ## 2018-12-11
 
 debug flow 中。
@@ -74,7 +77,7 @@ debug flow 中。
 只打印 flow 的box 不够 debug， 还需要什么吗？我想要检测 prop 出来 box 
 
 - [ ] 是否实现正确。打印原来的 joint， 新的 joint，新的 box，如何？
-- [ ] 是否能够nms 除去
+- [ ] 是否能够 nms 除去
 
 ### 加入了16662的 prop
 
