@@ -68,7 +68,9 @@ config 开始制作。
 
 思路：直接使用 py 作为配置文件。现在有三个东西，一是`nise_lib/nise_config`，二是命令行里的`args`，三是这个`配置文件`。
 
-定义优先度： $args>py>nise\_cfg​$。但似乎可以融合——args 和 py。
+定义优先度： args>py>nise\_cfg。但似乎可以融合——args 和 py。唯一传入 args 的是py 文件的路径。
+
+我对param 和 cfg 的区别： param 没有默认值，cfg 有。
 
 ## 2018-12-11
 

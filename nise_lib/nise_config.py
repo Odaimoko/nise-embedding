@@ -1,31 +1,119 @@
 import argparse
+import copy
 import os
 import os.path
-import sys
+import time
+from pathlib import Path
 
 import numpy as np
+import yaml
+from easydict import EasyDict as edict
+
+from plogs.plogs import get_logger
 
 
 def get_nise_arg_parser():
-    parser = argparse.ArgumentParser(description = 'PyTorch CPN Training')
-    parser.add_argument('-j', '--workers', default = 4, type = int, metavar = 'N',
-                        help = 'number of data loading workers (default: 12)')
-    parser.add_argument('-g', '--num_gpus', default = 1, type = int, metavar = 'N',
-                        help = 'number of GPU to use (default: 1)')
-    parser.add_argument('--epochs', default = 32, type = int, metavar = 'N',
-                        help = 'number of total epochs to run (default: 32)')
-    parser.add_argument('--start-epoch', default = 0, type = int, metavar = 'N',
-                        help = 'manual epoch number (useful on restarts)')
-    parser.add_argument('-c', '--checkpoint', default = 'checkpoint', type = str, metavar = 'PATH',
-                        help = 'path to save checkpoint (default: checkpoint)')
-    parser.add_argument('--resume', default = '', type = str, metavar = 'PATH',
-                        help = 'path to latest checkpoint')
-    return parser
+    parser = argparse.ArgumentParser(description = 'NISE PT')
+    # parser.add_argument('-j', '--workers', default = 4, type = int, metavar = 'N',
+    #                     help = 'number of data loading workers (default: 12)')
+    # parser.add_argument('-g', '--num_gpus', default = 1, type = int, metavar = 'N',
+    #                     help = 'number of GPU to use (default: 1)')
+    
+    parser.add_argument('--nise_config', type = str, metavar = 'nise config file',
+                        help = 'path to yaml format config file')
+    parser.add_argument('--simple-model-file', type = str, )
+    args, rest = parser.parse_known_args()
+    return args
 
 
-def add_pypath(path):
-    if path not in sys.path:
-        sys.path.insert(0, path)
+def update_config(_config, config_file):
+    if config_file is None: return
+    
+    def update_dict(_config, k, v):
+        
+        if isinstance(v, dict):
+            for k1, v1 in v.items():
+                update_dict(_config[k], k1, v1)
+        else:
+            _config[k] = v
+    
+    with open(config_file) as f:
+        exp_config = edict(yaml.load(f))
+        for k, v in exp_config.items():
+            update_dict(_config, k, v)
+            # if k in _config:
+            #     else:
+            # else:
+            #     raise ValueError("{} not exist in _config.py".format(k))
+
+
+def get_edcfg_from_nisecfg(nise_cfg):
+    '''
+
+    :param nise_cfg: 2-level class
+    :return:
+    '''
+    new_cfg = copy.copy(nise_cfg)
+    new_cfg = new_cfg.__dict__
+    for k, v in new_cfg.items():
+        new_cfg[k] = edict(v.__dict__)
+    new_cfg = edict(new_cfg)
+    return new_cfg
+
+
+def set_path_from_nise_cfg(nise_cfg):
+    suffix = '_'.join([
+        nise_cfg.TEST.MODE,
+        'task',
+        str(nise_cfg.TEST.TASK),
+        'gt' if nise_cfg.TEST.USE_GT_VALID_BOX else '',
+        'propthres',
+        str(nise_cfg.ALG.PROP_HUMAN_THRES),
+        # '_'.join(['RANGE',
+        #           str(nise_cfg.TEST.FROM),
+        #           str(nise_cfg.TEST.TO)] if not nise_cfg.TEST.ONLY_TEST else nise_cfg.TEST.ONLY_TEST)
+    ])
+    nise_cfg.PATH.JSON_SAVE_DIR = os.path.join(nise_cfg.PATH.JSON_SAVE_DIR, suffix)
+    nise_cfg.PATH.JOINTS_DIR = os.path.join(nise_cfg.PATH.JOINTS_DIR, suffix)
+    nise_cfg.PATH.IMAGES_OUT_DIR = os.path.join(nise_cfg.PATH.IMAGES_OUT_DIR, suffix)
+    return suffix
+
+
+def create_nise_logger(nise_cfg, cfg_name, phase = 'train'):
+    root_output_dir = Path(nise_cfg.PATH.LOG_SAVE_DIR)
+    # set up logger
+    if not root_output_dir.exists():
+        print('=> creating {}'.format(root_output_dir))
+        root_output_dir.mkdir()
+    
+    model = '_'.join([
+        nise_cfg.TEST.MODE,
+        'task',
+        str(nise_cfg.TEST.TASK),
+        'gt' if nise_cfg.TEST.USE_GT_VALID_BOX else '',
+        'propthres',
+        str(nise_cfg.ALG.PROP_HUMAN_THRES),
+        '_'.join(['RANGE',
+                  str(nise_cfg.TEST.FROM),
+                  str(nise_cfg.TEST.TO)] if not nise_cfg.TEST.ONLY_TEST else nise_cfg.TEST.ONLY_TEST),
+    ])
+    cfg_name = os.path.basename(cfg_name)
+    
+    final_output_dir = root_output_dir / model / cfg_name
+    
+    print('creating {}'.format(final_output_dir))
+    final_output_dir.mkdir(parents = True, exist_ok = True)
+    
+    time_str = time.strftime('%Y-%m-%d-%H-%M')
+    log_file = '{}_{}_{}.log'.format(cfg_name, time_str, phase)
+    ploger = get_logger()
+    ploger.config(to_file = True,
+                  file_location = str(final_output_dir) + '/',
+                  filename = log_file, show_levels = True,
+                  show_time = True)
+    ploger.format('[{level}] - {msg}')
+    
+    return ploger, str(final_output_dir)
 
 
 class NiseConfig:
@@ -38,9 +126,6 @@ class NiseConfig:
             self.weight_decay = .05
             # lr_gamma = 0.05
             # lr_dec_epoch = list(range(6, 40, 6))
-            
-            # tag loss weighted against heatmap loss, since heatmap's entries are less than 1
-            self.emb_tag_weight = 4
     
     class _DATA:
         def __init__(self):
@@ -84,12 +169,13 @@ class NiseConfig:
             self.VISUALIZE = False
     
     class _ALG:
+        
         def __init__(self):
             self._DEQUE_CAPACITY = 3
             self._OKS_MULTIPLIER = 1e4
             # only bbox score over this are recognized as human
             self._HUMAN_THRES = .5
-            self._PROP_HUMAN_THRES = .5
+            self.PROP_HUMAN_THRES = .5
             # only bbox area over this are recognized as human
             self._AREA_THRES = 32 * 32
             # only bbox ratio not over this are recognized as human
@@ -113,6 +199,7 @@ class NiseConfig:
             self.JOINTS_DIR = 'images_joint/'
             self.IMAGES_OUT_DIR = 'images_out/'
             self.JSON_SAVE_DIR = 'pred_json/'
+            self.LOG_SAVE_DIR = 'logs/'
             self.POSETRACK_ROOT = 'data/pt17/'
             self.GT_TRAIN_ANNOTATION_DIR = os.path.join(self.POSETRACK_ROOT, 'train_anno_json/')
             self.GT_VAL_ANNOTATION_DIR = os.path.join(self.POSETRACK_ROOT, 'valid_anno_json/')
@@ -145,3 +232,9 @@ class NiseConfig:
 
 
 cfg = NiseConfig()
+nise_cfg = get_edcfg_from_nisecfg(cfg)
+nise_args = get_nise_arg_parser()
+update_config(nise_cfg, nise_args.nise_config)
+
+suffix = set_path_from_nise_cfg(nise_cfg)
+nise_logger, _ = create_nise_logger(nise_cfg, suffix, 'valid')

@@ -1,0 +1,144 @@
+<html>
+    <head>
+        <title> Pretty Logs Python </title>
+        <link rel="stylesheet" href="./static/css/theme.css"/>
+        <link rel="stylesheet" href="./static/css/term.css"/>
+
+        <script rel="text/javascript" src="./static/js/type.js"></script>
+    </head>
+
+    <body>
+        <section class="demo">
+            <nav>
+                <ul>
+                    <li><a href="https://pypi.org/project/plogs/" target="_tab">Download</a></li>
+                    <li><a href="https://github.com/11/plogs" target="_tab">GitHub</a></li>
+                    <li><a href="#install">Install</a></li>
+                    <li><a href="https://github.com/11/plogs/blob/master/docs/docs.md" target="_tab">Documentation</a></li>
+                    <li><a href="#setup" >Setup</a></li>
+                    <li><a href="#examples">Examples</a></li>
+                </ul>
+            </nav>
+
+
+            <!-- terminal -->
+            <div class="cont">
+                <div id="term" class="term term-ready">
+                    <input class="term-input-hide" />
+                        <div class="term-bar">
+                            <div class="term-winctrl">
+                                <span class="term-btn close"></span>
+                                <span class="term-btn minimise"></span>
+                                <span class="term-btn maximise"></span>
+                            </div>
+                            <span class="term-title">Pretty Logs Demo</span>
+                            <span class="term-bar-spacer"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!--
+            <div class="like-n-follow">
+                <div class="love-btn">
+                    <a href="#">star</a>
+                </div>
+
+                <div class="love-btn">
+                    <a href="#">Follow @_dougrudolph</a>
+                </div>
+            </div>
+            -->
+
+            <div class="btn-container">
+                <a class="btn" href="https://pypi.org/project/plogs/" target="_tab">
+                    <span class="btn-text">Download plogs for python3 </span>
+                </a>
+            </div>
+
+        </section>
+
+        <section class="docs">
+            <div id="goals" class="desc">
+                <h3>Project Goals</h3>
+                <p>
+                    In the beginning, the goal of Pretty Logs was to create a colorful logging system designed for scalable projects.
+                    Later, my vision for Pretty Logs widened in scope to also include useful debugging tools that are found in
+                    JavaScript and aren't that readily available in Python.
+                    <br/>
+                    <br/>
+                    In the future, we anticipate better control to configure logging settings and a debugging log level where debug
+                    tools can only print to.
+                </p>
+            </div>
+
+            <div id="install" class="desc">
+                <h3>Installation</h3>
+                <p> The easiest way to install Pretty Logs is to install via pip. </p>
+                <pre><code><span class="no-select">$ </span>pip3 install -U plogs</code></pre>
+
+                <p>
+                    Is also possible to download and import Pretty Logs directly into your project. If you are you looking to do
+                    so, I recommend cloning the GitHub repository to ensure the plogs module hierarchy is kept the same.
+                </p>
+                <pre><code><span class="no-select">$ </span>git clone <u>https://github.com/11/plogs.git</u></code></pre>
+            </div>
+
+            <div id="setup" class="desc">
+                <h3>Setup</h3>
+                <p>
+                    Importing Pretty Logs into your project is quite simple. All that's required is to <b>import plogs</b> and
+                    instantiate an instance of <b>Logger</b>.
+                </p>
+                <pre><code>from plogs import Logger <br/>logging = Logger()</code></pre>
+                <p>
+                    It's recommend to do the following steps inside a <b>`__init__.py`</b> file at the root level of your project
+                    so Pretty Logs can be referenced throughout the entire application.
+            </div>
+
+            <div id="examples" class="desc">
+                <h3>Log with Colors</h3>
+                <p>
+                    Pretty Logs' main feature is color coding different logging levels and statues. The default logging levels are:
+                </p>
+                <br/>
+                <table>
+                    <tr>
+                        <td><code>logging.info</code></td>
+                        <td>gray</td>
+                    </tr>
+                    <tr>
+                        <td><code>logging.status</code></td>
+                        <td>bold</td>
+                    </tr>
+                    <tr>
+                        <td><code>logging.success</code></td>
+                        <td>green</td>
+                    </tr>
+                    <tr>
+                        <td><code>logging.warning</code></td>
+                        <td>orange</td>
+                    </tr>
+                    <tr>
+                        <td><code>logging.critical</code></td>
+                        <td>red</td>
+                    </tr>
+                </table>
+            </div>
+
+            <div id="" class="desc">
+                <h3>Log Tables</h3>
+                <p> Pretty Logs can print objects in a table and display the variables that each is holding. </p>
+                <pre><code>
+ex1 = Example(a=1, b=2)
+ex2 = Example(a='a', b='b')
+
+logging.table(ex1, ex2)
+                </code></pre>
+                <p> The output of these two objects would be: </p>
+
+                <pre><code>+ --------------- +<br/>|     |  a  |  b  |<br/>+ --- | --- | --- +<br/>| ex1 |  1  |  2  |<br>+ --- | --- | --- |<br/>| ex2 | 'a' | 'b' |<br/>+ --------------- +</code></pre>
+
+        </section>
+    </body>
+</html>

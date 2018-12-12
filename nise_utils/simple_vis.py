@@ -13,8 +13,8 @@ import math
 import numpy as np
 import torchvision
 import cv2
-from nise_lib.nise_config import cfg as nise_cfg
 
+from nise_lib.nise_config import  nise_cfg
 
 # from core.inference import get_max_preds
 

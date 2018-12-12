@@ -8,7 +8,7 @@ import cv2
 import time
 from nise_lib.nise_functions import *
 from nise_lib.nise_debugging_func import *
-from nise_lib.nise_config import cfg as nise_cfg
+
 from nise_utils.simple_vis import save_batch_image_with_joints, get_batch_image_with_joints, \
     save_single_whole_image_with_joints
 import tron_lib.utils.vis as vis_utils
@@ -17,6 +17,7 @@ from simple_lib.core.inference import get_final_preds
 from simple_lib.core.config import config as simple_cfg
 from nise_utils.transforms import get_affine_transform
 
+from nise_lib.nise_config import  nise_cfg
 
 class FrameItem:
     mkrs = Munkres()
@@ -173,7 +174,7 @@ class FrameItem:
         if not prev_frame_joints.numel() == 0:
             # if there  are joints to propagate
             if nise_cfg.ALG.JOINT_PROP_WITH_FILTERED_HUMAN:
-                prev_filtered_box, filtered_idx = prev_frame.get_filtered_bboxes(thres = nise_cfg.ALG._PROP_HUMAN_THRES)
+                prev_filtered_box, filtered_idx = prev_frame.get_filtered_bboxes(thres = nise_cfg.ALG.PROP_HUMAN_THRES)
                 if prev_filtered_box.numel() == 0:
                     set_empty_joint()
                     debug_print('Proped', 0, 'boxes', indent = 1)
@@ -247,8 +248,7 @@ class FrameItem:
             self.joint_prop_bboxes = expand_vector_to_tensor(self.joint_prop_bboxes)
             if nise_cfg.DEBUG.VISUALIZE:
                 p = PurePosixPath(self.img_path)
-                out_dir = os.path.join(nise_cfg.PATH.JOINTS_DIR + '_flowproped_' + str(self.task) + (
-                    '_gt' if nise_cfg.TEST.USE_GT_VALID_BOX else ''), p.parts[-2])
+                out_dir = os.path.join(nise_cfg.PATH.JOINTS_DIR + '_flowproped', p.parts[-2])
                 mkdir(out_dir)
                 num_people, num_joints, _ = self.new_joints.shape
                 for i in range(num_people):
@@ -296,7 +296,7 @@ class FrameItem:
             set_empty_unified_bbox()
         else:
             scores = all_bboxes[:, 4]  # vector
-            debug_print('Before NMS:', scores.shape[0], 'people. ', indent = 1, end = '\t')
+            debug_print('Before NMS:', scores.shape[0], 'people. ', indent = 1)
             scores = torch.stack([torch.zeros(num_people), scores], 1)  # num_people x 2
             cls_all_bboxes = torch.cat([torch.zeros(num_people, 4), all_bboxes[:, :4]], 1)  # num people x 8
             scores, boxes, cls_boxes = box_results_with_nms_and_limit(scores, cls_all_bboxes, 2)
@@ -308,7 +308,7 @@ class FrameItem:
             self.unified_bboxes = expand_vector_to_tensor(self.unified_bboxes)
             if self.unified_bboxes.numel() == 0:
                 set_empty_unified_bbox()
-            debug_print('After NMS:', self.unified_bboxes.shape[0], 'people')
+            debug_print('After NMS:', self.unified_bboxes.shape[0], 'people',indent = 1)
         self.bboxes_unified = True
     
     def get_filtered_bboxes(self, thres = nise_cfg.ALG._HUMAN_THRES):
@@ -327,8 +327,7 @@ class FrameItem:
         
         p = PurePosixPath(self.img_path)
         
-        out_dir = os.path.join(nise_cfg.PATH.JOINTS_DIR + '_task_' + str(self.task) + "_single" + (
-            '_gt' if nise_cfg.TEST.USE_GT_VALID_BOX else ''), p.parts[-2])
+        out_dir = os.path.join(nise_cfg.PATH.JOINTS_DIR + "_single", p.parts[-2])
         mkdir(out_dir)
         torch_img = im_to_torch(self.img_outside_flow).unsqueeze(0)
         if not self.bboxes_unified and not self.is_first:
@@ -418,7 +417,7 @@ class FrameItem:
                 prev_joints = self.new_joints.squeeze()  # squeeze is not for the first dim
                 # TODO:如果 propthres 和 human_thres 不一样，那么这里 id 的数量就是 humanthres 的，new_joints 就是 propthres 的。
                 prev_filtered_id_box, filtered_idx = filter_bbox_with_scores(prev_frame.id_bboxes,
-                                                                             thres = nise_cfg.ALG._PROP_HUMAN_THRES)
+                                                                             thres = nise_cfg.ALG.PROP_HUMAN_THRES)
                 prev_ids = prev_frame.human_ids[filtered_idx]
             else:
                 prev_boxes_filtered, prev_boxes_idx = prev_frame.get_filtered_bboxes()
@@ -502,8 +501,7 @@ class FrameItem:
         class_boxes[1] = self.id_bboxes
         training_start_time = time.strftime("%H-%M-%S", time.localtime())
         p = PurePosixPath(self.img_path)
-        out_dir = os.path.join(nise_cfg.PATH.IMAGES_OUT_DIR + '_task_' + str(self.task) + (
-            '_gt' if nise_cfg.TEST.USE_GT_VALID_BOX else ''), p.parts[-2])
+        out_dir = os.path.join(nise_cfg.PATH.IMAGES_OUT_DIR , p.parts[-2])
         mkdir(out_dir)
         
         vis_utils.vis_one_image_for_pt(
@@ -530,8 +528,7 @@ class FrameItem:
         joints_to_show = self._resize_joints(joints_to_show)
         num_people, num_joints, _ = joints_to_show.shape
         
-        out_dir = os.path.join(nise_cfg.PATH.JOINTS_DIR + '_task_' + str(self.task) + (
-            '_gt' if nise_cfg.TEST.USE_GT_VALID_BOX else ''), p.parts[-2])
+        out_dir = os.path.join(nise_cfg.PATH.JOINTS_DIR , p.parts[-2])
         mkdir(out_dir)
         for i in range(num_people):
             joints_i = joints_to_show[i, ...]  # 16 x 2

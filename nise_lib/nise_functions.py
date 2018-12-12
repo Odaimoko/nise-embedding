@@ -5,11 +5,13 @@ import argparse
 import pathlib
 from functools import wraps
 from easydict import EasyDict as edict
+from nise_lib.nise_config import nise_cfg
+import time
 
 # local packages
 import nise_lib._init_paths
 from nise_lib.nise_debugging_func import *
-from nise_lib.nise_config import cfg as nise_cfg
+
 import flow_models
 import flow_losses
 import flow_datasets
@@ -18,6 +20,8 @@ from simple_lib.core.config import config as simple_cfg
 from simple_lib.core.config import update_config
 from simple_models.pose_resnet import get_pose_net
 import time
+from pathlib import PurePosixPath
+from nise_lib.nise_config import nise_cfg
 
 # ─── LOAD MODEL ─────────────────────────────────────────────────────────────────
 
@@ -29,39 +33,7 @@ import tron_lib.utils.net as net_utils
 import tron_lib.datasets.dummy_datasets as datasets
 
 
-def get_nise_arg_parser():
-    parser = argparse.ArgumentParser(description = 'NISE PT')
-    # parser.add_argument('-j', '--workers', default = 4, type = int, metavar = 'N',
-    #                     help = 'number of data loading workers (default: 12)')
-    # parser.add_argument('-g', '--num_gpus', default = 1, type = int, metavar = 'N',
-    #                     help = 'number of GPU to use (default: 1)')
-    
-    parser.add_argument('--nise_config', type = str, metavar = 'nise config file',
-                        help = 'path to yaml format config file')
-    parser.add_argument('--nise_mode', default = 'valid', type = str, metavar = 'STR',
-                        help = '[valid/train]')
-    parser.add_argument('--nise_task', default = '1', type = str, metavar = 'N',
-                        help = '[1/2/3]')
-    args, rest = parser.parse_known_args()
-    return args
 
-
-def get_path_from_nise_cfg(nise_cfg):
-    pass
-
-
-def get_edcfg_from_nisecfg(nise_cfg):
-    '''
-
-    :param nise_cfg: 2-level class
-    :return:
-    '''
-    new_cfg = nise_cfg.__dict__
-    
-    for k, v in new_cfg.items():
-        new_cfg[k] = v.__dict__
-    new_cfg = edict(new_cfg)
-    return new_cfg
 
 def human_detect_parse_args():
     """Parse input arguments"""
@@ -665,7 +637,7 @@ def log_time(*text, record = None):
     def real_deco(func):
         @wraps(func)
         def impl(*args, **kw):
-            r = print if not record else record  # 如果没有record，默认print
+            r = debug_print if not record else record  # 如果没有record，默认print
             t = (func.__name__,) if not text else text
             start = time.time()
             func(*args, **kw)
