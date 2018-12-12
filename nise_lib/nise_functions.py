@@ -1,8 +1,10 @@
 import os
+import sys
 import colorama
 import argparse
 import pathlib
 from functools import wraps
+from easydict import EasyDict as edict
 
 # local packages
 import nise_lib._init_paths
@@ -28,26 +30,38 @@ import tron_lib.datasets.dummy_datasets as datasets
 
 
 def get_nise_arg_parser():
-    parser = argparse.ArgumentParser(description = 'PyTorch CPN Training')
-    parser.add_argument('-j', '--workers', default = 4, type = int, metavar = 'N',
-                        help = 'number of data loading workers (default: 12)')
-    parser.add_argument('-g', '--num_gpus', default = 1, type = int, metavar = 'N',
-                        help = 'number of GPU to use (default: 1)')
-    parser.add_argument('--epochs', default = 32, type = int, metavar = 'N',
-                        help = 'number of total epochs to run (default: 32)')
-    parser.add_argument('--start-epoch', default = 0, type = int, metavar = 'N',
-                        help = 'manual epoch number (useful on restarts)')
-    parser.add_argument('-c', '--checkpoint', default = 'checkpoint', type = str, metavar = 'PATH',
-                        help = 'path to save checkpoint (default: checkpoint)')
-    parser.add_argument('--resume', default = '', type = str, metavar = 'PATH',
-                        help = 'path to latest checkpoint')
+    parser = argparse.ArgumentParser(description = 'NISE PT')
+    # parser.add_argument('-j', '--workers', default = 4, type = int, metavar = 'N',
+    #                     help = 'number of data loading workers (default: 12)')
+    # parser.add_argument('-g', '--num_gpus', default = 1, type = int, metavar = 'N',
+    #                     help = 'number of GPU to use (default: 1)')
+    
+    parser.add_argument('--nise_config', type = str, metavar = 'nise config file',
+                        help = 'path to yaml format config file')
     parser.add_argument('--nise_mode', default = 'valid', type = str, metavar = 'STR',
                         help = '[valid/train]')
     parser.add_argument('--nise_task', default = '1', type = str, metavar = 'N',
-                        help = '[1/2]')
+                        help = '[1/2/3]')
     args, rest = parser.parse_known_args()
     return args
 
+
+def get_path_from_nise_cfg(nise_cfg):
+    pass
+
+
+def get_edcfg_from_nisecfg(nise_cfg):
+    '''
+
+    :param nise_cfg: 2-level class
+    :return:
+    '''
+    new_cfg = nise_cfg.__dict__
+    
+    for k, v in new_cfg.items():
+        new_cfg[k] = v.__dict__
+    new_cfg = edict(new_cfg)
+    return new_cfg
 
 def human_detect_parse_args():
     """Parse input arguments"""
@@ -56,6 +70,7 @@ def human_detect_parse_args():
     parser.add_argument(
         '--dataset', dest = 'dataset', required = True,
         help = 'Dataset to use')
+    
     parser.add_argument(
         '--tron_cfg', dest = 'cfg_file', required = True,
         help = 'Config file for training (and optionally testing)')
@@ -66,62 +81,12 @@ def human_detect_parse_args():
         default = [], nargs = '+')
     
     parser.add_argument(
-        '--disp_interval',
-        help = 'Display training info every N iterations',
-        default = 20, type = int)
-    parser.add_argument(
         '--no_cuda', dest = 'cuda', help = 'Do not use CUDA device', action = 'store_false')
-    
-    # Optimization
-    # These options has the highest prioity and can overwrite the values in config file
-    # or values set by set_cfgs. `None` means do not overwrite.
-    parser.add_argument(
-        '--bs', dest = 'batch_size',
-        help = 'Explicitly specify to overwrite the value comed from cfg_file.',
-        type = int)
-    parser.add_argument(
-        '--nw', dest = 'num_workers',
-        help = 'Explicitly specify to overwrite number of workers to load data. Defaults to 4',
-        type = int)
-    parser.add_argument(
-        '--iter_size',
-        help = 'Update once every iter_size steps, as in Caffe.',
-        default = 1, type = int)
-    
-    parser.add_argument(
-        '--o', dest = 'optimizer', help = 'Training optimizer.',
-        default = None)
-    parser.add_argument(
-        '--lr', help = 'Base learning rate.',
-        default = None, type = float)
-    parser.add_argument(
-        '--lr_decay_gamma',
-        help = 'Learning rate decay rate.',
-        default = None, type = float)
-    
-    # Epoch
-    parser.add_argument(
-        '--start_step',
-        help = 'Starting step count for training epoch. 0-indexed.',
-        default = 0, type = int)
-    
-    # Resume training: requires same iterations per epoch
-    parser.add_argument(
-        '--resume',
-        help = 'resume to training on a checkpoint',
-        action = 'store_true')
-    
-    parser.add_argument(
-        '--no_save', help = 'do not save anything', action = 'store_true')
     
     parser.add_argument(
         '--load_ckpt', help = 'checkpoint path to load')
     parser.add_argument(
         '--load_detectron', help = 'path to the detectron weight pickle file')
-    
-    parser.add_argument(
-        '--use_tfboard', help = 'Use tensorflow tensorboard to log training info',
-        action = 'store_true')
     
     args, rest = parser.parse_known_args()
     return args
@@ -176,12 +141,6 @@ def load_human_detect_model(args, tron_cfg):
 
 
 def flow_init_parser_and_tools(parser, tools):
-    parser.add_argument('--start_epoch', type = int, default = 1)
-    parser.add_argument('--total_epochs', type = int, default = 10000)
-    parser.add_argument('--batch_size', '-b', type = int,
-                        default = 8, help = "Batch size")
-    parser.add_argument('--train_n_batches', type = int, default = -1,
-                        help = 'Number of min-batches per epoch. If < 0, it will be determined by training_dataloader')
     parser.add_argument('--crop_size', type = int, nargs = '+', default = [256, 256],
                         help = "Spatial dimension to crop training samples for training")
     parser.add_argument('--gradient_clip', type = float, default = None)
@@ -460,64 +419,6 @@ def pred_flow(two_images, model):
     return output
 
 
-# Backup
-# def inference(args, epoch, data_loader, model, offset=0):
-#
-#     model.eval()
-#
-#     if args.save_flow or args.render_validation:
-#         flow_folder = "{}/inference/{}.epoch-{}-flow-field".format(
-#             args.save, args.name.replace('/', '.'), epoch)
-#         if not os.path.exists(flow_folder):
-#             os.makedirs(flow_folder)
-#
-#     args.inference_n_batches = np.inf if args.inference_n_batches < 0 else args.inference_n_batches
-#
-#     progress = tqdm(data_loader, ncols=100, total=np.minimum(len(data_loader), args.inference_n_batches),
-#                     desc='Inferencing ',
-#                     leave=True, position=offset)
-#
-#     statistics = []
-#     total_loss = 0
-#     for batch_idx, (data, target) in enumerate(progress):
-#         if args.cuda:
-#             data, target = [d.cuda(async=True) for d in data], [
-#                 t.cuda(async=True) for t in target]
-#         # data[0] torch.Size([8, 3, 2, 384, 1024]) ，bs x channels x num_images, h, w
-#         # target torch.Size([8, 2, 384, 1024]) maybe offsets
-#         data, target = [Variable(d) for d in data], [
-#             Variable(t) for t in target]
-#
-#         # when ground-truth flows are not available for inference_dataset,
-#         # the targets are set to all zeros. thus, losses are actually L1 or L2 norms of compute optical flows,
-#         # depending on the type of loss norm passed in
-#         with torch.no_grad():
-#             # losses: list (2) output: torch.Size([bs, 2, 384, 1024])
-#             losses, output = model(data[0], target[0], inference=True)
-#
-#         losses = [torch.mean(loss_value) for loss_value in losses]
-#         loss_val = losses[0]  # Collect first loss for weight update
-#         total_loss += loss_val.item()
-#         loss_values = [v.item() for v in losses]
-#
-#         # gather loss_labels, direct return leads to recursion limit error as it looks for variables to gather'
-#         loss_labels = list(model.module.loss.loss_labels)
-#
-#         statistics.append(loss_values)
-#         # import IPython; IPython.embed()
-#         if args.save_flow or args.render_validation:
-#             for i in range(args.inference_batch_size):
-#                 _pflow = output[i].data.cpu().numpy().transpose(1, 2, 0)
-#                 flow_utils.writeFlow(join(flow_folder, '%06d.flo' % (batch_idx * args.inference_batch_size + i)),
-#                                      _pflow)
-#
-#     progress.close()
-#
-#     return
-def inference_simple():
-    pass
-
-
 # ─── CHECKPOINT UTIL ────────────────────────────────────────────────────────────
 
 
@@ -769,8 +670,9 @@ def log_time(*text, record = None):
             start = time.time()
             func(*args, **kw)
             end = time.time()
-            r(*t, '%.3f s.' % (end - start, ))
+            r(*t, '%.3f s.' % (end - start,))
             # r(' Start time: %.3f s. End time: %.3f s'%(start, end))
+        
         return impl
     
     return real_deco
