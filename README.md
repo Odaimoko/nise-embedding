@@ -1,5 +1,9 @@
 # nise-embedding
 
+Milestones
+
+- 2018-12-06: Surpass the state-of-the-art result of task 1, single frame multi-person pose estimation, in PoseTrack 2017. [link](#2018-12-06).
+
 # TODOLIST
 
 + [x] 接口问题
@@ -7,8 +11,14 @@
 + [ ] ~~找到 single frame 的问题，查看输出的图像。~~
 + [x] 2018-12-06：joint 最终分数=human detection*joint
 + [ ] 训练之前 freeze 一下
-+ [ ] flow 用 pad 达到 32的倍数（其他的方式）
++ [x] flow 用 pad 达到 32的倍数
+  + [ ] （其他的方式）
 + [ ] joint prop 的 score 怎么确定
++ [ ] 达到pt17的state-of-the-art
++ [ ] 使用data parallel 加速，现在太慢了。
+  + [ ] detect可以parallel
+  + [ ] flow可以？
+  + [ ] 
 
 # experiment
 
@@ -28,18 +38,12 @@ $ diff my_e2e_mask_rcnn_X-101-64x4d-FPN_1x.yaml ../Detectron.pytorch/tron_config
 
 
 
-Using Model from epoch 19, use it on pt17 validation for PT task 2 & 3 (multi-frame pose est)
+## 2018-12-10
 
-```
-& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
-& 12.6 & 11.8 &  7.1 &  4.1 &  7.7 &  3.8 &  1.8 &  7.4 \\
-```
+分段进行debug（如果有bug）
 
-
-
-
-
-
+- [ ] 打印flow的joint和box
+- [ ] 我觉得flow出来的box分数不应该直接用原生的。这样的话，如果一个错误的box分数很高，再也没有方法把他去除掉。它就会一直被prop下去。
 
 ## 2018-12-06
 
@@ -47,7 +51,7 @@ Debug：之前 predict joint 的时候有误。从formulation来说应该是
 $$
 P(Joint,Box|Image)=P(Box|Image)\cdot P(Joint|Box)
 $$
-而我用的只是P(Joint|Box)项，前面没用，所以百分比差了很多（大概是这个原因）。用前六个进行小测试，比[这里](#不使用 gtbox)高了7.7。
+而我用的只是$P(Joint|Box)$项，前面没用，所以百分比差了很多（大概是这个原因）。用前六个进行小测试，比[这里](#不使用 gtbox)高了7.7。
 
 ```
 & Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
@@ -65,7 +69,41 @@ $$
 
 ![image-20181206083501278](assets/image-20181206083501278.png)
 
+此时的 mota 数据，虽然毫无参考性。
 
+```
+& MOTA & MOTA & MOTA & MOTA & MOTA & MOTA & MOTA & MOTA & MOTP & Prec & Rec  \\
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total& Total& Total& Total\\
+&-108.2 &-100.2 &-164.7 &-191.7 &-128.3 &-160.1 &-214.3 &-149.5 & 83.1 & 26.8 & 83.6 \\
+```
+
+### 使用flow的思路
+
+由于flow的model需要宽和高都是64的倍数，之前使用的是resize到一个固定大小，不知道有没有效果。现在改为在右侧和下册pad 0，计算完flow之后只取原图大小的部分。原因在于joint的位置只可能在原图坐标范围内。
+
+现在的bug：joint prop的box会有很多有负数坐标。
+
+```JSON
+[-8.7352e+08, -9.2051e+08],
+[-4.0187e+08, -9.2051e+08],
+[-2.3431e+08,  5.2548e+08],
+[-5.8184e+08,  4.2619e+08],
+[-8.9214e+08, -8.6465e+08],
+[-8.7973e+08, -8.7706e+08],
+[-9.0455e+08, -8.5224e+08],
+[-9.2317e+08, -9.2051e+08],
+[-9.2317e+08, -8.9568e+08],
+[-9.2317e+08, -8.9568e+08],
+[ 2.6345e+07, -5.5436e+08],
+[-9.4799e+08, -9.2051e+08],
+[-8.5490e+08, -8.6465e+08],
+[-9.2317e+08, -9.2051e+08],
+[-1.5983e+08, -7.5295e+08]
+```
+
+原因不明，可能是因为flow太奇怪了？
+
+不是，是因为有的box其实prob不高也拿去predict了，挨着边缘而joint预测的结果在圈外，所以joint就会负数，那么prop的时候其实有问题。之前没有意识到这个，因为tensor可以用负数索引。
 
 ## 2018-12-04
 

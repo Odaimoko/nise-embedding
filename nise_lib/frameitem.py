@@ -92,6 +92,7 @@ class FrameItem:
         self.id_idx_in_unified = None
         
         self.human_ids = None
+        self.dict_info = {}
         
         # ─── FLAGS FOR CORRENT ORDER ─────────────────────────────────────
         self.human_detected = False
@@ -103,6 +104,7 @@ class FrameItem:
         
         self.NO_BBOXES = False
     
+    @log_time('\t人检测……')
     def detect_human(self, detector, gt_joints = None):
         '''
         """ - detect person: do we use all the results? - """
@@ -132,8 +134,10 @@ class FrameItem:
             # 有可能出现没检测到的情况，大部分不可能，但是工程起见。
             # 2TODO 比如 bonn_mpii_train_5sec\00098_mpii 最前面几个是全黑所以检测不到……emmmm怎么办呢
             self.detected_bboxes = expand_vector_to_tensor(self.detected_bboxes)
+        debug_print('Detected', self.detected_bboxes.shape[0], 'boxes', indent = 1)
         self.human_detected = True
     
+    @log_time('\t生成flow……')
     def gen_flow(self, flow_model, prev_frame_img = None):
         # No precedent functions, root
         if self.is_first:  # if this is first frame
@@ -148,7 +152,7 @@ class FrameItem:
         self.flow_to_current = self.flow_to_current[:, :self.ori_img_h, :self.ori_img_w]
         self.flow_calculated = True
     
-    @log_time('Joint prop……')
+    @log_time('\tJoint prop……')
     def joint_prop(self, Q):
         '''
          WHAT IS PROP BOX SCORE???
@@ -172,9 +176,11 @@ class FrameItem:
                 prev_filtered_box, filtered_idx = prev_frame.get_filtered_bboxes(thres = nise_cfg.ALG._PROP_HUMAN_THRES)
                 if prev_filtered_box.numel() == 0:
                     set_empty_joint()
+                    debug_print('Proped', 0, 'boxes', indent = 1)
                     return
                 prev_frame_joints = prev_frame_joints[filtered_idx]
-                scores = prev_frame.id_bboxes[:, -1]
+                # TODO: 如果 score 是一个标量，在242行就不能在 dim=1的时候 unsqueeze，只有 score 是一个向量才行
+                scores = prev_frame.unified_bboxes[filtered_idx, -1]
             else:  # use all prev joints rather than filtered, or should we?
                 scores = prev_frame.unified_bboxes[:, -1]
             prev_frame_joints = expand_vector_to_tensor(prev_frame_joints, 3)
@@ -234,6 +240,8 @@ class FrameItem:
             joint_prop_bboxes = joints_to_bboxes(self.new_joints, joint_vis = None,
                                                  clamp_size = (self.img_w, self.img_h))
             # add scores
+            if joint_prop_bboxes_scores.numel()==1:
+                joint_prop_bboxes_scores.unsqueeze_(0)
             joint_prop_bboxes_scores.unsqueeze_(1)
             self.joint_prop_bboxes = torch.cat([joint_prop_bboxes, joint_prop_bboxes_scores], 1)
             self.joint_prop_bboxes = expand_vector_to_tensor(self.joint_prop_bboxes)
@@ -244,26 +252,26 @@ class FrameItem:
             mkdir(out_dir)
             num_people, num_joints, _ = self.new_joints.shape
             for i in range(num_people):
-                debug_print('drawing flow proped', i, self.joint_prop_bboxes[i],indent = 1)
+                # debug_print('drawing flow proped', i, self.joint_prop_bboxes[i], indent = 1)
                 joints_i = self.new_joints[i, ...]  # 16 x 2
-                joint_visible = torch.ones([num_joints, 1])
-                nise_batch_joints = torch.cat([joints_i, joint_visible], 1)  # 16 x 3
+                prev_joints_i = prev_frame_joints[i, ...].float()
+                joints_to_draw_i = torch.stack([joints_i, prev_joints_i], 0)
+                joint_visible = torch.ones([2, num_joints, 1])
+                nise_batch_joints = torch.cat([joints_to_draw_i, joint_visible], 2)  # 16 x 3
                 
                 save_single_whole_image_with_joints(
                     im_to_torch(self.original_img).unsqueeze(0),
-                    nise_batch_joints.unsqueeze(0),
-                    joint_visible.reshape([1, -1]),
+                    nise_batch_joints,
                     os.path.join(out_dir, self.img_name + "_id_" + "{:02d}".format(i) + ".jpg"),
-                    nrow = 2, boxes = self.joint_prop_bboxes[i].unsqueeze(0)
+                    boxes = self.joint_prop_bboxes[i].unsqueeze(0)
                 )
-                
-        debug_print('proped', self.joint_prop_bboxes.shape[0], 'boxes', indent = 1)
+        debug_print('Proped', self.joint_prop_bboxes.shape[0], 'boxes', indent = 1)
         self.joints_proped = True
-        
-    @log_time('NMS……')
+    
+    @log_time('\tNMS……')
     def unify_bbox(self):
         """ - merge bbox; nms; """
-    
+        
         def set_empty_unified_bbox():
             
             self.unified_bboxes = torch.tensor([])
@@ -288,6 +296,7 @@ class FrameItem:
             set_empty_unified_bbox()
         else:
             scores = all_bboxes[:, 4]  # vector
+            debug_print('Before NMS:', scores.shape[0], 'people. ', indent = 1, end = '\t')
             scores = torch.stack([torch.zeros(num_people), scores], 1)  # num_people x 2
             cls_all_bboxes = torch.cat([torch.zeros(num_people, 4), all_bboxes[:, :4]], 1)  # num people x 8
             scores, boxes, cls_boxes = box_results_with_nms_and_limit(scores, cls_all_bboxes, 2)
@@ -299,6 +308,7 @@ class FrameItem:
             self.unified_bboxes = expand_vector_to_tensor(self.unified_bboxes)
             if self.unified_bboxes.numel() == 0:
                 set_empty_unified_bbox()
+            debug_print('After NMS:', self.unified_bboxes.shape[0], 'people')
         self.bboxes_unified = True
     
     def get_filtered_bboxes(self, thres = nise_cfg.ALG._HUMAN_THRES):
@@ -307,11 +317,11 @@ class FrameItem:
         if self.NO_BBOXES:
             # if no bboxes at all
             return torch.tensor(self.unified_bboxes), None
-        filtered, valid_score_idx = filter_bbox_with_scores(self.unified_bboxes, thres = nise_cfg.ALG._HUMAN_THRES)
+        filtered, valid_score_idx = filter_bbox_with_scores(self.unified_bboxes, thres)
         final_valid_idx = valid_score_idx
         return filtered, final_valid_idx
     
-    @log_time('关节预测……')
+    @log_time('\t关节预测……')
     def est_joints(self, joint_detector):
         """detect current image's bboxes' joints pos using human-pose-estimation - """
         
@@ -375,7 +385,8 @@ class FrameItem:
         self.joints = expand_vector_to_tensor(self.joints, 3)
         
         self.joints_detected = True
-    
+
+    @log_time('\tID分配……')
     def assign_id(self, Q, get_dist_mat = None):
         """ input: distance matrix; output: correspondence   """
         """ - Associate ids. question: how to associate using more than two frames?between each 2?- """
@@ -388,9 +399,9 @@ class FrameItem:
             self.id_bboxes = self.unified_bboxes
             self.id_bboxes = expand_vector_to_tensor(self.id_bboxes)
             self.id_idx_in_unified = torch.tensor(range(self.unified_bboxes.shape[0])).long()
-        
+    
         self.human_ids = torch.zeros(self.id_bboxes.shape[0]).long()
-        
+    
         if self.is_first:
             # if it's the first frame, just assign every, starting from 1
             # no problem when no people detected
@@ -398,21 +409,25 @@ class FrameItem:
             FrameItem.max_id = self.id_bboxes.shape[0]  # not +1
         elif not self.NO_BBOXES:
             # if no boxes no need for matching, and none for the next frame
-            
+        
             if get_dist_mat is None: raise NotImplementedError('Should pass a matrix function function in')
-            
+            prev_frame = Q[-1]
             # proped from prev frame. since we want prev ids, we should get filter ones.
-            if nise_cfg.ALG.USE_ALL_PROPED_BOX or \
-                    nise_cfg.ALG.JOINT_PROP_WITH_FILTERED_HUMAN:
+            if nise_cfg.ALG.JOINT_PROP_WITH_FILTERED_HUMAN:
                 prev_joints = self.new_joints.squeeze()  # squeeze is not for the first dim
+                # TODO:如果 propthres 和 human_thres 不一样，那么这里 id 的数量就是 humanthres 的，new_joints 就是 propthres 的。
+                prev_filtered_id_box, filtered_idx = filter_bbox_with_scores(prev_frame.id_bboxes,
+                                                                             thres = nise_cfg.ALG._PROP_HUMAN_THRES)
+                prev_ids = prev_frame.human_ids[filtered_idx]
             else:
-                prev_boxes_filtered, prev_boxes_idx = Q[-1].get_filtered_bboxes()
+                prev_boxes_filtered, prev_boxes_idx = prev_frame.get_filtered_bboxes()
                 prev_joints = self.new_joints[prev_boxes_idx].squeeze()  # squeeze is not for the first dim
+                prev_ids = prev_frame.human_ids
+        
             # ─── MATCHING ──────────────────────────────
             prev_joints = expand_vector_to_tensor(prev_joints, 3)  # unsqueeze if accidental injury happens
-            prev_ids = Q[-1].human_ids
             assert (prev_joints.shape[0] == len(prev_ids))
-            
+        
             if len(prev_ids) == 0:
                 # if no person in the previous frame, consecutively
                 self.human_ids = torch.tensor(
@@ -439,7 +454,26 @@ class FrameItem:
                         FrameItem.max_id += 1
         # debug_print('ID Assigned')
         self.id_assigned = True
+
+    @log_time('\tID分配……')
+    def assign_id_task_1_2(self, Q, get_dist_mat = None):
+        """ input: distance matrix; output: correspondence   """
+        """ - Associate ids. question: how to associate using more than two frames?between each 2?- """
+        if not self.joints_detected:
+            raise ValueError('Should detect joints first')
+        if nise_cfg.ALG.ASSGIN_ID_TO_FILTERED_BOX:
+            self.id_bboxes, self.id_idx_in_unified = self.get_filtered_bboxes()
+            self.id_bboxes = expand_vector_to_tensor(self.id_bboxes)  # in case only one person ,then we have 5 index
+        else:
+            self.id_bboxes = self.unified_bboxes
+            self.id_bboxes = expand_vector_to_tensor(self.id_bboxes)
+            self.id_idx_in_unified = torch.tensor(range(self.unified_bboxes.shape[0])).long()
     
+        self.human_ids = torch.zeros(self.id_bboxes.shape[0]).long()
+    
+        # debug_print('ID Assigned')
+        self.id_assigned = True
+
     def _resize_x(self, x):
         return x * self.ori_img_w / self.img_w
     
@@ -458,6 +492,7 @@ class FrameItem:
         resized_joints[:, :, 1] = self._resize_y(joints[:, :, 1])
         return resized_joints
     
+    @log_time('\t画图……')
     def visualize(self, dataset):
         if self.id_assigned is False and self.task != 1:
             raise ValueError('Should assign id first.')
@@ -479,7 +514,7 @@ class FrameItem:
             None,
             dataset = dataset,
             box_alpha = 0.3,  # opacity
-            show_class = False,
+            show_class = True,
             thresh = nise_cfg.DEBUG.VIS_HUMAN_THRES,
             human_ids = self.human_ids,
             kp_thresh = 2,
@@ -505,12 +540,12 @@ class FrameItem:
             save_single_whole_image_with_joints(
                 im_to_torch(self.original_img).unsqueeze(0),
                 nise_batch_joints.unsqueeze(0),
-                joint_visible.reshape([1, -1]),
                 os.path.join(out_dir, self.img_name + "_id_" + "{:02d}".format(
                     self.human_ids[i].item()) + ".jpg"),
-                nrow = 2, boxes = self.id_bboxes[i].unsqueeze(0), human_ids = self.human_ids[i].unsqueeze(0)
+                boxes = self.id_bboxes[i].unsqueeze(0), human_ids = self.human_ids[i].unsqueeze(0)
             )
     
+    # @log_time('\tTo dict......')
     def to_dict(self):
         '''
         Output string for json dump
@@ -518,7 +553,7 @@ class FrameItem:
 
         :return:
         '''
-        if self.task == 1:
+        if self.task == 1 or self.task == 2:
             
             d = {
                 'image': [
@@ -541,7 +576,7 @@ class FrameItem:
                                         'id': [j],
                                         'x': [self.joints[i, j, 0].item() * self.ori_img_w / self.img_w],
                                         'y': [self.joints[i, j, 1].item() * self.ori_img_h / self.img_h],
-                                        'score': [self.joints_score[i, j].item()]  # what score????
+                                        'score': [self.joints_score[i, j].item()]
                                     } for j in range(nise_cfg.DATA.num_joints)
                                 ]
                             }
@@ -561,12 +596,12 @@ class FrameItem:
                 ],
                 'annorect': [  # i for people
                     {
-                        'score': [self.id_bboxes[i, 4].item()],
-                        'track_id': [self.human_ids[i].item()],
                         'x1': [0],
                         'x2': [0],
                         'y1': [0],
                         'y2': [0],
+                        'score': [self.id_bboxes[i, 4].item()],
+                        'track_id': [self.human_ids[i].item()],
                         'annopoints': [
                             {
                                 'point': [
@@ -574,7 +609,7 @@ class FrameItem:
                                         'id': [j],
                                         'x': [self.joints[i, j, 0].item() * self.ori_img_w / self.img_w],
                                         'y': [self.joints[i, j, 1].item() * self.ori_img_h / self.img_h],
-                                        'score': [-1]  # what score????
+                                        'score': [self.joints_score[i, j].item()]
                                     } for j in range(nise_cfg.DATA.num_joints)
                                 ]
                             }
@@ -585,4 +620,5 @@ class FrameItem:
                 # 'imgnum'
             }
         
+        self.dict_info = d
         return d

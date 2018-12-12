@@ -79,14 +79,17 @@ class NiseConfig:
             
             self.FRAME = True
             self.EST_IN_FRAME = True
-            self.VIS_HUMAN_THRES = 0.6
+            self.VIS_HUMAN_THRES = .5
+            
+            self.VISUALIZE = False
     
     class _ALG:
         def __init__(self):
             self._DEQUE_CAPACITY = 3
             self._OKS_MULTIPLIER = 1e4
             # only bbox score over this are recognized as human
-            self._HUMAN_THRES = .9
+            self._HUMAN_THRES = .5
+            self._PROP_HUMAN_THRES = .5
             # only bbox area over this are recognized as human
             self._AREA_THRES = 32 * 32
             # only bbox ratio not over this are recognized as human
@@ -94,10 +97,10 @@ class NiseConfig:
             # if want more joint prop boxes, set this to false
             self.FILTER_HUMAN_WHEN_DETECT = False
             # if not filtered when detected, filter when prop??
-            self.JOINT_PROP_WITH_FILTERED_HUMAN = False
+            self.JOINT_PROP_WITH_FILTERED_HUMAN = True
             self.FILTER_BBOX_WITH_SMALL_AREA = False
-            self.ASSGIN_ID_TO_FILTERED_BOX = False
-            self.USE_ALL_PROPED_BOX = True
+            self.ASSGIN_ID_TO_FILTERED_BOX = self.JOINT_PROP_WITH_FILTERED_HUMAN
+            self.USE_ALL_PROPED_BOX_TO_ASSIGN_ID = True
             # padding image s.t. w/h to be multiple of 32
             self.FLOW_MULTIPLE = 2 ** 6
             self.FLOW_PADDING_END = 0
