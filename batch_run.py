@@ -15,7 +15,7 @@ def mkdir(path):
         return False
 
 
-series = [(2 * i, 2 * i + 2) for i in range(3,25)]
+series = [(2 * i, 2 * i + 2) for i in range(3)]
 print(series)
 
 def run_cmd(cmd):

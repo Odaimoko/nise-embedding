@@ -3,6 +3,7 @@
 Milestones
 
 - 2018-12-06: Surpass the state-of-the-art result of task 1, single frame multi-person pose estimation, in PoseTrack 2017. [link](#2018-12-06).
+- 2018-12-12: Surpassthe state-of-the-art result  (my own) of task 1,  [2018-12-12](#2018-12-12).
 
 # TODOLIST
 
@@ -76,6 +77,26 @@ DONE。
 
 为了找出为什么奇奇怪怪莫名其妙就增加了mAP， 重新 debug。
 
+
+
+找到了原因，之前使用了`1024x576`大小的，现在用的原图大小。
+
+| 原来的              | 现在的       |
+| ------------------- | ------------ |
+| 读入一帧图片        | 读入一帧图片 |
+| resize 到`1024x576` | 检测人       |
+| 检测人              | estimation   |
+| estimation          |              |
+
+```
+但是跑了原来的1024，mAP 又是……
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 79.5 & 77.8 & 69.8 & 58.0 & 69.6 & 64.9 & 57.4 & 68.9 \\
+```
+
+
+
+
 放出之前的前六
 
 ```
@@ -105,6 +126,8 @@ DONE。
 ```
 
 也就是说回不去了？
+
+
 
 ## 2018-12-11
 
