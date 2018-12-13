@@ -17,7 +17,8 @@ from simple_lib.core.inference import get_final_preds
 from simple_lib.core.config import config as simple_cfg
 from nise_utils.transforms import get_affine_transform
 
-from nise_lib.nise_config import  nise_cfg
+from nise_lib.nise_config import nise_cfg
+
 
 class FrameItem:
     mkrs = Munkres()
@@ -108,8 +109,6 @@ class FrameItem:
     @log_time('\t人检测……')
     def detect_human(self, detector, gt_joints = None):
         '''
-        """ - detect person: do we use all the results? - """
-
         :param detector:
         :return: human is represented as tensor of size num_people x 4. The result is NMSed.
         '''
@@ -241,7 +240,7 @@ class FrameItem:
             joint_prop_bboxes = joints_to_bboxes(self.new_joints, joint_vis = None,
                                                  clamp_size = (self.img_w, self.img_h))
             # add scores
-            if joint_prop_bboxes_scores.numel()==1:
+            if joint_prop_bboxes_scores.numel() == 1:
                 joint_prop_bboxes_scores.unsqueeze_(0)
             joint_prop_bboxes_scores.unsqueeze_(1)
             self.joint_prop_bboxes = torch.cat([joint_prop_bboxes, joint_prop_bboxes_scores], 1)
@@ -308,7 +307,7 @@ class FrameItem:
             self.unified_bboxes = expand_vector_to_tensor(self.unified_bboxes)
             if self.unified_bboxes.numel() == 0:
                 set_empty_unified_bbox()
-            debug_print('After NMS:', self.unified_bboxes.shape[0], 'people',indent = 1)
+            debug_print('After NMS:', self.unified_bboxes.shape[0], 'people', indent = 1)
         self.bboxes_unified = True
     
     def get_filtered_bboxes(self, thres = nise_cfg.ALG._HUMAN_THRES):
@@ -385,7 +384,7 @@ class FrameItem:
         self.joints = expand_vector_to_tensor(self.joints, 3)
         
         self.joints_detected = True
-
+    
     @log_time('\tID分配……')
     def assign_id(self, Q, get_dist_mat = None):
         """ input: distance matrix; output: correspondence   """
@@ -399,9 +398,9 @@ class FrameItem:
             self.id_bboxes = self.unified_bboxes
             self.id_bboxes = expand_vector_to_tensor(self.id_bboxes)
             self.id_idx_in_unified = torch.tensor(range(self.unified_bboxes.shape[0])).long()
-    
+        
         self.human_ids = torch.zeros(self.id_bboxes.shape[0]).long()
-    
+        
         if self.is_first:
             # if it's the first frame, just assign every, starting from 1
             # no problem when no people detected
@@ -409,7 +408,7 @@ class FrameItem:
             FrameItem.max_id = self.id_bboxes.shape[0]  # not +1
         elif not self.NO_BBOXES:
             # if no boxes no need for matching, and none for the next frame
-        
+            
             if get_dist_mat is None: raise NotImplementedError('Should pass a matrix function function in')
             prev_frame = Q[-1]
             # proped from prev frame. since we want prev ids, we should get filter ones.
@@ -423,11 +422,11 @@ class FrameItem:
                 prev_boxes_filtered, prev_boxes_idx = prev_frame.get_filtered_bboxes()
                 prev_joints = self.new_joints[prev_boxes_idx].squeeze()  # squeeze is not for the first dim
                 prev_ids = prev_frame.human_ids
-        
+            
             # ─── MATCHING ──────────────────────────────
             prev_joints = expand_vector_to_tensor(prev_joints, 3)  # unsqueeze if accidental injury happens
             assert (prev_joints.shape[0] == len(prev_ids))
-        
+            
             if len(prev_ids) == 0:
                 # if no person in the previous frame, consecutively
                 self.human_ids = torch.tensor(
@@ -454,7 +453,7 @@ class FrameItem:
                         FrameItem.max_id += 1
         # debug_print('ID Assigned')
         self.id_assigned = True
-
+    
     @log_time('\tID分配……')
     def assign_id_task_1_2(self, Q, get_dist_mat = None):
         """ input: distance matrix; output: correspondence   """
@@ -468,12 +467,12 @@ class FrameItem:
             self.id_bboxes = self.unified_bboxes
             self.id_bboxes = expand_vector_to_tensor(self.id_bboxes)
             self.id_idx_in_unified = torch.tensor(range(self.unified_bboxes.shape[0])).long()
-    
+        
         self.human_ids = torch.zeros(self.id_bboxes.shape[0]).long()
-    
+        
         # debug_print('ID Assigned')
         self.id_assigned = True
-
+    
     def _resize_x(self, x):
         return x * self.ori_img_w / self.img_w
     
@@ -501,7 +500,7 @@ class FrameItem:
         class_boxes[1] = self.id_bboxes
         training_start_time = time.strftime("%H-%M-%S", time.localtime())
         p = PurePosixPath(self.img_path)
-        out_dir = os.path.join(nise_cfg.PATH.IMAGES_OUT_DIR , p.parts[-2])
+        out_dir = os.path.join(nise_cfg.PATH.IMAGES_OUT_DIR, p.parts[-2])
         mkdir(out_dir)
         
         vis_utils.vis_one_image_for_pt(
@@ -528,7 +527,7 @@ class FrameItem:
         joints_to_show = self._resize_joints(joints_to_show)
         num_people, num_joints, _ = joints_to_show.shape
         
-        out_dir = os.path.join(nise_cfg.PATH.JOINTS_DIR , p.parts[-2])
+        out_dir = os.path.join(nise_cfg.PATH.JOINTS_DIR, p.parts[-2])
         mkdir(out_dir)
         for i in range(num_people):
             joints_i = joints_to_show[i, ...]  # 16 x 2
