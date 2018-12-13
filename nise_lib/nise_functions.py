@@ -5,7 +5,7 @@ import argparse
 import pathlib
 from functools import wraps
 from easydict import EasyDict as edict
-from nise_lib.nise_config import nise_cfg,nise_logger
+from nise_lib.nise_config import nise_cfg,nise_logger,mkrs
 import time
 
 # local packages
@@ -547,7 +547,7 @@ def get_joints_oks_mtx(j1, j2):
 
     :param j1: num_people 1 x 16 x 2
     :param j2: num_people 2 x 16 x 2
-    :return:
+    :return: n1 x n2
     '''
     num_person_prev = j1.shape[0]
     num_person_cur = j2.shape[0]
@@ -572,6 +572,20 @@ def get_joints_oks_mtx(j1, j2):
     e = np.sum(np.exp(-e), axis = 2) / e.shape[2]
     return to_torch(e)
 
+def get_matching_indices(dist_mat):
+    '''
+    
+    :param dist_mat: n1 x n2
+    :return: matching result.
+    '''
+    # to use munkres package, we need int. munkres minimize cost, so use negative version
+    # but if converted to numpy, will have precision problem
+    scaled_distance_matrix = -nise_cfg.ALG._OKS_MULTIPLIER * dist_mat
+    scaled_distance_matrix = scaled_distance_matrix.numpy()
+    mask = (scaled_distance_matrix <= -1e-9).astype(np.float32)
+    scaled_distance_matrix *= mask
+    indices = mkrs.compute(scaled_distance_matrix.tolist())
+    return indices
 
 # ─── MISC ───────────────────────────────────────────────────────────────────────
 

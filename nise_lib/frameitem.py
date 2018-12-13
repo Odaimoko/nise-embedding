@@ -1,7 +1,6 @@
 import sys
 
 sys.path.append('..')
-from munkres import Munkres
 from pathlib import PurePosixPath
 import scipy
 import cv2
@@ -21,7 +20,6 @@ from nise_lib.nise_config import nise_cfg
 
 
 class FrameItem:
-    mkrs = Munkres()
     max_id = 0
     '''
         Item in Deque, storing image (for flow generation), joints(for propagation),
@@ -29,30 +27,36 @@ class FrameItem:
          One image or a batch of images?
     '''
     
-    def __init__(self, img_path, task = 2, is_first = False):
+    def __init__(self, img_path, task = 2, is_first = False, gt_joints = None):
         '''
 
         :param is_first: is this frame the first of the sequence
         '''
+        if gt_joints is not None:
+            if gt_joints.numel() == 0:
+                self.gt_boxes = torch.tensor([])
+            else:
+                gt_box = joints_to_bboxes(gt_joints[:, :, :2], gt_joints[:, :, 2], (self.img_w, self.img_h))
+                gt_box = expand_vector_to_tensor(gt_box)
+                gt_scores = torch.ones([gt_box.shape[0]])
+                gt_scores.unsqueeze_(1)
+                self.gt_boxes = torch.cat([gt_box, gt_scores], 1)
+        else:
+            self.gt_boxes = torch.tensor([])
+            self.gt_joints = torch.tensor([])
+        
         self.task = task  # 1 for single-frame, 2 for multi-frame and tracking
         self.is_first = is_first
         self.img_path = img_path
         self.img_name = PurePosixPath(img_path).stem
         # tensor with size C x H x W,  detector needs BGR so here use bgr.
-        # flow uses rgb
+        
         self.original_img = cv2.imread(self.img_path)  # with original size? YES
         self.ori_img_h, self.ori_img_w, _ = self.original_img.shape
         # 依然是W/H， 回忆model第一个192是宽。
         self.img_ratio = simple_cfg.MODEL.IMAGE_SIZE[0] / simple_cfg.MODEL.IMAGE_SIZE[1]
         
-        """ - Normalize person crop to some size to fit flow input
-        
-        # data[0] torch.Size([8, 3, 2, 384, 1024]) ，bs x channels x num_images, h, w
-        # target torch.Size([8, 2, 384, 1024]) maybe offsets
-        
-        """
         if nise_cfg.TEST.USE_GT_VALID_BOX and self.task == 1:
-            # dont change image size ok?
             self.flow_img = self.original_img
         else:
             if nise_cfg.ALG.FLOW_MODE == nise_cfg.ALG.FLOW_PADDING_END:
@@ -81,19 +85,17 @@ class FrameItem:
         # should be LongTensor since we are going to use them as index. same length with unified_bbox
         self.joints = torch.tensor([])
         self.joints_score = torch.tensor([])
-        # tensor
         self.new_joints = torch.tensor([])  # for similarity
-        # tensor, in the resized img for flow.
         self.flow_to_current = None  # 2, h, w
         
-        # tensors, coord in the original image
+        # coord in the original image
         self.detected_bboxes = torch.tensor([])  # num_people x 5, with score
         self.joint_prop_bboxes = torch.tensor([])
         self.unified_bboxes = torch.tensor([])
         self.id_bboxes = torch.tensor([])  # those have ids. should have the same length with human_ids
-        self.id_idx_in_unified = None
+        self.id_idx_in_unified = torch.tensor([])
         
-        self.human_ids = None
+        self.human_ids = torch.tensor([])
         self.dict_info = {}
         
         # ─── FLAGS FOR CORRENT ORDER ─────────────────────────────────────
@@ -106,22 +108,17 @@ class FrameItem:
         
         self.NO_BBOXES = False
     
+    # def get_box_from_joints
+    
     @log_time('\t人检测……')
-    def detect_human(self, detector, gt_joints = None):
+    def detect_human(self, detector):
         '''
         :param detector:
         :return: human is represented as tensor of size num_people x 4. The result is NMSed.
         '''
         
-        if nise_cfg.TEST.USE_GT_VALID_BOX and gt_joints is not None:
-            if gt_joints.numel() == 0:
-                self.detected_bboxes = torch.tensor([])
-            else:
-                gt_bbox = joints_to_bboxes(gt_joints[:, :, :2], gt_joints[:, :, 2], (self.img_w, self.img_h))
-                gt_bbox = expand_vector_to_tensor(gt_bbox)
-                gt_scores = torch.ones([gt_bbox.shape[0]])
-                gt_scores.unsqueeze_(1)
-                self.detected_bboxes = torch.cat([gt_bbox, gt_scores], 1)
+        if nise_cfg.TEST.USE_GT_VALID_BOX:
+            self.detected_bboxes = self.gt_boxes
         
         else:
             cls_boxes = im_detect_all(detector, self.original_img)  # the example from detectron use this in this way
@@ -139,11 +136,17 @@ class FrameItem:
     
     @log_time('\t生成flow……')
     def gen_flow(self, flow_model, prev_frame_img = None):
+        """ - Normalize person crop to some size to fit flow input
+        
+        # data[0] torch.Size([8, 3, 2, 384, 1024]) ，bs x channels x num_images, h, w
+        # target torch.Size([8, 2, 384, 1024]) maybe offsets
+        
+        """
         # No precedent functions, root
         if self.is_first:  # if this is first frame
             return
         """ - Now we have some images Q and current img, calculate FLow using previous and current one - """
-        resized_img = self.flow_img[:, :, ::-1]  # to rgb
+        resized_img = self.flow_img[:, :, ::-1]  # to rgb# flow uses rgb
         resized_prev = prev_frame_img[:, :, ::-1]
         resized_img = im_to_torch(resized_img)
         resized_prev = im_to_torch(resized_prev)
@@ -167,6 +170,18 @@ class FrameItem:
         def set_empty_joint():
             self.joints_proped = True
         
+        def check_joints_format(prev_frame_joints):
+            prev_frame_joints = expand_vector_to_tensor(prev_frame_joints, 3)
+            if not ((prev_frame_joints.shape[2] == nise_cfg.DATA.num_joints and prev_frame_joints.shape[0] == 2) or (
+                    prev_frame_joints.shape[2] == 2 and prev_frame_joints.shape[1] == nise_cfg.DATA.num_joints)):
+                raise ValueError(
+                    'Size not matched, current size ' + str(prev_frame_joints.shape))
+            if prev_frame_joints.shape[2] == nise_cfg.DATA.num_joints:
+                # :param prev_frame_joints: 2x num_people x num_joints. to num_people x num_joints x 2
+                prev_frame_joints = torch.transpose(prev_frame_joints, 0, 1)
+                prev_frame_joints = torch.transpose(prev_frame_joints, 1, 2)
+            return prev_frame_joints
+        
         # preprocess
         prev_frame = Q[-1]
         prev_frame_joints = prev_frame.joints
@@ -179,45 +194,19 @@ class FrameItem:
                     debug_print('Proped', 0, 'boxes', indent = 1)
                     return
                 prev_frame_joints = prev_frame_joints[filtered_idx]
-                # TODO: 如果 score 是一个标量，在242行就不能在 dim=1的时候 unsqueeze，只有 score 是一个向量才行
+                # 2TODO: 如果 score 是一个标量，在242行就不能在 dim=1的时候 unsqueeze，只有 score 是一个向量才行
                 scores = prev_frame.unified_bboxes[filtered_idx, -1]
             else:  # use all prev joints rather than filtered, or should we?
                 scores = prev_frame.unified_bboxes[:, -1]
-            prev_frame_joints = expand_vector_to_tensor(prev_frame_joints, 3)
             
-            if not ((prev_frame_joints.shape[2] == nise_cfg.DATA.num_joints and prev_frame_joints.shape[0] == 2) or (
-                    prev_frame_joints.shape[2] == 2 and prev_frame_joints.shape[1] == nise_cfg.DATA.num_joints)):
-                raise ValueError(
-                    'Size not matched, current size ' + str(prev_frame_joints.shape))
-            if prev_frame_joints.shape[2] == nise_cfg.DATA.num_joints:
-                # :param prev_frame_joints: 2x num_people x num_joints. to num_people x num_joints x 2
-                prev_frame_joints = torch.transpose(prev_frame_joints, 0, 1)
-                prev_frame_joints = torch.transpose(prev_frame_joints, 1, 2)
+            if nise_cfg.TEST.USE_GT_JOINTS_TO_PROP: # match一下，只用检测到的gt的joint
+                matched_gt_boxes = 0
+                
+            
+            prev_frame_joints = check_joints_format(prev_frame_joints)
             
             prev_frame_joints = prev_frame_joints.int()
             
-            # if nise_cfg.ALG.JOINT_PROP_WITH_FILTERED_HUMAN:
-            #     # Dont use all, only high confidence
-            #     valid_scores_idx = torch.nonzero(scores >= nise_cfg.ALG._HUMAN_THRES).squeeze_()
-            #     joint_prop_bboxes_scores = scores[valid_scores_idx]  # vector
-            #
-            #     new_joints = torch.zeros([len(joint_prop_bboxes_scores), nise_cfg.DATA.num_joints, 2])
-            #
-            #     # the ith in new_joints is the valid_scores_idx[i] th in prev_frame_joints
-            #     for person in range(new_joints.shape[0]):
-            #         # if we dont use item, o_p will be a tensor and
-            #         # use tensor to index prev_frame_joints resulting in size [1,2] of joint_pos
-            #         original_person = valid_scores_idx[person].item()
-            #         for joint in range(nise_cfg.DATA.num_joints):
-            #             joint_pos = prev_frame_joints[original_person, joint, :]  # x,y
-            #             # if joint pos is inside the image, use the flow; otherwise set to 0.
-            #             if joint_pos[0] < self.img_w and joint_pos[1] < self.img_h:
-            #                 # this is cuda so turn it into cpu
-            #                 joint_flow = self.flow_to_current[:, joint_pos[1], joint_pos[0]].cpu()
-            #             else:
-            #                 joint_flow = torch.zeros(2)
-            #             new_joints[person, joint, :] = prev_frame_joints[original_person, joint, :].float() + joint_flow
-            # else:
             new_joints = torch.zeros(prev_frame_joints.shape)
             # using previous score as new score
             joint_prop_bboxes_scores = scores  # vector
@@ -240,9 +229,7 @@ class FrameItem:
             joint_prop_bboxes = joints_to_bboxes(self.new_joints, joint_vis = None,
                                                  clamp_size = (self.img_w, self.img_h))
             # add scores
-            if joint_prop_bboxes_scores.numel() == 1:
-                joint_prop_bboxes_scores.unsqueeze_(0)
-            joint_prop_bboxes_scores.unsqueeze_(1)
+            joint_prop_bboxes_scores = expand_vector_to_tensor(joint_prop_bboxes_scores).unsqueeze(1)
             self.joint_prop_bboxes = torch.cat([joint_prop_bboxes, joint_prop_bboxes_scores], 1)
             self.joint_prop_bboxes = expand_vector_to_tensor(self.joint_prop_bboxes)
             if nise_cfg.DEBUG.VISUALIZE:
@@ -272,9 +259,8 @@ class FrameItem:
         """ - merge bbox; nms; """
         
         def set_empty_unified_bbox():
-            
-            self.unified_bboxes = torch.tensor([])
             # kakunin! No box at all in this image
+            self.unified_bboxes = torch.tensor([])
             self.NO_BBOXES = True
         
         if self.is_first or self.task == 1:
@@ -346,7 +332,6 @@ class FrameItem:
             # from simple/JointDataset.py
             trans = get_affine_transform(center, scale, rotation, simple_cfg.MODEL.IMAGE_SIZE)
             # In simple_cfg, 0 is h/1 for w. in warpAffine should be (w,h)
-            # but when visualization, it seems that the reverse way is correct??
             # 哦是因为192是宽256是高
             resized_human_np = cv2.warpAffine(
                 self.img_outside_flow,  # hw3
@@ -371,7 +356,6 @@ class FrameItem:
             self.joints_score[i, :] = to_torch(max_val).squeeze() * human_score
             
             if nise_cfg.DEBUG.VISUALIZE:
-                # vis
                 # debug_print(i, indent = 1)
                 img_with_joints = get_batch_image_with_joints(torch_img, to_torch(preds), torch.ones(1, 15, 1))
                 resized_human_np_with_joints = cv2.warpAffine(
@@ -436,14 +420,8 @@ class FrameItem:
                 id_joints = self.joints[self.id_idx_in_unified, :, :]
                 id_joints = expand_vector_to_tensor(id_joints, 3)  # in case only one person is in this image
                 dist_mat = get_dist_mat(id_joints, prev_joints)
-                # to use munkres package, we need int. munkres minimize cost, so use negative version
-                scaled_distance_matrix = -nise_cfg.ALG._OKS_MULTIPLIER * dist_mat
-                # but if converted to numpy, will have precision problem
-                scaled_distance_matrix = scaled_distance_matrix.numpy()
-                mask = (scaled_distance_matrix <= -1e-9).astype(np.float32)
-                scaled_distance_matrix *= mask
-                indexes = FrameItem.mkrs.compute(scaled_distance_matrix.tolist())
-                for cur, prev in indexes:
+                indices = get_matching_indices(dist_mat)
+                for cur, prev in indices:
                     # value = dist_mat[cur][prev]
                     # debug_print('(%d, %d) -> %f' % (cur, prev, value))
                     self.human_ids[cur] = prev_ids[prev]

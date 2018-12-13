@@ -4,6 +4,7 @@ import os
 import os.path
 import time
 from pathlib import Path
+from munkres import Munkres
 
 import numpy as np
 import yaml
@@ -165,7 +166,7 @@ class NiseConfig:
             self.SIMPLE = False
             
             self.FRAME = True
-            self.EST_IN_FRAME = True
+            self.EST_IN_FRAME = False
             self.VIS_HUMAN_THRES = .5
             
             self.VISUALIZE = False
@@ -209,6 +210,7 @@ class NiseConfig:
     class _TEST:
         def __init__(self):
             self.USE_GT_VALID_BOX = False
+            self.USE_GT_JOINTS_TO_PROP = True
     
     def __init__(self):
         #
@@ -240,3 +242,6 @@ update_config(nise_cfg, nise_args.nise_config)
 
 suffix = set_path_from_nise_cfg(nise_cfg)
 nise_logger, _ = create_nise_logger(nise_cfg, suffix, 'valid')
+
+mkrs = Munkres()
+
