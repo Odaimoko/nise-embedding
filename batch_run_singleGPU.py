@@ -5,6 +5,7 @@ import argparse
 import yaml
 import time
 
+
 def get_nise_arg_parser():
     parser = argparse.ArgumentParser(description = 'NISE PT')
     parser.add_argument('--workers', default = 4, type = int, metavar = 'N',
@@ -28,12 +29,6 @@ def mkdir(path):
         return False
 
 
-def run_cmd(cmd):
-    print('Running:', cmd)
-    os.system(cmd)
-    time.sleep(2)
-
-
 def create_yaml(series):
     with open('exp_config/t.yaml', 'r')as f:
         c = yaml.load(f)
@@ -52,10 +47,16 @@ def create_yaml(series):
     return batch_files
 
 
+def run_cmd(cmd):
+    print('Running:', cmd)
+    os.system(cmd)
+    time.sleep(2)
+
+
 a = get_nise_arg_parser()
 # series = list(range(a.f, a.t))
 # series = [(2 * i, 2 * i + 2) for i in range(a.f,a.t)]
-series = [( i, i+1) for i in range(a.f,a.t)]
+series = [(i, i + 1) for i in range(a.f, a.t)]
 if not series:
     print('ERR: TO must be larger than FROM.')
     exit(1)
@@ -66,5 +67,4 @@ batch_files = create_yaml(series)
 m = '''~/anaconda3/bin/python run.py --model FlowNet2S --flownet_resume ../flownet2-pytorch/FlowNet2-S_checkpoint.pth.tar --simple_cfg ../simple-baseline-pytorch/experiments/pt17/res50-coco-256x192_d256x3_adam_lr1e-3.yaml --gpus 0 --simple-model-file /home/zhangxt/disk/posetrack/simple-baseline-pytorch/output-pt17/pt17/pose_resnet_50/res50-coco-256x192_d256x3_adam_lr1e-3/pt17-epoch-20-87.92076779477024 --tron_cfg /home/zhangxt/disk/posetrack/nise_embedding/my_e2e_mask_rcnn_X-101-64x4d-FPN_1x.yaml --load_detectron /home/zhangxt/disk/pretrained/e2e_mask_rcnn_X-101-64x4d-FPN_1x.pkl --dataset coco2017 --nise_config '''
 
 p = Pool(a.workers)
-p.map(run_cmd, [ m+f for f in batch_files])
-# run_cmd(m+'exp_config/t.yaml')
+p.map(run_cmd, [m + f for f in batch_files])

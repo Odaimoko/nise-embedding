@@ -5,7 +5,6 @@ import os.path
 import time
 from pathlib import Path
 from munkres import Munkres
-
 import numpy as np
 import yaml
 from easydict import EasyDict as edict
@@ -21,7 +20,7 @@ def get_nise_arg_parser():
     #                     help = 'number of GPU to use (default: 1)')
     
     parser.add_argument('--nise_config', type = str, metavar = 'nise config file',
-                        help = 'path to yaml format config file')
+                        help = 'path to yaml format config file', default = 'exp_config/t.yaml')
     parser.add_argument('--simple-model-file', type = str, )
     args, rest = parser.parse_known_args()
     return args
@@ -67,10 +66,11 @@ def set_path_from_nise_cfg(nise_cfg):
         nise_cfg.TEST.MODE,
         'task',
         str(nise_cfg.TEST.TASK),
-        'gt' if nise_cfg.TEST.USE_GT_VALID_BOX else 'detect',
-        'propthres',
-        str(nise_cfg.ALG.PROP_HUMAN_THRES),
+        'GTbox' if nise_cfg.TEST.USE_GT_VALID_BOX else 'DETbox',
         'propfiltered' if nise_cfg.ALG.JOINT_PROP_WITH_FILTERED_HUMAN else 'propall',
+        'propthres'  if nise_cfg.ALG.JOINT_PROP_WITH_FILTERED_HUMAN else '',
+        str(nise_cfg.ALG.PROP_HUMAN_THRES) if nise_cfg.ALG.JOINT_PROP_WITH_FILTERED_HUMAN else '',
+        'propGT' if nise_cfg.TEST.USE_GT_JOINTS_TO_PROP else 'propDET'
     ])
     suffix_range = '_'.join(['RANGE',
                              str(nise_cfg.TEST.FROM),
@@ -211,6 +211,7 @@ class NiseConfig:
         def __init__(self):
             self.USE_GT_VALID_BOX = False
             self.USE_GT_JOINTS_TO_PROP = True
+            self.GT_JOINTS_PROP_IOU_THRES = .5
     
     def __init__(self):
         #
@@ -241,7 +242,7 @@ nise_args = get_nise_arg_parser()
 update_config(nise_cfg, nise_args.nise_config)
 
 suffix = set_path_from_nise_cfg(nise_cfg)
-nise_logger, _ = create_nise_logger(nise_cfg, suffix, 'valid')
+training_start_time = time.strftime("%m_%d-%H:%M", time.localtime())
 
+nise_logger, _ = create_nise_logger(nise_cfg, '_'.join([training_start_time, suffix]), 'valid')
 mkrs = Munkres()
-

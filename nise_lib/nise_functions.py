@@ -5,7 +5,7 @@ import argparse
 import pathlib
 from functools import wraps
 from easydict import EasyDict as edict
-from nise_lib.nise_config import nise_cfg,nise_logger,mkrs
+from nise_lib.nise_config import nise_cfg, nise_logger, mkrs
 import time
 
 # local packages
@@ -31,8 +31,7 @@ import tron_lib.nn as mynn
 from tron_lib.utils.detectron_weight_helper import load_detectron_weight
 import tron_lib.utils.net as net_utils
 import tron_lib.datasets.dummy_datasets as datasets
-
-
+from tron_lib.utils.boxes import bbox_overlaps
 
 
 def human_detect_parse_args():
@@ -572,11 +571,12 @@ def get_joints_oks_mtx(j1, j2):
     e = np.sum(np.exp(-e), axis = 2) / e.shape[2]
     return to_torch(e)
 
+
 def get_matching_indices(dist_mat):
     '''
     
     :param dist_mat: n1 x n2
-    :return: matching result.
+    :return:  result. each pair in result (a,b) means the a th of n1 <-> the b th of n2
     '''
     # to use munkres package, we need int. munkres minimize cost, so use negative version
     # but if converted to numpy, will have precision problem
@@ -586,6 +586,7 @@ def get_matching_indices(dist_mat):
     scaled_distance_matrix *= mask
     indices = mkrs.compute(scaled_distance_matrix.tolist())
     return indices
+
 
 # ─── MISC ───────────────────────────────────────────────────────────────────────
 
@@ -656,7 +657,7 @@ def log_time(*text, record = None):
             start = time.time()
             func(*args, **kw)
             end = time.time()
-            r(*t, '%.3f s.' % (end - start,),printer = nise_logger.status)
+            r(*t, '%.3f s.' % (end - start,), printer = nise_logger.status)
             # r(' Start time: %.3f s. End time: %.3f s'%(start, end))
         
         return impl
@@ -665,11 +666,23 @@ def log_time(*text, record = None):
 
 
 if __name__ == '__main__':
-    # test oks distance
-    num_person = 2
-    h, w = 576, 1024
-    person = gen_rand_joints(num_person, h, w)
-    threesome = torch.cat(
-        [person + torch.rand(num_person, 16, 2), gen_rand_joints(1, h, w)])
-    dist = get_joints_oks_mtx(person, threesome)
-    print(dist)
+    # # test oks distance
+    num_person = 1
+    # h, w = 576, 1024
+    # person = gen_rand_joints(num_person, h, w)
+    # threesome = torch.cat(
+    #     [person + torch.rand(num_person, 16, 2), gen_rand_joints(1, h, w)])
+    # dist = get_joints_oks_mtx(person, threesome)
+    # print(dist)
+    from pycocotools.mask import iou
+    
+    top_boxes = np.ones([num_person, 4])
+    top_boxes[0,2]-=.5
+    all_boxes = np.ones([num_person+1, 4])
+    all_boxes[0]+=0.3
+    all_boxes[1]+=0.5
+    print(top_boxes)
+    print(all_boxes)
+    # iou's input is [x,y,w,h]
+    top_to_all_overlaps = iou(top_boxes, all_boxes, np.zeros(1))
+    print(top_to_all_overlaps)

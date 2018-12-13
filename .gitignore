@@ -120,3 +120,4 @@ pred_json/val_gt_task1/eval_one_video.py
 images_out/valid_gt/count_frames.py
 logs/
 ignore/
+exp_config/t.yaml

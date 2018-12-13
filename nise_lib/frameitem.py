@@ -1,4 +1,5 @@
 import sys
+from pycocotools.mask import iou
 
 sys.path.append('..')
 from pathlib import PurePosixPath
@@ -32,18 +33,6 @@ class FrameItem:
 
         :param is_first: is this frame the first of the sequence
         '''
-        if gt_joints is not None:
-            if gt_joints.numel() == 0:
-                self.gt_boxes = torch.tensor([])
-            else:
-                gt_box = joints_to_bboxes(gt_joints[:, :, :2], gt_joints[:, :, 2], (self.img_w, self.img_h))
-                gt_box = expand_vector_to_tensor(gt_box)
-                gt_scores = torch.ones([gt_box.shape[0]])
-                gt_scores.unsqueeze_(1)
-                self.gt_boxes = torch.cat([gt_box, gt_scores], 1)
-        else:
-            self.gt_boxes = torch.tensor([])
-            self.gt_joints = torch.tensor([])
         
         self.task = task  # 1 for single-frame, 2 for multi-frame and tracking
         self.is_first = is_first
@@ -81,6 +70,18 @@ class FrameItem:
         # only used in computation of center and scale
         self.img_h, self.img_w, _ = self.img_outside_flow.shape
         
+        if gt_joints is not None and gt_joints.numel() != 0:
+            
+            gt_box = joints_to_bboxes(gt_joints[:, :, :2], gt_joints[:, :, 2], (self.img_w, self.img_h))
+            gt_box = expand_vector_to_tensor(gt_box)
+            gt_scores = torch.ones([gt_box.shape[0]])
+            gt_scores.unsqueeze_(1)
+            self.gt_boxes = torch.cat([gt_box, gt_scores], 1)
+            self.gt_joints = gt_joints
+        else:
+            self.gt_boxes = torch.tensor([])
+            self.gt_joints = torch.tensor([])
+        
         # tensor num_person x num_joints x 2
         # should be LongTensor since we are going to use them as index. same length with unified_bbox
         self.joints = torch.tensor([])
@@ -90,7 +91,7 @@ class FrameItem:
         
         # coord in the original image
         self.detected_bboxes = torch.tensor([])  # num_people x 5, with score
-        self.joint_prop_bboxes = torch.tensor([])
+        self.prop_bboxes = torch.tensor([])
         self.unified_bboxes = torch.tensor([])
         self.id_bboxes = torch.tensor([])  # those have ids. should have the same length with human_ids
         self.id_idx_in_unified = torch.tensor([])
@@ -197,11 +198,27 @@ class FrameItem:
                 # 2TODO: 如果 score 是一个标量，在242行就不能在 dim=1的时候 unsqueeze，只有 score 是一个向量才行
                 scores = prev_frame.unified_bboxes[filtered_idx, -1]
             else:  # use all prev joints rather than filtered, or should we?
+                prev_filtered_box = prev_frame.unified_bboxes
                 scores = prev_frame.unified_bboxes[:, -1]
+            prev_filtered_box = expand_vector_to_tensor(prev_filtered_box)
+            prev_frame_joints = expand_vector_to_tensor(prev_frame_joints, 3)
+            prev_frame_joints_vis = torch.ones(prev_frame_joints.shape)[:, :, 0]  # numpeople x numjoints
             
-            if nise_cfg.TEST.USE_GT_JOINTS_TO_PROP: # match一下，只用检测到的gt的joint
-                matched_gt_boxes = 0
-                
+            if scores.numel() == 1:  # 从这里下来的 score，如果只有一个的话，是一个scalar，而不是一个size为1 的向量
+                scores.unsqueeze_(0)
+            
+            if nise_cfg.TEST.USE_GT_JOINTS_TO_PROP and self.gt_boxes.numel() != 0:  # match一下，只用检测到的gt的joint
+                prev_box_np = prev_filtered_box.numpy()[:, :4]
+                gt_box_np = self.gt_boxes.numpy()[:, :4]
+                gt_scores = self.gt_boxes[:, 4]
+                prev_to_gt_iou = iou(prev_box_np, gt_box_np, np.zeros(0))
+                mask = prev_to_gt_iou >= nise_cfg.TEST.GT_JOINTS_PROP_IOU_THRES
+                matched_gt_ind = np.nonzero(np.sum(mask, 0))[0]
+                prev_frame_joints = self.gt_joints[matched_gt_ind.astype(np.uint8)][:, :, :2]
+                prev_frame_joints = expand_vector_to_tensor(prev_frame_joints, 3)
+                prev_frame_joints_vis = self.gt_joints[matched_gt_ind.astype(np.uint8)][:, :, 2]
+                prev_frame_joints_vis = expand_vector_to_tensor(prev_frame_joints_vis)
+                scores = gt_scores[matched_gt_ind.astype(np.uint8)]  # 从这里下来的score如果是一个，会是向量而不是scalar
             
             prev_frame_joints = check_joints_format(prev_frame_joints)
             
@@ -209,29 +226,32 @@ class FrameItem:
             
             new_joints = torch.zeros(prev_frame_joints.shape)
             # using previous score as new score
-            joint_prop_bboxes_scores = scores  # vector
+            prop_bboxes_scores = scores  # vector
             
             for person in range(new_joints.shape[0]):
                 # debug_print('person', person)
                 for joint in range(nise_cfg.DATA.num_joints):
                     joint_pos = prev_frame_joints[person, joint, :]  # x,y
+                    joint_vis = prev_frame_joints_vis[person, joint]
                     if joint_pos[0] < self.img_w and joint_pos[1] < self.img_h \
-                            and joint_pos[0] >= 0 and joint_pos[1] >= 0:
+                            and joint_pos[0] > 0 and joint_pos[1] > 0 and joint_vis > 0:
                         # TODO 可能和作者不一样的地方，画面外的joint怎么办，我设定的是两个0，然后自然而然就会被clamp
                         joint_flow = self.flow_to_current[:, joint_pos[1], joint_pos[0]].cpu()
                     else:
                         joint_flow = torch.zeros(2)
+                    # TODO 之前new_joints里面没有0，但现在因为引入了gtbox，就可能有（没有标注的关节坐标和vis都是0）
+                    # 当然非gtprop的都是1
                     new_joints[person, joint, :] = prev_frame_joints[person, joint, :].float() + joint_flow
             
             # for similarity. no need to expand here cause if only prev_joints has the right dimension
             self.new_joints = new_joints
             # calc new bboxes from new joints, dont clamp joint, clamp box
-            joint_prop_bboxes = joints_to_bboxes(self.new_joints, joint_vis = None,
-                                                 clamp_size = (self.img_w, self.img_h))
+            prop_bboxes = joints_to_bboxes(self.new_joints, joint_vis = None,
+                                           clamp_size = (self.img_w, self.img_h))
             # add scores
-            joint_prop_bboxes_scores = expand_vector_to_tensor(joint_prop_bboxes_scores).unsqueeze(1)
-            self.joint_prop_bboxes = torch.cat([joint_prop_bboxes, joint_prop_bboxes_scores], 1)
-            self.joint_prop_bboxes = expand_vector_to_tensor(self.joint_prop_bboxes)
+            prop_bboxes_scores.unsqueeze_(1)
+            self.prop_bboxes = torch.cat([prop_bboxes, prop_bboxes_scores], 1)
+            self.prop_bboxes = expand_vector_to_tensor(self.prop_bboxes)
             if nise_cfg.DEBUG.VISUALIZE:
                 p = PurePosixPath(self.img_path)
                 out_dir = os.path.join(nise_cfg.PATH.JOINTS_DIR + '_flowproped', p.parts[-2])
@@ -249,9 +269,9 @@ class FrameItem:
                         im_to_torch(self.original_img).unsqueeze(0),
                         nise_batch_joints,
                         os.path.join(out_dir, self.img_name + "_id_" + "{:02d}".format(i) + ".jpg"),
-                        boxes = self.joint_prop_bboxes[i].unsqueeze(0)
+                        boxes = self.prop_bboxes[i].unsqueeze(0)
                     )
-        debug_print('Proped', self.joint_prop_bboxes.shape[0], 'boxes', indent = 1)
+        debug_print('Proped', self.prop_bboxes.shape[0], 'boxes', indent = 1)
         self.joints_proped = True
     
     @log_time('\tNMS……')
@@ -271,7 +291,7 @@ class FrameItem:
                 raise ValueError(
                     'Should run human detection and joints propagation first')
             num_classes = 2  # bg and human
-            all_bboxes = torch.cat([self.detected_bboxes, self.joint_prop_bboxes])  # x 5
+            all_bboxes = torch.cat([self.detected_bboxes, self.prop_bboxes])  # x 5
         
         num_people = all_bboxes.shape[0]
         

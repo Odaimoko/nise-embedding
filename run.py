@@ -59,7 +59,7 @@ if nise_cfg.TEST.TASK == 1:
                            simple_joint_est_model, flow_model)
 elif nise_cfg.TEST.TASK == 2:
     
-    nise_pred_task_3_debug(dataset_path,
+    nise_pred_task_2_debug(dataset_path,
                            nise_cfg.PATH.JSON_SAVE_DIR,
                            human_det_dataset,
                            maskRCNN,

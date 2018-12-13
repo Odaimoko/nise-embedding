@@ -8,42 +8,38 @@ Milestones
 # TODOLIST
 
 + [x] 接口问题
-
 + [x] 固定 gt 的 bbox，est joints（2018-12-03）
-
 + [ ] ~~找到 single frame 的问题，查看输出的图像。~~
-
 + [x] 2018-12-06：joint 最终分数=human detection*joint
-
 + [ ] 训练之前 freeze 一下
-
 + [x] flow 用 pad 达到 32的倍数
 
   + [ ] （其他的方式）
-
 + [ ] joint prop 的 score 怎么确定
-
-+ [ ] 达到pt17的state-of-the-art
-
-+ [ ] 使用data parallel 加速，现在太慢了。
++ [ ] 达到pt17 task 3 的state-of-the-art
++ [x] 使用data parallel 加速，现在太慢了。
 
   + [ ] 2018-12-11：看了时间之后，发现并没有什么可以减少时间的？可能在 jointprop 和 est的时候整个batch 一起走。
 
   + [ ] Detected 8 boxes.发现主要是存储图像花时间了。
-        人检测…… 1.136 s.
-      	 	生成flow…… 0.121 s.
-      	 	Proped 5 boxes
-      	 	Joint prop…… 0.512 s.
-      	 	Before NMS: 13 people. 	After NMS: 8 people
-      	 	NMS…… 0.000 s.
-      	 	关节预测…… 0.483 s.
-      	 	ID分配…… 0.001 s
+    人检测…… 1.136 s.
+  	 	生成flow…… 0.121 s.
+  	 	Proped 5 boxes
+  	 	Joint prop…… 0.512 s.
+  	 	Before NMS: 13 people. 	After NMS: 8 people
+  	 	NMS…… 0.000 s.
+  	 	关节预测…… 0.483 s.
+  	 	ID分配…… 0.001 s
 
   + [ ] detect可以parallel？好像不行。
 
   + [ ] flow可以？flow 的 model 可以接受 batch 的输入，大小为 $bs\times channels\times 2\times h\times w$。但如果要这一步并行化，就要加载进所有的图片？或者也可以设置一个生成 flow 的 batchsize， 毕竟这个是 root。$2$指的是 flow 需要两张图片，如果要并行就需要$[[1,2],[2,3],[3,4]]$。
-
 + [x] 宁可花多一点时间去做正确，也不要回头来 debug。
++ [x] 为什么高那么多？66.7->69.6。[2018-12-12](2018-12-12)。
++ [ ] flow 的正确性怎么看？小数据集的正确性先确保了。
++ [x] 多线程。bash 多个 GPU 利用。
++ [x] 参数与设定分开。[2018-12-12](2018-12-12)。
++ [ ] 
 
 # experiment
 
@@ -60,6 +56,55 @@ $ diff my_e2e_mask_rcnn_X-101-64x4d-FPN_1x.yaml ../Detectron.pytorch/tron_config
 ---
 >   MASK_ON: True
 ```
+
+
+
+## 2018-12-13
+
+在prop 的时候加入是否使用 gtbox 的选项：如果True，在 prop 的时候，将上一帧的 box 和 gt 比较，如果有 gtbox 的 IoU 大于 thres，那么将这个 gtbox 对应的 gtjoint 拿过来prop， 而不是用上一帧 prop 的结果。这样既保留了detection的结果，又保证了 joint 的正确性。
+
+验证实现结果：使用 thres==1
+
+这是 task1的结果
+
+```
+groundTruth='val_gt_task1/', outputDir='./out', predictions='valid_anno_json_pred_task_1/', saveEvalPerSequence=False)
+Loading data
+# gt frames  : 333
+# pred frames: 333
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 82.3 & 77.3 & 61.6 & 42.6 & 63.6 & 48.4 & 36.4 & 60.5 \\
+```
+prop的时候使用 detect的结果（理应和上面一样）
+```
+valid_task_2_DETbox_propfiltered_propthres_1_propDET
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 82.3 & 77.3 & 61.6 & 42.6 & 63.6 & 48.4 & 36.4 & 60.5 \\
+```
+
+prop 的时候使用 GT 的结果（理应一样）
+
+```
+valid_task_2_DETbox_propfiltered_propthres_1_propGT
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 82.3 & 77.3 & 61.6 & 42.6 & 63.6 & 48.4 & 36.4 & 60.5 \\
+```
+
+好的正确了。接下来看 thres+GT 的结果
+
+```
+thres=0.5
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 79.4 & 76.2 & 61.0 & 40.4 & 63.1 & 47.3 & 33.0 & 58.7 \\
+0.9
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 79.3 & 76.2 & 60.9 & 40.4 & 63.1 & 47.2 & 32.9 & 58.6 \\
+0.99
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 82.3 & 77.3 & 61.6 & 42.7 & 63.7 & 48.5 & 36.2 & 60.5 \\
+```
+
+
 
 
 
