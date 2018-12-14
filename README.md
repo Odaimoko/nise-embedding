@@ -59,6 +59,29 @@ $ diff my_e2e_mask_rcnn_X-101-64x4d-FPN_1x.yaml ../Detectron.pytorch/tron_config
 
 
 
+## 2018-12-14
+
+总结一下昨天学习的东西。做一个东西，本质是为了解决某个问题。为了解决这个问题，会提出一个方法。那么怎么看这个方法究竟有没有用，其实就是看这个问题有没有解决或者解决到了什么程度，这就需要一个评判标准（ evaluation metric）。另外，为了确保确实是这个方法的功效，还需要控制变量。
+
+例如做这个项目
+
+| pipeline       | 功能                         | evaluation  |
+| -------------- | ---------------------------- | ----------- |
+| 检测人         | top down 的方法基础          | box 的 AP   |
+| 单人检测 joint | 在检测人的基础上，检测 joint | mAP         |
+| flow prop      | 补充没有检测到的 box         | 无          |
+| matching       | Assign tracking 的 id        | mota 和 mAP |
+|                |                              |             |
+
+现在想要知道 flow 有没有加对，问题就在于怎么决定是否有效。
+
+- 用GT使用的上一帧的 gt 而非这一帧，只是用上一帧的 pose（probability=1），所以应该用 detector 的probability。 score 改一改。gt 和 pose 的 probability 可以联合起来。
+- 专门看 detection 丢掉的视频。
+
+可以tune 的参数
+
+- nms 判定为同一个的 thres。
+
 ## 2018-12-13
 
 在prop 的时候加入是否使用 gtbox 的选项：如果True，在 prop 的时候，将上一帧的 box 和 gt 比较，如果有 gtbox 的 IoU 大于 thres，那么将这个 gtbox 对应的 gtjoint 拿过来prop， 而不是用上一帧 prop 的结果。这样既保留了detection的结果，又保证了 joint 的正确性。
@@ -103,8 +126,6 @@ thres=0.5
 & Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
 & 82.3 & 77.3 & 61.6 & 42.7 & 63.7 & 48.5 & 36.2 & 60.5 \\
 ```
-
-
 
 
 

@@ -1,6 +1,7 @@
 import nise_lib._init_paths
 from collections import deque
 import torch.backends.cudnn as cudnn
+import threading
 
 from nise_lib.nise_functions import *
 from nise_lib.nise_debugging_func import *
@@ -18,7 +19,7 @@ def is_skip_video(nise_cfg, i, file_name):
             return False
         else:
             return True
-        
+    
     if s == True:
         if i >= nise_cfg.TEST.FROM and i < nise_cfg.TEST.TO:
             s = False
@@ -30,6 +31,7 @@ def nise_pred_task_1_debug(gt_anno_dir, json_save_dir, vis_dataset, hunam_detect
     anno_file_names = get_type_from_dir(gt_anno_dir, ['.json'])
     anno_file_names = sorted(anno_file_names)
     mkdir(json_save_dir)
+    mkdir('det_json')
     for i, file_name in enumerate(anno_file_names):
         debug_print(i, file_name)
         if is_skip_video(nise_cfg, i, file_name):
@@ -39,6 +41,7 @@ def nise_pred_task_1_debug(gt_anno_dir, json_save_dir, vis_dataset, hunam_detect
         with open(file_name, 'r') as f:
             gt = json.load(f)['annolist']
         pred_frames = []
+        detection_result = []
         Q = deque(maxlen = nise_cfg.ALG._DEQUE_CAPACITY)
         for j, frame in enumerate(gt):
             # frame dict_keys(['image', 'annorect', 'imgnum', 'is_labeled', 'ignore_regions'])
@@ -60,13 +63,24 @@ def nise_pred_task_1_debug(gt_anno_dir, json_save_dir, vis_dataset, hunam_detect
             
             if nise_cfg.DEBUG.VISUALIZE:
                 fi.assign_id_task_1_2(Q)
-                fi.visualize(dataset = vis_dataset)
+                threading.Thread(target = fi.visualize, args = [vis_dataset]).start()
+                # fi.visualize(dataset = vis_dataset)
+            # if nise_cfg.DEBUG.SAVE_DETECTION_TENSOR:
+            
+            detection_result.append({img_file_path: fi.detect_results()})
             pred_frames.append(fi.to_dict())
             Q.append(fi)
         
         with open(json_path, 'w') as f:
             json.dump({'annolist': pred_frames}, f)
-            debug_print('json saved:', json_path)
+            debug_print('pt eval json saved:', json_path)
+        
+        det_path = os.path.join('det_json', p.parts[-1])
+        
+        if nise_cfg.DEBUG.SAVE_DETECTION_TENSOR:
+            with open(det_path, 'w') as f:
+                json.dump(detection_result, f)
+                debug_print('det results json saved:', det_path)
 
 
 def nise_pred_task_2_debug(gt_anno_dir, json_save_dir, vis_dataset, hunam_detector, joint_estimator, flow_model):

@@ -1,0 +1,600 @@
+Namespace(evalPoseEstimation=True, evalPoseTracking=False, groundTruth='/Users/oda/posetrack/nise_embedding/pred_json/val_gt_task1/', outputDir='./out', predictions='/Users/oda/posetrack/nise_embedding/pred_json/valid_anno_json_pred_task_1/', saveEvalPerSequence=False)
+Loading data
+# gt frames  : 48
+# pred frames: 48
+Evaluation of per-frame multi-person pose estimation
+saving results to ./out/total_AP_metrics.json
+Average Precision (AP) metric:
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 34.6 & 37.4 & 17.9 & 12.9 & 25.2 & 26.7 & 14.4 & 24.9 \\
+Namespace(evalPoseEstimation=True, evalPoseTracking=False, groundTruth='/Users/oda/posetrack/nise_embedding/pred_json/val_gt_task1/', outputDir='./out', predictions='/Users/oda/posetrack/nise_embedding/pred_json/valid_anno_json_pred_task_1/', saveEvalPerSequence=False)
+Loading data
+# gt frames  : 52
+# pred frames: 52
+Evaluation of per-frame multi-person pose estimation
+saving results to ./out/total_AP_metrics.json
+Average Precision (AP) metric:
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 85.1 & 85.2 & 84.3 & 77.2 & 68.7 & 45.3 & 49.1 & 71.7 \\
+Namespace(evalPoseEstimation=True, evalPoseTracking=False, groundTruth='/Users/oda/posetrack/nise_embedding/pred_json/val_gt_task1/', outputDir='./out', predictions='/Users/oda/posetrack/nise_embedding/pred_json/valid_anno_json_pred_task_1/', saveEvalPerSequence=False)
+Loading data
+# gt frames  : 59
+# pred frames: 59
+Evaluation of per-frame multi-person pose estimation
+saving results to ./out/total_AP_metrics.json
+Average Precision (AP) metric:
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 99.5 & 99.5 & 98.3 & 95.3 & 71.7 & 16.9 &  0.1 & 70.8 \\
+Namespace(evalPoseEstimation=True, evalPoseTracking=False, groundTruth='/Users/oda/posetrack/nise_embedding/pred_json/val_gt_task1/', outputDir='./out', predictions='/Users/oda/posetrack/nise_embedding/pred_json/valid_anno_json_pred_task_1/', saveEvalPerSequence=False)
+Loading data
+# gt frames  : 54
+# pred frames: 54
+Evaluation of per-frame multi-person pose estimation
+saving results to ./out/total_AP_metrics.json
+Average Precision (AP) metric:
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 93.6 & 82.8 & 77.4 & 40.7 & 78.3 & 75.5 & 63.7 & 74.5 \\
+Namespace(evalPoseEstimation=True, evalPoseTracking=False, groundTruth='/Users/oda/posetrack/nise_embedding/pred_json/val_gt_task1/', outputDir='./out', predictions='/Users/oda/posetrack/nise_embedding/pred_json/valid_anno_json_pred_task_1/', saveEvalPerSequence=False)
+Loading data
+# gt frames  : 60
+# pred frames: 60
+Evaluation of per-frame multi-person pose estimation
+saving results to ./out/total_AP_metrics.json
+Average Precision (AP) metric:
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 60.5 & 53.8 & 31.8 & 16.9 & 54.7 & 36.3 & 17.4 & 40.2 \\
+Namespace(evalPoseEstimation=True, evalPoseTracking=False, groundTruth='/Users/oda/posetrack/nise_embedding/pred_json/val_gt_task1/', outputDir='./out', predictions='/Users/oda/posetrack/nise_embedding/pred_json/valid_anno_json_pred_task_1/', saveEvalPerSequence=False)
+Loading data
+# gt frames  : 60
+# pred frames: 60
+Evaluation of per-frame multi-person pose estimation
+saving results to ./out/total_AP_metrics.json
+Average Precision (AP) metric:
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 95.0 & 86.6 & 60.6 & 38.9 & 72.6 & 48.9 & 42.0 & 65.6 \\
+Namespace(evalPoseEstimation=True, evalPoseTracking=False, groundTruth='/Users/oda/posetrack/nise_embedding/pred_json/val_gt_task1/', outputDir='./out', predictions='/Users/oda/posetrack/nise_embedding/pred_json/valid_anno_json_pred_task_1/', saveEvalPerSequence=False)
+Loading data
+# gt frames  : 57
+# pred frames: 57
+Evaluation of per-frame multi-person pose estimation
+saving results to ./out/total_AP_metrics.json
+Average Precision (AP) metric:
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 90.8 & 93.0 & 84.2 & 78.0 & 93.9 & 79.7 & 79.8 & 86.0 \\
+Namespace(evalPoseEstimation=True, evalPoseTracking=False, groundTruth='/Users/oda/posetrack/nise_embedding/pred_json/val_gt_task1/', outputDir='./out', predictions='/Users/oda/posetrack/nise_embedding/pred_json/valid_anno_json_pred_task_1/', saveEvalPerSequence=False)
+Loading data
+# gt frames  : 50
+# pred frames: 50
+Evaluation of per-frame multi-person pose estimation
+saving results to ./out/total_AP_metrics.json
+Average Precision (AP) metric:
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 98.7 & 96.6 & 94.2 & 89.3 & 98.4 & 94.5 & 95.5 & 95.5 \\
+Namespace(evalPoseEstimation=True, evalPoseTracking=False, groundTruth='/Users/oda/posetrack/nise_embedding/pred_json/val_gt_task1/', outputDir='./out', predictions='/Users/oda/posetrack/nise_embedding/pred_json/valid_anno_json_pred_task_1/', saveEvalPerSequence=False)
+Loading data
+# gt frames  : 52
+# pred frames: 52
+Evaluation of per-frame multi-person pose estimation
+saving results to ./out/total_AP_metrics.json
+Average Precision (AP) metric:
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 86.7 & 87.8 & 84.7 & 77.4 & 89.2 & 78.7 & 56.8 & 80.6 \\
+Namespace(evalPoseEstimation=True, evalPoseTracking=False, groundTruth='/Users/oda/posetrack/nise_embedding/pred_json/val_gt_task1/', outputDir='./out', predictions='/Users/oda/posetrack/nise_embedding/pred_json/valid_anno_json_pred_task_1/', saveEvalPerSequence=False)
+Loading data
+# gt frames  : 45
+# pred frames: 45
+Evaluation of per-frame multi-person pose estimation
+saving results to ./out/total_AP_metrics.json
+Average Precision (AP) metric:
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 80.8 & 83.3 & 76.5 & 61.5 & 73.6 & 69.8 & 59.3 & 72.7 \\
+Namespace(evalPoseEstimation=True, evalPoseTracking=False, groundTruth='/Users/oda/posetrack/nise_embedding/pred_json/val_gt_task1/', outputDir='./out', predictions='/Users/oda/posetrack/nise_embedding/pred_json/valid_anno_json_pred_task_1/', saveEvalPerSequence=False)
+Loading data
+# gt frames  : 50
+# pred frames: 50
+Evaluation of per-frame multi-person pose estimation
+saving results to ./out/total_AP_metrics.json
+Average Precision (AP) metric:
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 67.8 & 69.4 & 51.7 & 50.4 & 64.0 & 66.2 & 60.0 & 61.8 \\
+Namespace(evalPoseEstimation=True, evalPoseTracking=False, groundTruth='/Users/oda/posetrack/nise_embedding/pred_json/val_gt_task1/', outputDir='./out', predictions='/Users/oda/posetrack/nise_embedding/pred_json/valid_anno_json_pred_task_1/', saveEvalPerSequence=False)
+Loading data
+# gt frames  : 60
+# pred frames: 60
+Evaluation of per-frame multi-person pose estimation
+saving results to ./out/total_AP_metrics.json
+Average Precision (AP) metric:
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 83.4 & 70.5 & 58.9 & 44.4 & 79.0 & 68.9 & 72.1 & 69.2 \\
+Namespace(evalPoseEstimation=True, evalPoseTracking=False, groundTruth='/Users/oda/posetrack/nise_embedding/pred_json/val_gt_task1/', outputDir='./out', predictions='/Users/oda/posetrack/nise_embedding/pred_json/valid_anno_json_pred_task_1/', saveEvalPerSequence=False)
+Loading data
+# gt frames  : 56
+# pred frames: 56
+Evaluation of per-frame multi-person pose estimation
+saving results to ./out/total_AP_metrics.json
+Average Precision (AP) metric:
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 84.6 & 71.0 & 79.2 & 72.8 & 86.9 & 77.8 & 81.0 & 79.4 \\
+Namespace(evalPoseEstimation=True, evalPoseTracking=False, groundTruth='/Users/oda/posetrack/nise_embedding/pred_json/val_gt_task1/', outputDir='./out', predictions='/Users/oda/posetrack/nise_embedding/pred_json/valid_anno_json_pred_task_1/', saveEvalPerSequence=False)
+Loading data
+# gt frames  : 54
+# pred frames: 54
+Evaluation of per-frame multi-person pose estimation
+saving results to ./out/total_AP_metrics.json
+Average Precision (AP) metric:
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 77.6 & 78.8 & 67.1 & 55.9 & 80.9 & 74.4 & 71.6 & 72.7 \\
+Namespace(evalPoseEstimation=True, evalPoseTracking=False, groundTruth='/Users/oda/posetrack/nise_embedding/pred_json/val_gt_task1/', outputDir='./out', predictions='/Users/oda/posetrack/nise_embedding/pred_json/valid_anno_json_pred_task_1/', saveEvalPerSequence=False)
+Loading data
+# gt frames  : 48
+# pred frames: 48
+Evaluation of per-frame multi-person pose estimation
+saving results to ./out/total_AP_metrics.json
+Average Precision (AP) metric:
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 89.6 & 90.4 & 80.6 & 69.4 & 84.9 & 67.3 & 52.3 & 77.3 \\
+Namespace(evalPoseEstimation=True, evalPoseTracking=False, groundTruth='/Users/oda/posetrack/nise_embedding/pred_json/val_gt_task1/', outputDir='./out', predictions='/Users/oda/posetrack/nise_embedding/pred_json/valid_anno_json_pred_task_1/', saveEvalPerSequence=False)
+Loading data
+# gt frames  : 47
+# pred frames: 47
+Evaluation of per-frame multi-person pose estimation
+saving results to ./out/total_AP_metrics.json
+Average Precision (AP) metric:
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 86.7 & 79.6 & 82.8 & 68.2 & 79.4 & 74.8 & 69.8 & 78.0 \\
+Namespace(evalPoseEstimation=True, evalPoseTracking=False, groundTruth='/Users/oda/posetrack/nise_embedding/pred_json/val_gt_task1/', outputDir='./out', predictions='/Users/oda/posetrack/nise_embedding/pred_json/valid_anno_json_pred_task_1/', saveEvalPerSequence=False)
+Loading data
+# gt frames  : 47
+# pred frames: 47
+Evaluation of per-frame multi-person pose estimation
+saving results to ./out/total_AP_metrics.json
+Average Precision (AP) metric:
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 73.4 & 80.2 & 77.9 & 69.9 & 71.9 & 74.9 & 70.2 & 74.0 \\
+Namespace(evalPoseEstimation=True, evalPoseTracking=False, groundTruth='/Users/oda/posetrack/nise_embedding/pred_json/val_gt_task1/', outputDir='./out', predictions='/Users/oda/posetrack/nise_embedding/pred_json/valid_anno_json_pred_task_1/', saveEvalPerSequence=False)
+Loading data
+# gt frames  : 61
+# pred frames: 61
+Evaluation of per-frame multi-person pose estimation
+saving results to ./out/total_AP_metrics.json
+Average Precision (AP) metric:
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 96.1 & 94.1 & 93.0 & 85.4 & 92.5 & 93.9 & 89.4 & 92.3 \\
+Namespace(evalPoseEstimation=True, evalPoseTracking=False, groundTruth='/Users/oda/posetrack/nise_embedding/pred_json/val_gt_task1/', outputDir='./out', predictions='/Users/oda/posetrack/nise_embedding/pred_json/valid_anno_json_pred_task_1/', saveEvalPerSequence=False)
+Loading data
+# gt frames  : 50
+# pred frames: 50
+Evaluation of per-frame multi-person pose estimation
+saving results to ./out/total_AP_metrics.json
+Average Precision (AP) metric:
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 91.0 & 90.7 & 81.7 & 65.3 & 84.1 & 74.1 & 63.4 & 79.4 \\
+Namespace(evalPoseEstimation=True, evalPoseTracking=False, groundTruth='/Users/oda/posetrack/nise_embedding/pred_json/val_gt_task1/', outputDir='./out', predictions='/Users/oda/posetrack/nise_embedding/pred_json/valid_anno_json_pred_task_1/', saveEvalPerSequence=False)
+Loading data
+# gt frames  : 53
+# pred frames: 53
+Evaluation of per-frame multi-person pose estimation
+saving results to ./out/total_AP_metrics.json
+Average Precision (AP) metric:
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 80.5 & 68.7 & 71.5 & 51.9 & 57.0 & 53.8 & 48.7 & 63.0 \\
+Namespace(evalPoseEstimation=True, evalPoseTracking=False, groundTruth='/Users/oda/posetrack/nise_embedding/pred_json/val_gt_task1/', outputDir='./out', predictions='/Users/oda/posetrack/nise_embedding/pred_json/valid_anno_json_pred_task_1/', saveEvalPerSequence=False)
+Loading data
+# gt frames  : 57
+# pred frames: 57
+Evaluation of per-frame multi-person pose estimation
+saving results to ./out/total_AP_metrics.json
+Average Precision (AP) metric:
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 88.9 & 88.4 & 84.4 & 66.4 & 77.4 & 71.3 & 67.7 & 78.5 \\
+Namespace(evalPoseEstimation=True, evalPoseTracking=False, groundTruth='/Users/oda/posetrack/nise_embedding/pred_json/val_gt_task1/', outputDir='./out', predictions='/Users/oda/posetrack/nise_embedding/pred_json/valid_anno_json_pred_task_1/', saveEvalPerSequence=False)
+Loading data
+# gt frames  : 46
+# pred frames: 46
+Evaluation of per-frame multi-person pose estimation
+saving results to ./out/total_AP_metrics.json
+Average Precision (AP) metric:
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 84.4 & 92.3 & 85.7 & 52.8 & 85.8 & 80.3 & 77.4 & 80.1 \\
+Namespace(evalPoseEstimation=True, evalPoseTracking=False, groundTruth='/Users/oda/posetrack/nise_embedding/pred_json/val_gt_task1/', outputDir='./out', predictions='/Users/oda/posetrack/nise_embedding/pred_json/valid_anno_json_pred_task_1/', saveEvalPerSequence=False)
+Loading data
+# gt frames  : 54
+# pred frames: 54
+Evaluation of per-frame multi-person pose estimation
+saving results to ./out/total_AP_metrics.json
+Average Precision (AP) metric:
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 82.5 & 83.8 & 71.9 & 60.7 & 69.4 & 72.2 & 66.3 & 73.1 \\
+Namespace(evalPoseEstimation=True, evalPoseTracking=False, groundTruth='/Users/oda/posetrack/nise_embedding/pred_json/val_gt_task1/', outputDir='./out', predictions='/Users/oda/posetrack/nise_embedding/pred_json/valid_anno_json_pred_task_1/', saveEvalPerSequence=False)
+Loading data
+# gt frames  : 54
+# pred frames: 54
+Evaluation of per-frame multi-person pose estimation
+saving results to ./out/total_AP_metrics.json
+Average Precision (AP) metric:
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 38.0 & 32.0 & 16.1 & 11.1 & 26.6 & 18.1 & 18.7 & 23.9 \\
+Namespace(evalPoseEstimation=True, evalPoseTracking=False, groundTruth='/Users/oda/posetrack/nise_embedding/pred_json/val_gt_task1/', outputDir='./out', predictions='/Users/oda/posetrack/nise_embedding/pred_json/valid_anno_json_pred_task_1/', saveEvalPerSequence=False)
+Loading data
+# gt frames  : 54
+# pred frames: 54
+Evaluation of per-frame multi-person pose estimation
+saving results to ./out/total_AP_metrics.json
+Average Precision (AP) metric:
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 75.4 & 82.7 & 78.7 & 69.9 & 79.3 & 79.3 & 77.6 & 77.4 \\
+Namespace(evalPoseEstimation=True, evalPoseTracking=False, groundTruth='/Users/oda/posetrack/nise_embedding/pred_json/val_gt_task1/', outputDir='./out', predictions='/Users/oda/posetrack/nise_embedding/pred_json/valid_anno_json_pred_task_1/', saveEvalPerSequence=False)
+Loading data
+# gt frames  : 54
+# pred frames: 54
+Evaluation of per-frame multi-person pose estimation
+saving results to ./out/total_AP_metrics.json
+Average Precision (AP) metric:
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 46.8 & 66.9 & 63.4 & 73.6 & 40.3 & 50.1 & 28.8 & 52.4 \\
+Namespace(evalPoseEstimation=True, evalPoseTracking=False, groundTruth='/Users/oda/posetrack/nise_embedding/pred_json/val_gt_task1/', outputDir='./out', predictions='/Users/oda/posetrack/nise_embedding/pred_json/valid_anno_json_pred_task_1/', saveEvalPerSequence=False)
+Loading data
+# gt frames  : 46
+# pred frames: 46
+Evaluation of per-frame multi-person pose estimation
+saving results to ./out/total_AP_metrics.json
+Average Precision (AP) metric:
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 68.5 & 68.7 & 63.9 & 57.8 & 64.3 & 59.4 & 45.1 & 61.6 \\
+Namespace(evalPoseEstimation=True, evalPoseTracking=False, groundTruth='/Users/oda/posetrack/nise_embedding/pred_json/val_gt_task1/', outputDir='./out', predictions='/Users/oda/posetrack/nise_embedding/pred_json/valid_anno_json_pred_task_1/', saveEvalPerSequence=False)
+Loading data
+# gt frames  : 61
+# pred frames: 61
+Evaluation of per-frame multi-person pose estimation
+saving results to ./out/total_AP_metrics.json
+Average Precision (AP) metric:
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 82.5 & 80.3 & 74.7 & 65.3 & 62.6 & 60.4 & 47.3 & 68.6 \\
+Namespace(evalPoseEstimation=True, evalPoseTracking=False, groundTruth='/Users/oda/posetrack/nise_embedding/pred_json/val_gt_task1/', outputDir='./out', predictions='/Users/oda/posetrack/nise_embedding/pred_json/valid_anno_json_pred_task_1/', saveEvalPerSequence=False)
+Loading data
+# gt frames  : 58
+# pred frames: 58
+Evaluation of per-frame multi-person pose estimation
+saving results to ./out/total_AP_metrics.json
+Average Precision (AP) metric:
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 87.3 & 71.5 & 69.7 & 57.2 & 62.7 & 47.2 & 34.7 & 63.2 \\
+Namespace(evalPoseEstimation=True, evalPoseTracking=False, groundTruth='/Users/oda/posetrack/nise_embedding/pred_json/val_gt_task1/', outputDir='./out', predictions='/Users/oda/posetrack/nise_embedding/pred_json/valid_anno_json_pred_task_1/', saveEvalPerSequence=False)
+Loading data
+# gt frames  : 52
+# pred frames: 52
+Evaluation of per-frame multi-person pose estimation
+saving results to ./out/total_AP_metrics.json
+Average Precision (AP) metric:
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 69.1 & 72.3 & 58.3 & 27.0 & 64.5 & 30.2 & 26.2 & 50.9 \\
+Namespace(evalPoseEstimation=True, evalPoseTracking=False, groundTruth='/Users/oda/posetrack/nise_embedding/pred_json/val_gt_task1/', outputDir='./out', predictions='/Users/oda/posetrack/nise_embedding/pred_json/valid_anno_json_pred_task_1/', saveEvalPerSequence=False)
+Loading data
+# gt frames  : 42
+# pred frames: 42
+Evaluation of per-frame multi-person pose estimation
+saving results to ./out/total_AP_metrics.json
+Average Precision (AP) metric:
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 79.3 & 84.8 & 69.8 & 57.1 & 79.9 & 77.4 & 69.7 & 74.3 \\
+Namespace(evalPoseEstimation=True, evalPoseTracking=False, groundTruth='/Users/oda/posetrack/nise_embedding/pred_json/val_gt_task1/', outputDir='./out', predictions='/Users/oda/posetrack/nise_embedding/pred_json/valid_anno_json_pred_task_1/', saveEvalPerSequence=False)
+Loading data
+# gt frames  : 56
+# pred frames: 56
+Evaluation of per-frame multi-person pose estimation
+saving results to ./out/total_AP_metrics.json
+Average Precision (AP) metric:
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 29.5 & 29.5 & 25.3 & 18.1 & 14.9 & 14.0 & 17.8 & 21.8 \\
+Namespace(evalPoseEstimation=True, evalPoseTracking=False, groundTruth='/Users/oda/posetrack/nise_embedding/pred_json/val_gt_task1/', outputDir='./out', predictions='/Users/oda/posetrack/nise_embedding/pred_json/valid_anno_json_pred_task_1/', saveEvalPerSequence=False)
+Loading data
+# gt frames  : 47
+# pred frames: 47
+Evaluation of per-frame multi-person pose estimation
+saving results to ./out/total_AP_metrics.json
+Average Precision (AP) metric:
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 87.2 & 91.5 & 82.9 & 75.4 & 91.1 & 92.5 & 90.4 & 87.3 \\
+Namespace(evalPoseEstimation=True, evalPoseTracking=False, groundTruth='/Users/oda/posetrack/nise_embedding/pred_json/val_gt_task1/', outputDir='./out', predictions='/Users/oda/posetrack/nise_embedding/pred_json/valid_anno_json_pred_task_1/', saveEvalPerSequence=False)
+Loading data
+# gt frames  : 46
+# pred frames: 46
+Evaluation of per-frame multi-person pose estimation
+saving results to ./out/total_AP_metrics.json
+Average Precision (AP) metric:
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 80.2 & 80.3 & 75.1 & 78.3 & 73.2 & 66.6 & 60.9 & 74.0 \\
+Namespace(evalPoseEstimation=True, evalPoseTracking=False, groundTruth='/Users/oda/posetrack/nise_embedding/pred_json/val_gt_task1/', outputDir='./out', predictions='/Users/oda/posetrack/nise_embedding/pred_json/valid_anno_json_pred_task_1/', saveEvalPerSequence=False)
+Loading data
+# gt frames  : 40
+# pred frames: 40
+Evaluation of per-frame multi-person pose estimation
+saving results to ./out/total_AP_metrics.json
+Average Precision (AP) metric:
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 58.4 & 60.5 & 55.4 & 46.5 & 52.0 & 47.9 & 39.1 & 51.9 \\
+Namespace(evalPoseEstimation=True, evalPoseTracking=False, groundTruth='/Users/oda/posetrack/nise_embedding/pred_json/val_gt_task1/', outputDir='./out', predictions='/Users/oda/posetrack/nise_embedding/pred_json/valid_anno_json_pred_task_1/', saveEvalPerSequence=False)
+Loading data
+# gt frames  : 53
+# pred frames: 53
+Evaluation of per-frame multi-person pose estimation
+saving results to ./out/total_AP_metrics.json
+Average Precision (AP) metric:
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 91.9 & 89.3 & 87.5 & 81.8 & 82.8 & 78.2 & 62.8 & 82.7 \\
+Namespace(evalPoseEstimation=True, evalPoseTracking=False, groundTruth='/Users/oda/posetrack/nise_embedding/pred_json/val_gt_task1/', outputDir='./out', predictions='/Users/oda/posetrack/nise_embedding/pred_json/valid_anno_json_pred_task_1/', saveEvalPerSequence=False)
+Loading data
+# gt frames  : 51
+# pred frames: 51
+Evaluation of per-frame multi-person pose estimation
+saving results to ./out/total_AP_metrics.json
+Average Precision (AP) metric:
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 93.4 & 92.5 & 81.6 & 49.3 & 79.6 & 85.3 & 83.5 & 81.6 \\
+Namespace(evalPoseEstimation=True, evalPoseTracking=False, groundTruth='/Users/oda/posetrack/nise_embedding/pred_json/val_gt_task1/', outputDir='./out', predictions='/Users/oda/posetrack/nise_embedding/pred_json/valid_anno_json_pred_task_1/', saveEvalPerSequence=False)
+Loading data
+# gt frames  : 54
+# pred frames: 54
+Evaluation of per-frame multi-person pose estimation
+saving results to ./out/total_AP_metrics.json
+Average Precision (AP) metric:
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 88.6 & 91.3 & 85.3 & 91.8 & 60.3 & 71.2 & 47.3 & 77.3 \\
+Namespace(evalPoseEstimation=True, evalPoseTracking=False, groundTruth='/Users/oda/posetrack/nise_embedding/pred_json/val_gt_task1/', outputDir='./out', predictions='/Users/oda/posetrack/nise_embedding/pred_json/valid_anno_json_pred_task_1/', saveEvalPerSequence=False)
+Loading data
+# gt frames  : 48
+# pred frames: 48
+Evaluation of per-frame multi-person pose estimation
+saving results to ./out/total_AP_metrics.json
+Average Precision (AP) metric:
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 83.4 & 82.8 & 85.0 & 80.6 & 80.9 & 86.3 & 80.8 & 82.9 \\
+Namespace(evalPoseEstimation=True, evalPoseTracking=False, groundTruth='/Users/oda/posetrack/nise_embedding/pred_json/val_gt_task1/', outputDir='./out', predictions='/Users/oda/posetrack/nise_embedding/pred_json/valid_anno_json_pred_task_1/', saveEvalPerSequence=False)
+Loading data
+# gt frames  : 46
+# pred frames: 46
+Evaluation of per-frame multi-person pose estimation
+saving results to ./out/total_AP_metrics.json
+Average Precision (AP) metric:
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 66.4 & 73.0 & 68.5 & 65.6 & 76.7 & 84.9 & 81.5 & 73.3 \\
+Namespace(evalPoseEstimation=True, evalPoseTracking=False, groundTruth='/Users/oda/posetrack/nise_embedding/pred_json/val_gt_task1/', outputDir='./out', predictions='/Users/oda/posetrack/nise_embedding/pred_json/valid_anno_json_pred_task_1/', saveEvalPerSequence=False)
+Loading data
+# gt frames  : 61
+# pred frames: 61
+Evaluation of per-frame multi-person pose estimation
+saving results to ./out/total_AP_metrics.json
+Average Precision (AP) metric:
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 69.2 & 82.3 & 60.4 & 51.0 & 61.7 & 76.6 & 52.4 & 65.1 \\
+Namespace(evalPoseEstimation=True, evalPoseTracking=False, groundTruth='/Users/oda/posetrack/nise_embedding/pred_json/val_gt_task1/', outputDir='./out', predictions='/Users/oda/posetrack/nise_embedding/pred_json/valid_anno_json_pred_task_1/', saveEvalPerSequence=False)
+Loading data
+# gt frames  : 35
+# pred frames: 35
+Evaluation of per-frame multi-person pose estimation
+saving results to ./out/total_AP_metrics.json
+Average Precision (AP) metric:
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 77.4 & 53.4 &  nan &  nan & 72.4 &  nan &  nan & 72.3 \\
+Namespace(evalPoseEstimation=True, evalPoseTracking=False, groundTruth='/Users/oda/posetrack/nise_embedding/pred_json/val_gt_task1/', outputDir='./out', predictions='/Users/oda/posetrack/nise_embedding/pred_json/valid_anno_json_pred_task_1/', saveEvalPerSequence=False)
+Loading data
+# gt frames  : 59
+# pred frames: 59
+Evaluation of per-frame multi-person pose estimation
+saving results to ./out/total_AP_metrics.json
+Average Precision (AP) metric:
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 76.6 & 65.0 & 45.1 & 40.0 & 63.5 & 49.9 & 41.6 & 56.0 \\
+Namespace(evalPoseEstimation=True, evalPoseTracking=False, groundTruth='/Users/oda/posetrack/nise_embedding/pred_json/val_gt_task1/', outputDir='./out', predictions='/Users/oda/posetrack/nise_embedding/pred_json/valid_anno_json_pred_task_1/', saveEvalPerSequence=False)
+Loading data
+# gt frames  : 50
+# pred frames: 50
+Evaluation of per-frame multi-person pose estimation
+saving results to ./out/total_AP_metrics.json
+Average Precision (AP) metric:
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 68.7 & 68.2 & 66.5 & 60.3 & 70.4 & 77.3 & 72.9 & 69.2 \\
+Namespace(evalPoseEstimation=True, evalPoseTracking=False, groundTruth='/Users/oda/posetrack/nise_embedding/pred_json/val_gt_task1/', outputDir='./out', predictions='/Users/oda/posetrack/nise_embedding/pred_json/valid_anno_json_pred_task_1/', saveEvalPerSequence=False)
+Loading data
+# gt frames  : 56
+# pred frames: 56
+Evaluation of per-frame multi-person pose estimation
+saving results to ./out/total_AP_metrics.json
+Average Precision (AP) metric:
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 88.6 & 87.2 & 67.2 & 57.6 & 86.9 & 44.8 & 48.7 & 70.1 \\
+Namespace(evalPoseEstimation=True, evalPoseTracking=False, groundTruth='/Users/oda/posetrack/nise_embedding/pred_json/val_gt_task1/', outputDir='./out', predictions='/Users/oda/posetrack/nise_embedding/pred_json/valid_anno_json_pred_task_1/', saveEvalPerSequence=False)
+Loading data
+# gt frames  : 54
+# pred frames: 54
+Evaluation of per-frame multi-person pose estimation
+saving results to ./out/total_AP_metrics.json
+Average Precision (AP) metric:
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 70.7 & 69.2 & 63.8 & 51.0 & 64.2 & 65.3 & 58.8 & 63.8 \\
+Namespace(evalPoseEstimation=True, evalPoseTracking=False, groundTruth='/Users/oda/posetrack/nise_embedding/pred_json/val_gt_task1/', outputDir='./out', predictions='/Users/oda/posetrack/nise_embedding/pred_json/valid_anno_json_pred_task_1/', saveEvalPerSequence=False)
+Loading data
+# gt frames  : 51
+# pred frames: 51
+Evaluation of per-frame multi-person pose estimation
+saving results to ./out/total_AP_metrics.json
+Average Precision (AP) metric:
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 87.4 & 82.5 & 74.4 & 78.2 & 80.3 & 68.9 & 84.9 & 80.1 \\
+Running: mv other/000342_mpii_relpath_5sec_testsub.json .
+Running: bash /Users/oda/posetrack/poseval/eval_task_1.sh
+Running: mv 000342_mpii_relpath_5sec_testsub.json other
+Running: mv other/001735_mpii_relpath_5sec_testsub.json .
+Running: bash /Users/oda/posetrack/poseval/eval_task_1.sh
+Running: mv 001735_mpii_relpath_5sec_testsub.json other
+Running: mv other/001744_mpii_relpath_5sec_testsub.json .
+Running: bash /Users/oda/posetrack/poseval/eval_task_1.sh
+Running: mv 001744_mpii_relpath_5sec_testsub.json other
+Running: mv other/005067_mpii_relpath_5sec_testsub.json .
+Running: bash /Users/oda/posetrack/poseval/eval_task_1.sh
+Running: mv 005067_mpii_relpath_5sec_testsub.json other
+Running: mv other/00522_mpii_relpath_5sec_testsub.json .
+Running: bash /Users/oda/posetrack/poseval/eval_task_1.sh
+Running: mv 00522_mpii_relpath_5sec_testsub.json other
+Running: mv other/007684_mpii_relpath_5sec_testsub.json .
+Running: bash /Users/oda/posetrack/poseval/eval_task_1.sh
+Running: mv 007684_mpii_relpath_5sec_testsub.json other
+Running: mv other/008760_mpii_relpath_5sec_testsub.json .
+Running: bash /Users/oda/posetrack/poseval/eval_task_1.sh
+Running: mv 008760_mpii_relpath_5sec_testsub.json other
+Running: mv other/01001_mpii_step2_relpath_5sec_testsub.json .
+Running: bash /Users/oda/posetrack/poseval/eval_task_1.sh
+Running: mv 01001_mpii_step2_relpath_5sec_testsub.json other
+Running: mv other/014531_mpii_relpath_5sec_testsub.json .
+Running: bash /Users/oda/posetrack/poseval/eval_task_1.sh
+Running: mv 014531_mpii_relpath_5sec_testsub.json other
+Running: mv other/01486_mpii_relpath_5sec_testsub.json .
+Running: bash /Users/oda/posetrack/poseval/eval_task_1.sh
+Running: mv 01486_mpii_relpath_5sec_testsub.json other
+Running: mv other/015302_mpii_relpath_5sec_testsub.json .
+Running: bash /Users/oda/posetrack/poseval/eval_task_1.sh
+Running: mv 015302_mpii_relpath_5sec_testsub.json other
+Running: mv other/015860_mpii_relpath_5sec_testsub.json .
+Running: bash /Users/oda/posetrack/poseval/eval_task_1.sh
+Running: mv 015860_mpii_relpath_5sec_testsub.json other
+Running: mv other/018725_mpii_relpath_5sec_testsub.json .
+Running: bash /Users/oda/posetrack/poseval/eval_task_1.sh
+Running: mv 018725_mpii_relpath_5sec_testsub.json other
+Running: mv other/020910_mpii_relpath_5sec_testsub.json .
+Running: bash /Users/oda/posetrack/poseval/eval_task_1.sh
+Running: mv 020910_mpii_relpath_5sec_testsub.json other
+Running: mv other/022688_mpii_relpath_5sec_testsub.json .
+Running: bash /Users/oda/posetrack/poseval/eval_task_1.sh
+Running: mv 022688_mpii_relpath_5sec_testsub.json other
+Running: mv other/02276_mpii_relpath_5sec_testsub.json .
+Running: bash /Users/oda/posetrack/poseval/eval_task_1.sh
+Running: mv 02276_mpii_relpath_5sec_testsub.json other
+Running: mv other/02277_mpii_step2_relpath_5sec_testsub.json .
+Running: bash /Users/oda/posetrack/poseval/eval_task_1.sh
+Running: mv 02277_mpii_step2_relpath_5sec_testsub.json other
+Running: mv other/02364_mpii_relpath_5sec_testsub.json .
+Running: bash /Users/oda/posetrack/poseval/eval_task_1.sh
+Running: mv 02364_mpii_relpath_5sec_testsub.json other
+Running: mv other/024165_mpii_relpath_5sec_testsub.json .
+Running: bash /Users/oda/posetrack/poseval/eval_task_1.sh
+Running: mv 024165_mpii_relpath_5sec_testsub.json other
+Running: mv other/02835_mpii_relpath_5sec_testsub.json .
+Running: bash /Users/oda/posetrack/poseval/eval_task_1.sh
+Running: mv 02835_mpii_relpath_5sec_testsub.json other
+Running: mv other/03742_mpii_relpath_5sec_testsub.json .
+Running: bash /Users/oda/posetrack/poseval/eval_task_1.sh
+Running: mv 03742_mpii_relpath_5sec_testsub.json other
+Running: mv other/03943_mpii_step2_relpath_5sec_testsub.json .
+Running: bash /Users/oda/posetrack/poseval/eval_task_1.sh
+Running: mv 03943_mpii_step2_relpath_5sec_testsub.json other
+Running: mv other/04622_mpii_relpath_5sec_testsub.json .
+Running: bash /Users/oda/posetrack/poseval/eval_task_1.sh
+Running: mv 04622_mpii_relpath_5sec_testsub.json other
+Running: mv other/05833_mpii_relpath_5sec_testsub.json .
+Running: bash /Users/oda/posetrack/poseval/eval_task_1.sh
+Running: mv 05833_mpii_relpath_5sec_testsub.json other
+Running: mv other/07128_mpii_step2_relpath_5sec_testsub.json .
+Running: bash /Users/oda/posetrack/poseval/eval_task_1.sh
+Running: mv 07128_mpii_step2_relpath_5sec_testsub.json other
+Running: mv other/07496_mpii_relpath_5sec_testsub.json .
+Running: bash /Users/oda/posetrack/poseval/eval_task_1.sh
+Running: mv 07496_mpii_relpath_5sec_testsub.json other
+Running: mv other/08827_mpii_relpath_5sec_testsub.json .
+Running: bash /Users/oda/posetrack/poseval/eval_task_1.sh
+Running: mv 08827_mpii_relpath_5sec_testsub.json other
+Running: mv other/09883_mpii_step2_relpath_5sec_testsub.json .
+Running: bash /Users/oda/posetrack/poseval/eval_task_1.sh
+Running: mv 09883_mpii_step2_relpath_5sec_testsub.json other
+Running: mv other/12834_mpii_relpath_5sec_testsub.json .
+Running: bash /Users/oda/posetrack/poseval/eval_task_1.sh
+Running: mv 12834_mpii_relpath_5sec_testsub.json other
+Running: mv other/13293_mpii_step2_relpath_5sec_testsub.json .
+Running: bash /Users/oda/posetrack/poseval/eval_task_1.sh
+Running: mv 13293_mpii_step2_relpath_5sec_testsub.json other
+Running: mv other/13534_mpii_relpath_5sec_testsub.json .
+Running: bash /Users/oda/posetrack/poseval/eval_task_1.sh
+Running: mv 13534_mpii_relpath_5sec_testsub.json other
+Running: mv other/14102_mpii_relpath_5sec_testsub.json .
+Running: bash /Users/oda/posetrack/poseval/eval_task_1.sh
+Running: mv 14102_mpii_relpath_5sec_testsub.json other
+Running: mv other/14293_mpii_relpath_5sec_testsub.json .
+Running: bash /Users/oda/posetrack/poseval/eval_task_1.sh
+Running: mv 14293_mpii_relpath_5sec_testsub.json other
+Running: mv other/14384_mpii_step2_relpath_5sec_testsub.json .
+Running: bash /Users/oda/posetrack/poseval/eval_task_1.sh
+Running: mv 14384_mpii_step2_relpath_5sec_testsub.json other
+Running: mv other/14523_mpii_step2_relpath_5sec_testsub.json .
+Running: bash /Users/oda/posetrack/poseval/eval_task_1.sh
+Running: mv 14523_mpii_step2_relpath_5sec_testsub.json other
+Running: mv other/14960_mpii_step2_relpath_5sec_testsub.json .
+Running: bash /Users/oda/posetrack/poseval/eval_task_1.sh
+Running: mv 14960_mpii_step2_relpath_5sec_testsub.json other
+Running: mv other/15301_mpii_relpath_5sec_testsub.json .
+Running: bash /Users/oda/posetrack/poseval/eval_task_1.sh
+Running: mv 15301_mpii_relpath_5sec_testsub.json other
+Running: mv other/16180_mpii_relpath_5sec_testsub.json .
+Running: bash /Users/oda/posetrack/poseval/eval_task_1.sh
+Running: mv 16180_mpii_relpath_5sec_testsub.json other
+Running: mv other/16236_mpii_relpath_5sec_testsub.json .
+Running: bash /Users/oda/posetrack/poseval/eval_task_1.sh
+Running: mv 16236_mpii_relpath_5sec_testsub.json other
+Running: mv other/16239_mpii_step2_relpath_5sec_testsub.json .
+Running: bash /Users/oda/posetrack/poseval/eval_task_1.sh
+Running: mv 16239_mpii_step2_relpath_5sec_testsub.json other
+Running: mv other/16662_mpii_relpath_5sec_testsub.json .
+Running: bash /Users/oda/posetrack/poseval/eval_task_1.sh
+Running: mv 16662_mpii_relpath_5sec_testsub.json other
+Running: mv other/17839_mpii_relpath_5sec_testsub.json .
+Running: bash /Users/oda/posetrack/poseval/eval_task_1.sh
+Running: mv 17839_mpii_relpath_5sec_testsub.json other
+Running: mv other/20880_mpii_relpath_5sec_testsub.json .
+Running: bash /Users/oda/posetrack/poseval/eval_task_1.sh
+Running: mv 20880_mpii_relpath_5sec_testsub.json other
+Running: mv other/22430_mpii_relpath_5sec_testsub.json .
+Running: bash /Users/oda/posetrack/poseval/eval_task_1.sh
+Running: mv 22430_mpii_relpath_5sec_testsub.json other
+Running: mv other/23653_mpii_step2_relpath_5sec_testsub.json .
+Running: bash /Users/oda/posetrack/poseval/eval_task_1.sh
+Running: mv 23653_mpii_step2_relpath_5sec_testsub.json other
+Running: mv other/23717_mpii_relpath_5sec_testsub.json .
+Running: bash /Users/oda/posetrack/poseval/eval_task_1.sh
+Running: mv 23717_mpii_relpath_5sec_testsub.json other
+Running: mv other/23754_mpii_step2_relpath_5sec_testsub.json .
+Running: bash /Users/oda/posetrack/poseval/eval_task_1.sh
+Running: mv 23754_mpii_step2_relpath_5sec_testsub.json other
+Running: mv other/24158_mpii_step2_relpath_5sec_testsub.json .Namespace(evalPoseEstimation=True, evalPoseTracking=False, groundTruth='/Users/oda/posetrack/nise_embedding/pred_json/val_gt_task1/', outputDir='./out', predictions='/Users/oda/posetrack/nise_embedding/pred_json/valid_anno_json_pred_task_1/', saveEvalPerSequence=False)
+Loading data
+# gt frames  : 55
+# pred frames: 55
+Evaluation of per-frame multi-person pose estimation
+saving results to ./out/total_AP_metrics.json
+Average Precision (AP) metric:
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 75.3 & 69.3 & 60.8 & 48.4 & 64.2 & 57.2 & 43.5 & 60.8 \\
+Namespace(evalPoseEstimation=True, evalPoseTracking=False, groundTruth='/Users/oda/posetrack/nise_embedding/pred_json/val_gt_task1/', outputDir='./out', predictions='/Users/oda/posetrack/nise_embedding/pred_json/valid_anno_json_pred_task_1/', saveEvalPerSequence=False)
+Loading data
+# gt frames  : 53
+# pred frames: 53
+Evaluation of per-frame multi-person pose estimation
+saving results to ./out/total_AP_metrics.json
+Average Precision (AP) metric:
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 70.5 & 62.4 & 46.7 & 36.2 & 45.7 & 39.4 & 43.7 & 50.7 \\
+Namespace(evalPoseEstimation=True, evalPoseTracking=False, groundTruth='/Users/oda/posetrack/nise_embedding/pred_json/val_gt_task1/', outputDir='./out', predictions='/Users/oda/posetrack/nise_embedding/pred_json/valid_anno_json_pred_task_1/', saveEvalPerSequence=False)
+Loading data
+# gt frames  : 51
+# pred frames: 51
+Evaluation of per-frame multi-person pose estimation
+saving results to ./out/total_AP_metrics.json
+Average Precision (AP) metric:
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 80.1 & 75.9 & 53.2 & 47.7 & 55.8 & 64.3 &  nan & 64.2 \\
+
+Running: bash /Users/oda/posetrack/poseval/eval_task_1.sh
+Running: mv 24158_mpii_step2_relpath_5sec_testsub.json other
+Running: mv other/24575_mpii_step2_relpath_5sec_testsub.json .
+Running: bash /Users/oda/posetrack/poseval/eval_task_1.sh
+Running: mv 24575_mpii_step2_relpath_5sec_testsub.json other
+Running: mv other/24621_mpii_relpath_5sec_testsub.json .
+Running: bash /Users/oda/posetrack/poseval/eval_task_1.sh
+Running: mv 24621_mpii_relpath_5sec_testsub.json other

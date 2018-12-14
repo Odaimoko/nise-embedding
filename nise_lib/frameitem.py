@@ -97,7 +97,7 @@ class FrameItem:
         self.id_idx_in_unified = torch.tensor([])
         
         self.human_ids = torch.tensor([])
-        self.dict_info = {}
+        self.pt_eval_dict = {}
         
         # ─── FLAGS FOR CORRENT ORDER ─────────────────────────────────────
         self.human_detected = False
@@ -112,7 +112,7 @@ class FrameItem:
     # def get_box_from_joints
     
     @log_time('\t人检测……')
-    def detect_human(self, detector):
+    def detect_human(self, detector, gt_detection = None):
         '''
         :param detector:
         :return: human is represented as tensor of size num_people x 4. The result is NMSed.
@@ -132,6 +132,7 @@ class FrameItem:
             # 有可能出现没检测到的情况，大部分不可能，但是工程起见。
             # 2TODO 比如 bonn_mpii_train_5sec\00098_mpii 最前面几个是全黑所以检测不到……emmmm怎么办呢
             self.detected_bboxes = expand_vector_to_tensor(self.detected_bboxes)
+        
         debug_print('Detected', self.detected_bboxes.shape[0], 'boxes', indent = 1)
         self.human_detected = True
     
@@ -207,16 +208,16 @@ class FrameItem:
             if scores.numel() == 1:  # 从这里下来的 score，如果只有一个的话，是一个scalar，而不是一个size为1 的向量
                 scores.unsqueeze_(0)
             
-            if nise_cfg.TEST.USE_GT_JOINTS_TO_PROP and self.gt_boxes.numel() != 0:  # match一下，只用检测到的gt的joint
+            if nise_cfg.TEST.USE_GT_JOINTS_TO_PROP and prev_frame.gt_boxes.numel() != 0:  # match一下，只用检测到的gt的joint
                 prev_box_np = prev_filtered_box.numpy()[:, :4]
-                gt_box_np = self.gt_boxes.numpy()[:, :4]
-                gt_scores = self.gt_boxes[:, 4]
+                gt_box_np = prev_frame.gt_boxes.numpy()[:, :4]
+                gt_scores = prev_frame.gt_boxes[:, 4]
                 prev_to_gt_iou = iou(prev_box_np, gt_box_np, np.zeros(0))
                 mask = prev_to_gt_iou >= nise_cfg.TEST.GT_JOINTS_PROP_IOU_THRES
                 matched_gt_ind = np.nonzero(np.sum(mask, 0))[0]
-                prev_frame_joints = self.gt_joints[matched_gt_ind.astype(np.uint8)][:, :, :2]
+                prev_frame_joints = prev_frame.gt_joints[matched_gt_ind.astype(np.uint8)][:, :, :2]
                 prev_frame_joints = expand_vector_to_tensor(prev_frame_joints, 3)
-                prev_frame_joints_vis = self.gt_joints[matched_gt_ind.astype(np.uint8)][:, :, 2]
+                prev_frame_joints_vis = prev_frame.gt_joints[matched_gt_ind.astype(np.uint8)][:, :, 2]
                 prev_frame_joints_vis = expand_vector_to_tensor(prev_frame_joints_vis)
                 scores = gt_scores[matched_gt_ind.astype(np.uint8)]  # 从这里下来的score如果是一个，会是向量而不是scalar
             
@@ -252,7 +253,7 @@ class FrameItem:
             prop_bboxes_scores.unsqueeze_(1)
             self.prop_bboxes = torch.cat([prop_bboxes, prop_bboxes_scores], 1)
             self.prop_bboxes = expand_vector_to_tensor(self.prop_bboxes)
-            if nise_cfg.DEBUG.VISUALIZE:
+            if nise_cfg.DEBUG.VIS_PROPED_JOINTS:
                 p = PurePosixPath(self.img_path)
                 out_dir = os.path.join(nise_cfg.PATH.JOINTS_DIR + '_flowproped', p.parts[-2])
                 mkdir(out_dir)
@@ -358,7 +359,7 @@ class FrameItem:
                 trans,
                 (int(simple_cfg.MODEL.IMAGE_SIZE[0]), int(simple_cfg.MODEL.IMAGE_SIZE[1])),
                 flags = cv2.INTER_LINEAR)
-            if nise_cfg.DEBUG.EST_IN_FRAME == True:
+            if nise_cfg.DEBUG.VIS_SINGLE_NO_JOINTS == True:
                 cv2.imwrite(os.path.join(out_dir, p.stem + "_nojoints_" + str(i) + '.jpg'), resized_human_np)
             
             # 'images_joint/valid/015860_mpii_single_person/00000001_0.jpg'
@@ -375,7 +376,7 @@ class FrameItem:
             self.joints[i, :, :] = to_torch(preds).squeeze()
             self.joints_score[i, :] = to_torch(max_val).squeeze() * human_score
             
-            if nise_cfg.DEBUG.VISUALIZE:
+            if nise_cfg.DEBUG.VIS_EST_SINGLE:
                 # debug_print(i, indent = 1)
                 img_with_joints = get_batch_image_with_joints(torch_img, to_torch(preds), torch.ones(1, 15, 1))
                 resized_human_np_with_joints = cv2.warpAffine(
@@ -493,52 +494,54 @@ class FrameItem:
     def visualize(self, dataset):
         if self.id_assigned is False and self.task != 1:
             raise ValueError('Should assign id first.')
-        class_boxes = [[]] * 81
-        # filter for showing joints
-        class_boxes[1] = self.id_bboxes
-        training_start_time = time.strftime("%H-%M-%S", time.localtime())
-        p = PurePosixPath(self.img_path)
-        out_dir = os.path.join(nise_cfg.PATH.IMAGES_OUT_DIR, p.parts[-2])
-        mkdir(out_dir)
-        
-        vis_utils.vis_one_image_for_pt(
-            self.img_outside_flow[:, :, ::-1],  # BGR -> RGB for visualization
-            self.img_name,
-            out_dir,
-            class_boxes,
-            None,
-            None,
-            dataset = dataset,
-            box_alpha = 0.3,  # opacity
-            show_class = True,
-            thresh = nise_cfg.DEBUG.VIS_HUMAN_THRES,
-            human_ids = self.human_ids,
-            kp_thresh = 2,
-            ext = 'jpg'
-        )
+        if nise_cfg.DEBUG.VIS_BOX:
+            class_boxes = [[]] * 81
+            # filter for showing joints
+            class_boxes[1] = self.id_bboxes
+            training_start_time = time.strftime("%H-%M-%S", time.localtime())
+            p = PurePosixPath(self.img_path)
+            out_dir = os.path.join(nise_cfg.PATH.IMAGES_OUT_DIR, p.parts[-2])
+            mkdir(out_dir)
+            
+            vis_utils.vis_one_image_for_pt(
+                self.img_outside_flow[:, :, ::-1],  # BGR -> RGB for visualization
+                self.img_name,
+                out_dir,
+                class_boxes,
+                None,
+                None,
+                dataset = dataset,
+                box_alpha = 0.3,  # opacity
+                show_class = True,
+                thresh = nise_cfg.DEBUG.VIS_HUMAN_THRES,
+                human_ids = self.human_ids,
+                kp_thresh = 2,
+                ext = 'jpg'
+            )
         
         # SHOW JOINTS
-        if self.joints.numel() == 0 or self.id_idx_in_unified.numel() == 0:
-            # Essentially no joints or no joints after filtering
-            return
-        joints_to_show = self.joints[self.id_idx_in_unified]
-        joints_to_show = self._resize_joints(joints_to_show)
-        num_people, num_joints, _ = joints_to_show.shape
-        
-        out_dir = os.path.join(nise_cfg.PATH.JOINTS_DIR, p.parts[-2])
-        mkdir(out_dir)
-        for i in range(num_people):
-            joints_i = joints_to_show[i, ...]  # 16 x 2
-            joint_visible = torch.ones([num_joints, 1])
-            nise_batch_joints = torch.cat([joints_i, joint_visible], 1)  # 16 x 3
+        if nise_cfg.DEBUG.VIS_JOINTS_FULL:
+            if self.joints.numel() == 0 or self.id_idx_in_unified.numel() == 0:
+                # Essentially no joints or no joints after filtering
+                return
+            joints_to_show = self.joints[self.id_idx_in_unified]
+            joints_to_show = self._resize_joints(joints_to_show)
+            num_people, num_joints, _ = joints_to_show.shape
             
-            save_single_whole_image_with_joints(
-                im_to_torch(self.original_img).unsqueeze(0),
-                nise_batch_joints.unsqueeze(0),
-                os.path.join(out_dir, self.img_name + "_id_" + "{:02d}".format(
-                    self.human_ids[i].item()) + ".jpg"),
-                boxes = self.id_bboxes[i].unsqueeze(0), human_ids = self.human_ids[i].unsqueeze(0)
-            )
+            out_dir = os.path.join(nise_cfg.PATH.JOINTS_DIR, p.parts[-2])
+            mkdir(out_dir)
+            for i in range(num_people):
+                joints_i = joints_to_show[i, ...]  # 16 x 2
+                joint_visible = torch.ones([num_joints, 1])
+                nise_batch_joints = torch.cat([joints_i, joint_visible], 1)  # 16 x 3
+                
+                save_single_whole_image_with_joints(
+                    im_to_torch(self.original_img).unsqueeze(0),
+                    nise_batch_joints.unsqueeze(0),
+                    os.path.join(out_dir, self.img_name + "_id_" + "{:02d}".format(
+                        self.human_ids[i].item()) + ".jpg"),
+                    boxes = self.id_bboxes[i].unsqueeze(0), human_ids = self.human_ids[i].unsqueeze(0)
+                )
     
     # @log_time('\tTo dict......')
     def to_dict(self):
@@ -615,5 +618,8 @@ class FrameItem:
                 # 'imgnum'
             }
         
-        self.dict_info = d
+        self.pt_eval_dict = d
         return d
+    
+    def detect_results(self):
+        return  self.detected_bboxes.tolist()

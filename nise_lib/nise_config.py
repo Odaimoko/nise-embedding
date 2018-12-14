@@ -68,7 +68,7 @@ def set_path_from_nise_cfg(nise_cfg):
         str(nise_cfg.TEST.TASK),
         'GTbox' if nise_cfg.TEST.USE_GT_VALID_BOX else 'DETbox',
         'propfiltered' if nise_cfg.ALG.JOINT_PROP_WITH_FILTERED_HUMAN else 'propall',
-        'propthres'  if nise_cfg.ALG.JOINT_PROP_WITH_FILTERED_HUMAN else '',
+        'propthres' if nise_cfg.ALG.JOINT_PROP_WITH_FILTERED_HUMAN else '',
         str(nise_cfg.ALG.PROP_HUMAN_THRES) if nise_cfg.ALG.JOINT_PROP_WITH_FILTERED_HUMAN else '',
         'propGT' if nise_cfg.TEST.USE_GT_JOINTS_TO_PROP else 'propDET'
     ])
@@ -166,10 +166,15 @@ class NiseConfig:
             self.SIMPLE = False
             
             self.FRAME = True
-            self.EST_IN_FRAME = False
+            self.VISUALIZE = True
             self.VIS_HUMAN_THRES = .5
+            self.VIS_SINGLE_NO_JOINTS = False
+            self.VIS_BOX = True
+            self.VIS_EST_SINGLE = False
+            self.VIS_PROPED_JOINTS = False
+            self.VIS_JOINTS_FULL = False
             
-            self.VISUALIZE = False
+            self.SAVE_DETECTION_TENSOR = True
     
     class _ALG:
         
