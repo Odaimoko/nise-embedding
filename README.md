@@ -82,6 +82,12 @@ $ diff my_e2e_mask_rcnn_X-101-64x4d-FPN_1x.yaml ../Detectron.pytorch/tron_config
 
 - nms 判定为同一个的 thres。
 
+
+
+现在跑 task1，全部视频不要画图只需要半个小时，画图要一个小时。
+
+继续加快，存储了 detection 的结果，
+
 ## 2018-12-13
 
 在prop 的时候加入是否使用 gtbox 的选项：如果True，在 prop 的时候，将上一帧的 box 和 gt 比较，如果有 gtbox 的 IoU 大于 thres，那么将这个 gtbox 对应的 gtjoint 拿过来prop， 而不是用上一帧 prop 的结果。这样既保留了detection的结果，又保证了 joint 的正确性。

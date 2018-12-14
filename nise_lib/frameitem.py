@@ -112,7 +112,7 @@ class FrameItem:
     # def get_box_from_joints
     
     @log_time('\t人检测……')
-    def detect_human(self, detector, gt_detection = None):
+    def detect_human(self, detector, prepared_detection = None):
         '''
         :param detector:
         :return: human is represented as tensor of size num_people x 4. The result is NMSed.
@@ -120,7 +120,8 @@ class FrameItem:
         
         if nise_cfg.TEST.USE_GT_VALID_BOX:
             self.detected_bboxes = self.gt_boxes
-        
+        elif prepared_detection is not None and prepared_detection.numel() >= 5:
+            self.detected_bboxes = prepared_detection
         else:
             cls_boxes = im_detect_all(detector, self.original_img)  # the example from detectron use this in this way
             human_bboxes = torch.from_numpy(cls_boxes[1])  # person is the first class of coco， 0 for background
@@ -622,4 +623,4 @@ class FrameItem:
         return d
     
     def detect_results(self):
-        return  self.detected_bboxes.tolist()
+        return self.detected_bboxes.tolist()

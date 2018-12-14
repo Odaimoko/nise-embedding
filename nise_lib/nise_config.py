@@ -174,8 +174,9 @@ class NiseConfig:
             self.VIS_PROPED_JOINTS = False
             self.VIS_JOINTS_FULL = False
             
-            self.SAVE_DETECTION_TENSOR = True
-    
+            self.SAVE_DETECTION_TENSOR = False
+            self.USE_PT_VAL_DETECTION_RESULT = True
+
     class _ALG:
         
         def __init__(self):
@@ -211,6 +212,7 @@ class NiseConfig:
             self.POSETRACK_ROOT = 'data/pt17/'
             self.GT_TRAIN_ANNOTATION_DIR = os.path.join(self.POSETRACK_ROOT, 'train_anno_json/')
             self.GT_VAL_ANNOTATION_DIR = os.path.join(self.POSETRACK_ROOT, 'valid_anno_json/')
+            self.DETECT_JSON_DIR = 'det_json/'
     
     class _TEST:
         def __init__(self):
@@ -247,7 +249,7 @@ nise_args = get_nise_arg_parser()
 update_config(nise_cfg, nise_args.nise_config)
 
 suffix = set_path_from_nise_cfg(nise_cfg)
-training_start_time = time.strftime("%m_%d-%H:%M", time.localtime())
+training_start_time = time.strftime("%m_%d-%H_%M", time.localtime())
 
 nise_logger, _ = create_nise_logger(nise_cfg, '_'.join([training_start_time, suffix]), 'valid')
 mkrs = Munkres()

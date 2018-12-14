@@ -121,3 +121,4 @@ images_out/valid_gt/count_frames.py
 logs/
 ignore/
 exp_config/t.yaml
+!det_json/*
