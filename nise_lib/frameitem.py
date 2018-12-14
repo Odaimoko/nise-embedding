@@ -28,6 +28,7 @@ class FrameItem:
          One image or a batch of images?
     '''
     
+    @log_time('\tInit FI……')
     def __init__(self, img_path, task = 2, is_first = False, gt_joints = None):
         '''
 
@@ -212,21 +213,32 @@ class FrameItem:
             if nise_cfg.TEST.USE_GT_JOINTS_TO_PROP and prev_frame.gt_boxes.numel() != 0:  # match一下，只用检测到的gt的joint
                 prev_box_np = prev_filtered_box.numpy()[:, :4]
                 gt_box_np = prev_frame.gt_boxes.numpy()[:, :4]
-                gt_scores = prev_frame.gt_boxes[:, 4]
                 prev_to_gt_iou = iou(prev_box_np, gt_box_np, np.zeros(0))
-                mask = prev_to_gt_iou >= nise_cfg.TEST.GT_JOINTS_PROP_IOU_THRES
-                matched_gt_ind = np.nonzero(np.sum(mask, 0))[0]
-                prev_frame_joints = prev_frame.gt_joints[matched_gt_ind.astype(np.uint8)][:, :, :2]
-                prev_frame_joints = expand_vector_to_tensor(prev_frame_joints, 3)
-                prev_frame_joints_vis = prev_frame.gt_joints[matched_gt_ind.astype(np.uint8)][:, :, 2]
-                prev_frame_joints_vis = expand_vector_to_tensor(prev_frame_joints_vis)
-                scores = gt_scores[matched_gt_ind.astype(np.uint8)]  # 从这里下来的score如果是一个，会是向量而不是scalar
+                # gt_scores = prev_frame.gt_boxes[:, 4]
+                # mask = prev_to_gt_iou >= nise_cfg.TEST.GT_JOINTS_PROP_IOU_THRES
+                # matched_gt_ind = np.nonzero(np.sum(mask, 0))[0]
+                # prev_frame_joints = prev_frame.gt_joints[matched_gt_ind.astype(np.uint8)][:, :, :2]
+                # prev_frame_joints = expand_vector_to_tensor(prev_frame_joints, 3)
+                # prev_frame_joints_vis = prev_frame.gt_joints[matched_gt_ind.astype(np.uint8)][:, :, 2]
+                # prev_frame_joints_vis = expand_vector_to_tensor(prev_frame_joints_vis)
+                # scores = gt_scores[matched_gt_ind.astype(np.uint8)]  # 从这里下来的score如果是一个，会是向量而不是scalar
+                inds = get_matching_indices(to_torch(prev_to_gt_iou))
+                num_matched_people = len(inds)
+                prev_frame_joints = torch.zeros([num_matched_people, nise_cfg.DATA.num_joints, 2])
+                prev_frame_joints_vis=torch.zeros([num_matched_people,nise_cfg.DATA.num_joints])
+                scores = torch.zeros([num_matched_people])
+                for i, ind in enumerate(inds):
+                    prev, gt = ind
+                    prev_frame_joints[i] = prev_frame.gt_joints[gt, :, :2]
+                    prev_frame_joints_vis[i] = prev_frame.gt_joints[gt, :, 2]
+                    scores[i] = prev_filtered_box[prev, 4]
             
             prev_frame_joints = check_joints_format(prev_frame_joints)
             
             prev_frame_joints = prev_frame_joints.int()
             
             new_joints = torch.zeros(prev_frame_joints.shape)
+            # new_joints_vis  = torch.zeros(prev_frame_joints.shape[0],)
             # using previous score as new score
             prop_bboxes_scores = scores  # vector
             
@@ -235,8 +247,9 @@ class FrameItem:
                 for joint in range(nise_cfg.DATA.num_joints):
                     joint_pos = prev_frame_joints[person, joint, :]  # x,y
                     joint_vis = prev_frame_joints_vis[person, joint]
-                    if joint_pos[0] < self.img_w and joint_pos[1] < self.img_h \
-                            and joint_pos[0] > 0 and joint_pos[1] > 0 and joint_vis > 0:
+                    new_joint_vis = joint_pos[0] < self.img_w and joint_pos[1] < self.img_h \
+                            and joint_pos[0] > 0 and joint_pos[1] > 0 and joint_vis > 0
+                    if new_joint_vis:
                         # TODO 可能和作者不一样的地方，画面外的joint怎么办，我设定的是两个0，然后自然而然就会被clamp
                         joint_flow = self.flow_to_current[:, joint_pos[1], joint_pos[0]].cpu()
                     else:
@@ -248,7 +261,7 @@ class FrameItem:
             # for similarity. no need to expand here cause if only prev_joints has the right dimension
             self.new_joints = new_joints
             # calc new bboxes from new joints, dont clamp joint, clamp box
-            prop_bboxes = joints_to_bboxes(self.new_joints, joint_vis = None,
+            prop_bboxes = joints_to_bboxes(self.new_joints, joint_vis = prev_frame_joints_vis,
                                            clamp_size = (self.img_w, self.img_h))
             # add scores
             prop_bboxes_scores.unsqueeze_(1)

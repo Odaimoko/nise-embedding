@@ -4,10 +4,11 @@ import os
 import os.path
 import time
 from pathlib import Path
-from munkres import Munkres
+
 import numpy as np
 import yaml
 from easydict import EasyDict as edict
+from munkres import Munkres
 
 from plogs.plogs import get_logger
 
@@ -169,14 +170,14 @@ class NiseConfig:
             self.VISUALIZE = True
             self.VIS_HUMAN_THRES = .5
             self.VIS_SINGLE_NO_JOINTS = False
-            self.VIS_BOX = True
+            self.VIS_BOX = False
             self.VIS_EST_SINGLE = False
             self.VIS_PROPED_JOINTS = False
-            self.VIS_JOINTS_FULL = False
+            self.VIS_JOINTS_FULL = True
             
             self.SAVE_DETECTION_TENSOR = False
             self.USE_PT_VAL_DETECTION_RESULT = True
-
+    
     class _ALG:
         
         def __init__(self):
@@ -219,6 +220,8 @@ class NiseConfig:
             self.USE_GT_VALID_BOX = False
             self.USE_GT_JOINTS_TO_PROP = True
             self.GT_JOINTS_PROP_IOU_THRES = .5
+            
+            self.ONLY_TEST = []
     
     def __init__(self):
         #

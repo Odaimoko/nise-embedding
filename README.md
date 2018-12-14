@@ -88,6 +88,149 @@ $ diff my_e2e_mask_rcnn_X-101-64x4d-FPN_1x.yaml ../Detectron.pytorch/tron_config
 
 继续加快，存储了 detection 的结果，
 
+### 今天的实验
+
+使用上一帧的 gtpose 做 prop 的 candidate，匹配对象是上一帧的，采用的方法是匈牙利匹配，score 是 iou。probability 使用的上一帧 detection 的 score。
+
+```
+3943
+prev
+84.4	92.3	85.7	52.8	85.8	80.3	77.4	80.1
+after
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 76.1 & 88.9 & 84.7 & 50.9 & 78.1 & 74.8 & 70.7 & 74.9 \\
+```
+
+
+
+### 有丢失bbox 的例子（六七十的 mAP）
+
+- '3943'
+
+- '9833'
+
+- '22430'
+
+- '15302'
+
+
+
+    以下都是用 gtpose
+
+    ```
+    22430_mpii_relpath_5sec_testsub
+    task1
+    & Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+    & 68.7 & 68.2 & 66.5 & 60.3 & 70.4 & 77.3 & 72.9 & 69.2 \\
+    0.95
+    & Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+    & 47.6 & 49.8 & 50.0 & 53.5 & 63.2 & 72.2 & 70.0 & 57.4 \\
+    0.999
+    & Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+    & 56.1 & 58.3 & 58.5 & 55.6 & 67.5 & 71.9 & 69.3 & 62.1 \\
+    0.7
+    & Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+    & 47.5 & 49.6 & 50.6 & 53.0 & 63.4 & 72.2 & 70.0 & 57.3 \\
+    0.5
+    & Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+    & 49.6 & 50.9 & 51.3 & 53.0 & 65.4 & 74.3 & 70.0 & 58.6 \\
+    ```
+
+    ```
+    03943_mpii_step2_relpath_5sec_testsub
+    & Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+    & 84.4 & 92.3 & 85.7 & 52.8 & 85.8 & 80.3 & 77.4 & 80.1 \\
+    0.95
+    & Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+    & 77.1 & 89.1 & 84.7 & 54.1 & 78.9 & 77.6 & 72.4 & 76.3 \\
+    0.999
+    & Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+    & 81.4 & 91.2 & 85.5 & 55.0 & 81.3 & 77.9 & 72.8 & 78.1 \\
+    ```
+
+    ```
+    09883_mpii_step2_relpath_5sec_testsub
+    & Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+    & 82.5 & 80.3 & 74.7 & 65.3 & 62.6 & 60.4 & 47.3 & 68.6 \\
+    0.95
+    & Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+    & 75.5 & 75.4 & 73.9 & 59.4 & 63.3 & 69.9 & 47.9 & 67.1 \\
+    0.999
+    & Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+    & 80.0 & 77.3 & 75.0 & 63.0 & 59.4 & 71.8 & 47.8 & 68.6 \\
+    ```
+
+    ```
+    015302_mpii_relpath_5sec_testsub
+    & Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+    & 67.8 & 69.4 & 51.7 & 50.4 & 64.0 & 66.2 & 60.0 & 61.8 \\
+    0.95
+    & Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+    & 69.4 & 68.8 & 53.0 & 53.3 & 61.5 & 63.6 & 58.9 & 61.8 \\
+    0.999
+    & Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+    & 68.3 & 68.8 & 53.5 & 53.4 & 62.6 & 64.3 & 59.1 & 61.9 \\
+    0.7
+    & Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+    & 69.2 & 68.7 & 53.0 & 53.1 & 61.6 & 64.0 & 59.3 & 61.8 \\
+    0.5
+    & Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+    & 68.9 & 68.5 & 52.8 & 52.7 & 61.5 & 63.9 & 59.3 & 61.6 \\
+    
+    ```
+
+    接下来是非 prop gt，使用检测出来的 joint
+
+    ```
+    22430_mpii_relpath_5sec_testsub
+    task1
+    & Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+    & 68.7 & 68.2 & 66.5 & 60.3 & 70.4 & 77.3 & 72.9 & 69.2 \\
+    0.95
+    & Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+    & 40.2 & 41.8 & 39.0 & 44.2 & 50.0 & 60.2 & 50.9 & 46.2 \\
+    0.999
+    & Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+    & 48.9 & 49.5 & 45.5 & 47.9 & 52.8 & 60.4 & 51.6 & 50.8 \\
+    ```
+
+        015302_mpii_relpath_5sec_testsub
+        task 1
+        & Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+        & 67.8 & 69.4 & 51.7 & 50.4 & 64.0 & 66.2 & 60.0 & 61.8 \\
+        0.95
+        & Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\
+        & 66.3 & 64.4 & 50.0 & 52.1 & 62.6 & 65.7 & 59.7 & 60.5 \
+        0.999
+        & Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\
+        & 67.7 & 67.5 & 52.0 & 52.4 & 64.6 & 66.7 & 60.2 & 62.0 \
+        
+    ```
+    09883_mpii_step2_relpath_5sec_testsub
+    & Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+    & 82.5 & 80.3 & 74.7 & 65.3 & 62.6 & 60.4 & 47.3 & 68.6 \\
+    0.95
+    & Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+    & 59.2 & 60.3 & 60.8 & 54.8 & 44.2 & 65.6 & 46.2 & 56.1 \\
+    0.999
+    & Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+    & 81.9 & 80.1 & 74.9 & 64.8 & 55.0 & 72.0 & 47.5 & 69.0 \\
+    ```
+
+
+
+    ### 人太多的例子（六七十的 mAP）
+
+    - 12834
+    - 13293【50.9】
+    - 
+
+    ### 数据集的其他要点
+
+    15860里面，有镜头切换，所以 flow 提取的全是 false positive。其实只有一小部分，因为已经在标注的 central sequence 之外了
+
+
+
 ## 2018-12-13
 
 在prop 的时候加入是否使用 gtbox 的选项：如果True，在 prop 的时候，将上一帧的 box 和 gt 比较，如果有 gtbox 的 IoU 大于 thres，那么将这个 gtbox 对应的 gtjoint 拿过来prop， 而不是用上一帧 prop 的结果。这样既保留了detection的结果，又保证了 joint 的正确性。

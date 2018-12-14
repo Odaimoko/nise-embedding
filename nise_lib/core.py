@@ -1,25 +1,19 @@
-import nise_lib._init_paths
-from collections import deque
-import torch.backends.cudnn as cudnn
-import threading
-
-from nise_lib.nise_functions import *
-from nise_lib.nise_debugging_func import *
 import json
-from pathlib import PurePosixPath
-from nise_lib.frameitem import FrameItem
+import threading
+from collections import deque
 
-from nise_lib.nise_config import nise_cfg
+from nise_lib.frameitem import FrameItem
+from nise_lib.nise_functions import *
 
 
 def is_skip_video(nise_cfg, i, file_name):
     s = True
     for fn in nise_cfg.TEST.ONLY_TEST:
         if fn in file_name:  # priority
-            return False
-        else:
-            return True
-    
+            s = False
+            break
+    if nise_cfg.TEST.ONLY_TEST:
+        return s
     if s == True:
         if i >= nise_cfg.TEST.FROM and i < nise_cfg.TEST.TO:
             s = False
@@ -69,8 +63,7 @@ def nise_pred_task_1_debug(gt_anno_dir, json_save_dir, vis_dataset, hunam_detect
                 detect_box = torch.tensor(detect_box)
             else:
                 detect_box = torch.tensor([])
-                
-                
+            
             fi = FrameItem(img_file_path, 1, True, gt_joints)
             fi.detect_human(hunam_detector, detect_box)
             fi.unify_bbox()
@@ -110,6 +103,13 @@ def nise_pred_task_2_debug(gt_anno_dir, json_save_dir, vis_dataset, hunam_detect
         with open(file_name, 'r') as f:
             gt = json.load(f)['annolist']
         pred_frames = []
+        det_path = os.path.join(nise_cfg.PATH.DETECT_JSON_DIR, p.parts[-1])
+        if nise_cfg.DEBUG.USE_PT_VAL_DETECTION_RESULT:
+            with open(det_path, 'r')as f:
+                detection_result_from_json = json.load(f)
+            assert len(detection_result_from_json) == len(gt)
+        else:
+            detection_result_from_json = {}
         Q = deque(maxlen = nise_cfg.ALG._DEQUE_CAPACITY)
         for j, frame in enumerate(gt):
             # frame dict_keys(['image', 'annorect', 'imgnum', 'is_labeled', 'ignore_regions'])
@@ -122,10 +122,16 @@ def nise_pred_task_2_debug(gt_anno_dir, json_save_dir, vis_dataset, hunam_detect
                 gt_joints = get_joints_from_annorects(annorects)
             else:
                 gt_joints = torch.tensor([])
+            if nise_cfg.DEBUG.USE_PT_VAL_DETECTION_RESULT:
+                
+                detect_box = detection_result_from_json[j][img_file_path]
+                detect_box = torch.tensor(detect_box)
+            else:
+                detect_box = torch.tensor([])
             
             if j == 0:  # first frame doesnt have flow, joint prop
                 fi = FrameItem(img_file_path, is_first = True, gt_joints = gt_joints)
-                fi.detect_human(hunam_detector)
+                fi.detect_human(hunam_detector, detect_box)
                 fi.unify_bbox()
                 fi.est_joints(joint_estimator)
                 fi.assign_id_task_1_2(Q)
@@ -133,7 +139,7 @@ def nise_pred_task_2_debug(gt_anno_dir, json_save_dir, vis_dataset, hunam_detect
                     fi.visualize(dataset = vis_dataset)
             else:
                 fi = FrameItem(img_file_path, gt_joints = gt_joints)
-                fi.detect_human(hunam_detector)
+                fi.detect_human(hunam_detector, detect_box)
                 fi.gen_flow(flow_model, Q[-1].flow_img)
                 fi.joint_prop(Q)
                 fi.unify_bbox()
