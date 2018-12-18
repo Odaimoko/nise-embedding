@@ -94,10 +94,13 @@ prop 的时候不 filter。注意并不是所有图都有 annotation，所以虽
     - [x] score 使用原 box score * 新 joints 的平均值。
 
     - [ ] ```
-        valid_task_-1_DETbox_allBox_propAll_propDET_nmsThres_0.05_0.5
-        [INFO] - In total 23196 predictions, 18966 gts.
-        [INFO] - AP: tensor(0.5408)
-        ```
+      valid_task_-1_DETbox_allBox_propAll_propDET_nmsThres_0.05_0.5
+      [INFO] - In total 23196 predictions, 18966 gts.
+      [INFO] - AP: tensor(0.5408)
+      ```
+    ```
+    
+    ```
 
 
 
@@ -112,6 +115,10 @@ prop 的时候不 filter。注意并不是所有图都有 annotation，所以虽
 
 DONE。
 
+### 发现bug
+
+posetrack 里，有些人的标记只有一个点。这样的面积就是0，要去掉。
+
 ## 2018-12-17
 
 讨论结果
@@ -122,7 +129,7 @@ DONE。
 
 - [x] 整理算法详细结果。[link](./current-alg.md).
 - [x] 存储flow的结果，以及在detection结果上的estimation数据。用处是flow debug。
-- [ ] 弄清楚box ap怎么计算。
+- [x] 弄清楚box ap怎么计算。
 - [ ] 做实验的时候目的和步骤写清楚，记下来。
 - [ ] 保持每天目的记录的习惯，而不是想什么做什么。
 
@@ -132,8 +139,8 @@ DONE。
 
 ==标记有参数的地方==。
 
-- [ ] 计算所有 detbox 的 AP。
+- [x] 计算所有 detbox 的 AP。
 - [x] 计算 flow，存储。
-- [ ] prop box（过滤否，==thres==），score。==nms==。
-- [ ] 记录 nms 结果的 box
-- [ ] est joints
+- [x] prop box（过滤否，==thres==），score。==nms==。
+- [x] 记录 nms 结果的 box
+- [x] est joints

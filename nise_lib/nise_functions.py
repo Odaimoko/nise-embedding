@@ -1,28 +1,24 @@
-import os
-import sys
-import colorama
 import argparse
-import pathlib
-from functools import wraps
-from easydict import EasyDict as edict
-from nise_lib.nise_config import nise_cfg, nise_logger, mkrs
-import time
 import json
+import os
+import pathlib
+import sys
+import time
+from functools import wraps
+from pathlib import PurePosixPath
 
-# local packages
-import nise_lib._init_paths
-from nise_lib.nise_debugging_func import *
-
-import flow_models
-import flow_losses
+import colorama
 import flow_datasets
-from nise_utils.imutils import *
+import flow_losses
+import flow_models
 from simple_lib.core.config import config as simple_cfg
 from simple_lib.core.config import update_config
 from simple_models.pose_resnet import get_pose_net
-import time
-from pathlib import PurePosixPath
-from nise_lib.nise_config import nise_cfg
+
+from nise_lib.nise_config import mkrs
+# local packages
+from nise_lib.nise_debugging_func import *
+from nise_utils.imutils import *
 
 
 # DECORATORS
@@ -52,7 +48,6 @@ import tron_lib.nn as mynn
 from tron_lib.utils.detectron_weight_helper import load_detectron_weight
 import tron_lib.utils.net as net_utils
 import tron_lib.datasets.dummy_datasets as datasets
-from tron_lib.utils.boxes import bbox_overlaps
 
 
 def human_detect_parse_args():
@@ -756,7 +751,7 @@ def eval_load_gt_and_pred_boxes(anno_file_names, pred_anno_dir = None):
     if pred_anno_dir is None:
         pred_anno_dir = nise_cfg.PATH.UNIFIED_JSON_DIR
     debug_print('Evaluating', pred_anno_dir)
-    for i, file_name in enumerate(anno_file_names[43:44]):
+    for i, file_name in enumerate(anno_file_names):
         debug_print(i, file_name)
         
         with open(file_name, 'r') as f:
@@ -779,6 +774,8 @@ def eval_load_gt_and_pred_boxes(anno_file_names, pred_anno_dir = None):
                 continue
             gt_boxes = joints_to_boxes(gt_joints[:, :, :2], gt_joints[:, :, 2])
             pred_boxes = pred_anno[j][img_file_path]
+            gt_boxes, _ = filter_bbox_with_area(gt_boxes,10)
+            pred_boxes, _ = filter_bbox_with_area(pred_boxes,10)
             bin_vec = voc_eval_single_img(gt_boxes, pred_boxes)
             gt_boxes_list.append(gt_boxes)
             pred_boxes_list.append(pred_boxes)
