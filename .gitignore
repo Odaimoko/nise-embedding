@@ -122,3 +122,6 @@ logs/
 ignore/
 exp_config/t.yaml
 !det_json/*
+pre_com/
+
+unifed_boxes/

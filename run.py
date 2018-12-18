@@ -11,7 +11,7 @@ import pprint
 # local packages
 import nise_lib._init_paths
 from flownet_utils import tools
-from nise_lib.nise_config import nise_cfg,nise_logger
+from nise_lib.nise_config import nise_cfg, nise_logger
 from nise_lib.nise_functions import *
 from nise_lib.nise_debugging_func import *
 from nise_lib.core import *
@@ -21,7 +21,10 @@ from simple_lib.core.config import config as simple_cfg
 pp = pprint.PrettyPrinter(indent = 2)
 debug_print(pp.pformat(nise_cfg))
 
-
+flow_model = None
+maskRCNN = None
+simple_joint_est_model = None
+human_det_dataset=None
 # viz = visdom.Visdom(env = 'run-with-flownet')
 # ─── FROM FLOWNET 2.0 ───────────────────────────────────────────────────────────
 if nise_cfg.DEBUG.load_flow_model:
@@ -53,14 +56,21 @@ elif nise_cfg.TEST.MODE == 'train':
 if nise_cfg.TEST.TASK == 1:
     
     nise_pred_task_1_debug(dataset_path,
-                           nise_cfg.PATH.JSON_SAVE_DIR,
                            human_det_dataset,
                            maskRCNN,
                            simple_joint_est_model, flow_model)
 elif nise_cfg.TEST.TASK == 2:
     
     nise_pred_task_2_debug(dataset_path,
-                           nise_cfg.PATH.JSON_SAVE_DIR,
+                           
                            human_det_dataset,
                            maskRCNN,
                            simple_joint_est_model, flow_model)
+elif nise_cfg.TEST.TASK == -1:
+    
+    nise_flow_debug(dataset_path,
+                           
+                           human_det_dataset,
+                           maskRCNN,
+                           simple_joint_est_model, flow_model)
+

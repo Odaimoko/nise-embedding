@@ -63,21 +63,55 @@ def get_edcfg_from_nisecfg(nise_cfg):
 
 
 def set_path_from_nise_cfg(nise_cfg):
+    detect_part = [
+        'GTbox' if nise_cfg.TEST.USE_GT_PEOPLE_BOX else 'DETbox',
+        'filterBox' if nise_cfg.ALG.FILTER_HUMAN_WHEN_DETECT else 'allBox'
+    ]
+    if nise_cfg.ALG.FILTER_HUMAN_WHEN_DETECT:
+        detect_part.append('boxThres')
+        detect_part.append(str(nise_cfg.ALG._HUMAN_THRES))
+    
+    prop_part = []
+    
+    if nise_cfg.TEST.USE_ALL_GT_JOINTS_TO_PROP:
+        prop_part.append('propALLGT')
+        prop_part.append('gtScore')
+        prop_part.append(str(nise_cfg.TEST.GT_BOX_SCORE))
+    # else:
+    if nise_cfg.ALG.JOINT_PROP_WITH_FILTERED_HUMAN:
+        prop_part.append('propFiltered')
+        prop_part.append('propThres')
+        prop_part.append(str(nise_cfg.ALG.PROP_HUMAN_THRES))
+    else:
+        prop_part.append('propAll')
+    if nise_cfg.TEST.USE_GT_JOINTS_TO_PROP:
+        prop_part.append('propGT')
+    else:
+        prop_part.append('propDET')
+    
+    unify_part = [
+        'nmsThres',
+        str(nise_cfg.ALG.UNIFY_NMS_THRES_1),
+        str(nise_cfg.ALG.UNIFY_NMS_THRES_2)
+    ]
+    
+    detect_part = '_'.join(detect_part)
+    prop_part = '_'.join(prop_part)
+    unify_part = '_'.join(unify_part)
     suffix = '_'.join([
         nise_cfg.TEST.MODE,
         'task',
         str(nise_cfg.TEST.TASK),
-        'GTbox' if nise_cfg.TEST.USE_GT_VALID_BOX else 'DETbox',
-        'propfiltered' if nise_cfg.ALG.JOINT_PROP_WITH_FILTERED_HUMAN else 'propall',
-        'propthres' if nise_cfg.ALG.JOINT_PROP_WITH_FILTERED_HUMAN else '',
-        str(nise_cfg.ALG.PROP_HUMAN_THRES) if nise_cfg.ALG.JOINT_PROP_WITH_FILTERED_HUMAN else '',
-        'propGT' if nise_cfg.TEST.USE_GT_JOINTS_TO_PROP else 'propDET'
+        detect_part,
+        prop_part,
+        unify_part,
     ])
     suffix_range = '_'.join(['RANGE',
                              str(nise_cfg.TEST.FROM),
                              str(nise_cfg.TEST.TO)] if not nise_cfg.TEST.ONLY_TEST else nise_cfg.TEST.ONLY_TEST)
     suffix_with_range = '_'.join([suffix, suffix_range])
     nise_cfg.PATH.JSON_SAVE_DIR = os.path.join(nise_cfg.PATH.JSON_SAVE_DIR, suffix)
+    nise_cfg.PATH.UNIFIED_JSON_DIR = os.path.join(nise_cfg.PATH.UNIFIED_JSON_DIR, suffix)
     nise_cfg.PATH.JOINTS_DIR = os.path.join(nise_cfg.PATH.JOINTS_DIR, suffix_with_range)
     nise_cfg.PATH.IMAGES_OUT_DIR = os.path.join(nise_cfg.PATH.IMAGES_OUT_DIR, suffix_with_range)
     return suffix_with_range
@@ -90,34 +124,18 @@ def create_nise_logger(nise_cfg, cfg_name, phase = 'train'):
         print('=> creating {}'.format(root_output_dir))
         root_output_dir.mkdir()
     
-    model = '_'.join([
-        nise_cfg.TEST.MODE,
-        'task',
-        str(nise_cfg.TEST.TASK),
-        'gt' if nise_cfg.TEST.USE_GT_VALID_BOX else '',
-        'propthres',
-        str(nise_cfg.ALG.PROP_HUMAN_THRES),
-        '_'.join(['RANGE',
-                  str(nise_cfg.TEST.FROM),
-                  str(nise_cfg.TEST.TO)] if not nise_cfg.TEST.ONLY_TEST else nise_cfg.TEST.ONLY_TEST),
-    ])
     cfg_name = os.path.basename(cfg_name)
+    time_str = time.strftime("%m_%d-%H_%M", time.localtime())
     
-    final_output_dir = root_output_dir / cfg_name
-    
-    print('creating {}'.format(final_output_dir))
-    final_output_dir.mkdir(parents = True, exist_ok = True)
-    
-    time_str = time.strftime('%Y-%m-%d-%H-%M')
-    log_file = '{}_{}_{}.log'.format(cfg_name, time_str, phase)
+    log_file = '{}_{}.log'.format(time_str, cfg_name)
     ploger = get_logger()
     ploger.config(to_file = True,
-                  file_location = str(final_output_dir) + '/',
+                  file_location = nise_cfg.PATH.LOG_SAVE_DIR,
                   filename = log_file, show_levels = True,
                   show_time = True)
     ploger.format('[{level}] - {msg}')
     
-    return ploger, str(final_output_dir)
+    return ploger
 
 
 class NiseConfig:
@@ -159,7 +177,7 @@ class NiseConfig:
         def __init__(self):
             self.PRINT = True
             self.DEVELOPING = True
-            self.load_flow_model = True
+            self.load_flow_model = False
             self.FLOW = False
             self.load_human_det_model = True
             self.HUMAN = False
@@ -176,7 +194,7 @@ class NiseConfig:
             self.VIS_JOINTS_FULL = True
             
             self.SAVE_DETECTION_TENSOR = False
-            self.USE_PT_VAL_DETECTION_RESULT = True
+            self.USE_DETECTION_RESULT = True
     
     class _ALG:
         
@@ -191,11 +209,14 @@ class NiseConfig:
             # only bbox ratio not over this are recognized as human
             self._ASPECT_RATIO_THRES = 0.75
             # if want more joint prop boxes, set this to false
-            self.FILTER_HUMAN_WHEN_DETECT = False
+            self.FILTER_HUMAN_WHEN_DETECT = True
             # if not filtered when detected, filter when prop??
             self.JOINT_PROP_WITH_FILTERED_HUMAN = True
             self.FILTER_BBOX_WITH_SMALL_AREA = False
-            self.ASSGIN_ID_TO_FILTERED_BOX = self.JOINT_PROP_WITH_FILTERED_HUMAN
+            self.UNIFY_NMS_THRES_1 = .3
+            self.UNIFY_NMS_THRES_2 = .5
+            
+            self.ASSGIN_ID_TO_FILTERED_BOX = False  # self.JOINT_PROP_WITH_FILTERED_HUMAN
             self.USE_ALL_PROPED_BOX_TO_ASSIGN_ID = True
             # padding image s.t. w/h to be multiple of 32
             self.FLOW_MULTIPLE = 2 ** 6
@@ -206,22 +227,31 @@ class NiseConfig:
     class _PATH:
         def __init__(self):
             self.SEQ_DIR = 'data/pt17/images/bonn/000001_bonn/'
-            self.JOINTS_DIR = 'images_joint/'
-            self.IMAGES_OUT_DIR = 'images_out/'
-            self.JSON_SAVE_DIR = 'pred_json/'
             self.LOG_SAVE_DIR = 'logs/'
             self.POSETRACK_ROOT = 'data/pt17/'
             self.GT_TRAIN_ANNOTATION_DIR = os.path.join(self.POSETRACK_ROOT, 'train_anno_json/')
             self.GT_VAL_ANNOTATION_DIR = os.path.join(self.POSETRACK_ROOT, 'valid_anno_json/')
-            self.DETECT_JSON_DIR = 'det_json/'
+            self.JOINTS_DIR = 'images_joint/'
+            self.IMAGES_OUT_DIR = 'images_out/'
+            self.JSON_SAVE_DIR = 'pred_json/'
+            self.DETECT_JSON_DIR = 'pre_com/det_json/'
+            self.UNIFIED_JSON_DIR = 'unifed_boxes/'
+            self.FLOW_JSON_DIR = 'pre_com/flow/'
+            self.DET_EST_JSON_DIR = 'pre_com/det_est/'
     
     class _TEST:
         def __init__(self):
-            self.USE_GT_VALID_BOX = False
+            self.USE_GT_PEOPLE_BOX = False
+            
             self.USE_GT_JOINTS_TO_PROP = True
+            self.USE_ALL_GT_JOINTS_TO_PROP = True
+            self.GT_BOX_SCORE = 1
+            
             self.GT_JOINTS_PROP_IOU_THRES = .5
             
             self.ONLY_TEST = []
+            
+            self.MAP_TP_IOU_THRES = .5
     
     def __init__(self):
         #
@@ -252,7 +282,6 @@ nise_args = get_nise_arg_parser()
 update_config(nise_cfg, nise_args.nise_config)
 
 suffix = set_path_from_nise_cfg(nise_cfg)
-training_start_time = time.strftime("%m_%d-%H_%M", time.localtime())
-
-nise_logger, _ = create_nise_logger(nise_cfg, '_'.join([training_start_time, suffix]), 'valid')
+print('SUFFIX', suffix)
+nise_logger = create_nise_logger(nise_cfg, suffix)
 mkrs = Munkres()

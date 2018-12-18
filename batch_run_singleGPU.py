@@ -32,7 +32,9 @@ def mkdir(path):
 def create_yaml(series):
     with open('exp_config/t.yaml', 'r')as f:
         c = yaml.load(f)
-    out_dir = 'exp_config/batch_%02d_%02d' % (series[0][0], series[-1][-1])
+    training_start_time = time.strftime("%m_%d-%H_%M", time.localtime())
+
+    out_dir = 'exp_config/%s-batch_%02d_%02d' % (training_start_time,series[0][0], series[-1][-1])
     mkdir(out_dir)
     batch_files = []
     for s in series:

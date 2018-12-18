@@ -16,7 +16,7 @@ def create_logger(cfg, cfg_name, phase = 'train'):
         nise_cfg.TEST.MODE,
         'task',
         str(nise_cfg.TEST.TASK),
-        'gt' if nise_cfg.TEST.USE_GT_VALID_BOX else '',
+        'gt' if nise_cfg.TEST.USE_GT_PEOPLE_BOX else '',
         'propthres',
         str(nise_cfg.ALG.PROP_HUMAN_THRES),
         '_'.join(['RANGE',

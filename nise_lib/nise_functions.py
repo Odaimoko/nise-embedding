@@ -7,6 +7,7 @@ from functools import wraps
 from easydict import EasyDict as edict
 from nise_lib.nise_config import nise_cfg, nise_logger, mkrs
 import time
+import json
 
 # local packages
 import nise_lib._init_paths
@@ -22,6 +23,26 @@ from simple_models.pose_resnet import get_pose_net
 import time
 from pathlib import PurePosixPath
 from nise_lib.nise_config import nise_cfg
+
+
+# DECORATORS
+
+def log_time(*text, record = None):
+    def real_deco(func):
+        @wraps(func)
+        def impl(*args, **kw):
+            r = debug_print if not record else record  # 如果没有record，默认print
+            t = (func.__name__,) if not text else text
+            start = time.time()
+            func(*args, **kw)
+            end = time.time()
+            r(*t, '%.3f s.' % (end - start,), printer = nise_logger.status)
+            # r(' Start time: %.3f s. End time: %.3f s'%(start, end))
+        
+        return impl
+    
+    return real_deco
+
 
 # ─── LOAD MODEL ─────────────────────────────────────────────────────────────────
 
@@ -439,7 +460,7 @@ def imcrop(img, bbox):
 # ─── BOX UTILS ──────────────────────────────────────────────────────────────────
 
 
-def joints_to_bboxes(new_joints, joint_vis = None, clamp_size = ()):
+def joints_to_boxes(new_joints, joint_vis = None, clamp_size = ()):
     '''
 
     :param new_joints:  num_people x num_joints x 2
@@ -516,7 +537,60 @@ def xywh2cs(x, y, w, h, training_bbox_aspect_ratio):
     return center, scale
 
 
+# from https://github.com/tensorflow/models/blob/master/research/object_detection/utils/np_box_ops.py
+def area(boxes):
+    """Computes area of boxes.
+    Args:
+      boxes: Numpy array with shape [N, 4] holding N boxes
+    Returns:
+      a numpy array with shape [N*1] representing box areas
+    """
+    return (boxes[:, 2] - boxes[:, 0]) * (boxes[:, 3] - boxes[:, 1])
+
+
+def intersection(boxes1, boxes2):
+    """Compute pairwise intersection areas between boxes.
+    Args:
+      boxes1: a numpy array with shape [N, 4] holding N boxes
+      boxes2: a numpy array with shape [M, 4] holding M boxes
+    Returns:
+      a numpy array with shape [N*M] representing pairwise intersection area
+    """
+    [y_min1, x_min1, y_max1, x_max1] = np.split(boxes1, 4, axis = 1)
+    [y_min2, x_min2, y_max2, x_max2] = np.split(boxes2, 4, axis = 1)
+    
+    all_pairs_min_ymax = np.minimum(y_max1, np.transpose(y_max2))
+    all_pairs_max_ymin = np.maximum(y_min1, np.transpose(y_min2))
+    intersect_heights = np.maximum(
+        np.zeros(all_pairs_max_ymin.shape),
+        all_pairs_min_ymax - all_pairs_max_ymin)
+    all_pairs_min_xmax = np.minimum(x_max1, np.transpose(x_max2))
+    all_pairs_max_xmin = np.maximum(x_min1, np.transpose(x_min2))
+    intersect_widths = np.maximum(
+        np.zeros(all_pairs_max_xmin.shape),
+        all_pairs_min_xmax - all_pairs_max_xmin)
+    return intersect_heights * intersect_widths
+
+
+def iou(boxes1, boxes2):
+    """Computes pairwise intersection-over-union between box collections.
+    Args:
+      boxes1: a numpy array with shape [N, 4] holding N boxes.
+      boxes2: a numpy array with shape [M, 4] holding N boxes.
+    Returns:
+      a numpy array with shape [N, M] representing pairwise iou scores.
+    """
+    intersect = intersection(boxes1, boxes2)
+    area1 = area(boxes1)
+    area2 = area(boxes2)
+    union = np.expand_dims(area1, axis = 1) + np.expand_dims(
+        area2, axis = 0) - intersect
+    return intersect / union
+
+
 def filter_bbox_with_scores(boxes, thres = nise_cfg.ALG._HUMAN_THRES):
+    if boxes.numel() == 0:
+        return boxes, torch.tensor([])
     scores = boxes[:, -1]
     valid_scores_idx = torch.nonzero(scores >= thres).squeeze_().long()  # in case it's 6 x **1** x 5
     filtered_box = boxes[valid_scores_idx, :]
@@ -596,6 +670,7 @@ def mkdir(path):
     
     if not os.path.exists(path):
         os.makedirs(path)
+        debug_print('Make dir', path)
         return True
     else:
         return False
@@ -605,6 +680,10 @@ def make_nise_dirs():
     mkdir(nise_cfg.PATH.IMAGES_OUT_DIR)
     mkdir(nise_cfg.PATH.JSON_SAVE_DIR)
     mkdir(nise_cfg.PATH.JOINTS_DIR)
+    mkdir(nise_cfg.PATH.DETECT_JSON_DIR)
+    mkdir(nise_cfg.PATH.FLOW_JSON_DIR)
+    mkdir(nise_cfg.PATH.DET_EST_JSON_DIR)
+    mkdir(nise_cfg.PATH.UNIFIED_JSON_DIR)
 
 
 def get_type_from_dir(dirpath, type_list):
@@ -631,12 +710,12 @@ def get_joints_from_annorects(annorects):
         for pt_info in points:
             # analogous to coco.py  # matlab based on 1.
             i_pt = pt_info['id'][0]
-            joints_3d[i_pt, 0] = pt_info['x'][0] - 1
-            joints_3d[i_pt, 1] = pt_info['y'][0] - 1
+            joints_3d[i_pt, 0] = pt_info['x'][0] - 1 if pt_info['x'][0] >= 0 else 0
+            joints_3d[i_pt, 1] = pt_info['y'][0] - 1 if pt_info['y'][0] >= 0 else 0
             
             t_vis = pt_info['is_visible'][0]
             if t_vis > 1: t_vis = 1
-            joints_3d[i_pt, 2] = t_vis
+            joints_3d[i_pt, 2] = t_vis and pt_info['x'][0] >= 0 and pt_info['y'][0] >= 0
         # head_bbox = [rect['x1'][0], rect['y1'][0], rect['x2'][0], rect['y2'][0]]
         # head_bbox = np.array(head_bbox)
         all_joints.append(joints_3d)
@@ -646,23 +725,115 @@ def get_joints_from_annorects(annorects):
     return joints
 
 
-# DECORATORS
-
-def log_time(*text, record = None):
-    def real_deco(func):
-        @wraps(func)
-        def impl(*args, **kw):
-            r = debug_print if not record else record  # 如果没有record，默认print
-            t = (func.__name__,) if not text else text
-            start = time.time()
-            func(*args, **kw)
-            end = time.time()
-            r(*t, '%.3f s.' % (end - start,), printer = nise_logger.status)
-            # r(' Start time: %.3f s. End time: %.3f s'%(start, end))
-        
-        return impl
+# ─── EVALUATION ──────────────────────────────────────────────────────────
+def voc_eval_single_img(gt_boxes, pred_boxes, iou_thres = nise_cfg.TEST.MAP_TP_IOU_THRES):
+    '''
     
-    return real_deco
+    :param gt_boxes: Tensor, size of num_people x 5
+    :param pred_boxes: Tensor, size of num_people x 5
+    :return: binary vector, indicating if pred boxes are tp or not
+    '''
+    bin_vec = torch.zeros(pred_boxes.shape[0])
+    if bin_vec.numel() == 0:  # no predictions in this img
+        return bin_vec
+    pred_box_np = pred_boxes.numpy()[:, :4]
+    gt_box_np = gt_boxes.numpy()[:, :4]
+    pred_to_gt_iou = iou(pred_box_np, gt_box_np, )
+    inds = get_matching_indices(to_torch(pred_to_gt_iou))
+    for prev, gt in inds:
+        overlap = pred_to_gt_iou[prev, gt]
+        if overlap >= iou_thres:
+            bin_vec[prev] = 1
+    return bin_vec
+
+
+# @log_time('Loading gt and predictions ... ')
+def eval_load_gt_and_pred_boxes(anno_file_names, pred_anno_dir = None):
+    npos = 0
+    gt_boxes_list = []
+    pred_boxes_list = []
+    bin_vec_list = []
+    if pred_anno_dir is None:
+        pred_anno_dir = nise_cfg.PATH.UNIFIED_JSON_DIR
+    debug_print('Evaluating', pred_anno_dir)
+    for i, file_name in enumerate(anno_file_names[43:44]):
+        debug_print(i, file_name)
+        
+        with open(file_name, 'r') as f:
+            gt = json.load(f)['annolist']
+        p = PurePosixPath(file_name)
+        uni_path = os.path.join(pred_anno_dir, p.stem + '.pkl')
+        pred_anno = torch.load(uni_path)
+        start = 0
+        end = 50
+        for j, frame in enumerate(gt[start:]):
+            j += start
+            img_file_path = frame['image'][0]['name']
+            img_file_path = os.path.join(nise_cfg.PATH.POSETRACK_ROOT, img_file_path)
+            debug_print(j, img_file_path, indent = 1)
+            annorects = frame['annorect']
+            if (annorects is not None and len(annorects) != 0):
+                gt_joints = get_joints_from_annorects(annorects)
+            else:
+                # dont eval
+                continue
+            gt_boxes = joints_to_boxes(gt_joints[:, :, :2], gt_joints[:, :, 2])
+            pred_boxes = pred_anno[j][img_file_path]
+            bin_vec = voc_eval_single_img(gt_boxes, pred_boxes)
+            gt_boxes_list.append(gt_boxes)
+            pred_boxes_list.append(pred_boxes)
+            bin_vec_list.append(bin_vec)
+            npos += gt_boxes.shape[0]
+    total_pred_boxes = torch.cat(pred_boxes_list, 0)
+    total_pred_boxes_scores = total_pred_boxes[:, 4]
+    total_bin_vec = torch.cat(bin_vec_list)
+    return total_pred_boxes_scores, total_bin_vec, npos
+
+
+def voc_ap_for_pt(rec, prec):
+    '''
+    
+    :param rec, torch vector
+    :param prec, torch vector
+    :return: ap, torch scalar?
+    '''
+    
+    mrec = np.concatenate(([0.], rec.numpy(), [1.]))
+    mpre = np.concatenate(([0.], prec.numpy(), [0.]))
+    
+    # compute the precision envelope
+    for i in range(mpre.size - 1, 0, -1):
+        mpre[i - 1] = np.maximum(mpre[i - 1], mpre[i])
+    
+    # to calculate area under PR curve, look for points
+    # where X axis (recall) changes value
+    i = np.where(mrec[1:] != mrec[:-1])[0]
+    
+    # and sum (\Delta recall) * prec
+    ap = np.sum((mrec[i + 1] - mrec[i]) * mpre[i + 1])
+    
+    return torch.tensor(ap)
+
+
+def voc_eval_for_pt(gt_anno_dir, pred_anno_dir = None):
+    '''
+    
+    :param gt_anno_dir:
+    :return:
+    '''
+    anno_file_names = get_type_from_dir(gt_anno_dir, ['.json'])
+    anno_file_names = sorted(anno_file_names)
+    total_pred_boxes_scores, total_bin_vec, npos = eval_load_gt_and_pred_boxes(anno_file_names, pred_anno_dir)
+    debug_print('In total %d predictions, %d gts.' % (total_pred_boxes_scores.shape[0], npos))
+    sorted_scores, sorted_idx = torch.sort(total_pred_boxes_scores, descending = True)
+    tp = total_bin_vec[sorted_idx]
+    fp = 1 - tp
+    tp = tp.cumsum(dim = 0)
+    fp = fp.cumsum(dim = 0)
+    rec = tp / float(npos)
+    prec = tp / torch.max(tp + fp, torch.tensor(np.finfo(float).eps))
+    ap = voc_ap_for_pt(rec, prec)
+    return rec, prec, ap
 
 
 if __name__ == '__main__':
@@ -674,13 +845,11 @@ if __name__ == '__main__':
     #     [person + torch.rand(num_person, 16, 2), gen_rand_joints(1, h, w)])
     # dist = get_joints_oks_mtx(person, threesome)
     # print(dist)
-    from pycocotools.mask import iou
-    
     top_boxes = np.ones([num_person, 4])
-    top_boxes[0,2]-=.5
-    all_boxes = np.ones([num_person+1, 4])
-    all_boxes[0]+=0.3
-    all_boxes[1]+=0.5
+    top_boxes[0, 2] -= .5
+    all_boxes = np.ones([num_person + 1, 4])
+    all_boxes[0] += 0.3
+    all_boxes[1] += 0.5
     print(top_boxes)
     print(all_boxes)
     # iou's input is [x,y,w,h]

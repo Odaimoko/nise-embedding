@@ -12,14 +12,14 @@ TEST:
   USE_GT_JOINTS_TO_PROP: False
   USE_ALL_GT_JOINTS_TO_PROP: False
   GT_BOX_SCORE: .7
-  FROM: 0
-  TO: 2
+  FROM: 7
+  TO: 8
 
   #  ONLY_TEST:
   #    - '15302'
   #    - '20880'
   #    - '15860'
-  TASK: 1
+  TASK: -1
   MODE: valid
 DEBUG:
   VISUALIZE: False
@@ -36,5 +36,6 @@ DEBUG:
   SAVE_NMS_TENSOR: True
   NO_NMS: False
   USE_DETECTION_RESULT: True
-  USE_FLOW_RESULT: False
+  USE_FLOW_RESULT: True
   USE_DET_EST_RESULT: False
+  load_joint_est_model: True

@@ -46,7 +46,7 @@ class FrameItem:
         # target torch.Size([8, 2, 384, 1024]) maybe offsets
         
         """
-        if nise_cfg.TEST.USE_GT_VALID_BOX and self.task == 1:
+        if nise_cfg.TEST.USE_GT_PEOPLE_BOX and self.task == 1:
             # dont change image size ok?
             print('原来大小')
             self.bgr_img = self.original_img
@@ -101,11 +101,11 @@ class FrameItem:
         :return: human is represented as tensor of size num_people x 4. The result is NMSed.
         '''
         
-        if nise_cfg.TEST.USE_GT_VALID_BOX and gt_joints is not None:
+        if nise_cfg.TEST.USE_GT_PEOPLE_BOX and gt_joints is not None:
             if gt_joints.numel() == 0:
                 self.detected_bboxes = torch.tensor([])
             else:
-                gt_bbox = joints_to_bboxes(gt_joints[:, :, :2], gt_joints[:, :, 2], (self.img_w, self.img_h))
+                gt_bbox = joints_to_boxes(gt_joints[:, :, :2], gt_joints[:, :, 2], (self.img_w, self.img_h))
                 gt_bbox = expand_vector_to_tensor(gt_bbox)
                 gt_scores = torch.ones([gt_bbox.shape[0]])
                 gt_scores.unsqueeze_(1)
@@ -220,7 +220,7 @@ class FrameItem:
             # for similarity. no need to expand here cause if only prev_joints has the right dimension
             self.new_joints = new_joints
             # calc new bboxes from new joints
-            joint_prop_bboxes = joints_to_bboxes(self.new_joints, nise_cfg.DATA.flow_input_size)
+            joint_prop_bboxes = joints_to_boxes(self.new_joints, nise_cfg.DATA.flow_input_size)
             # add scores
             joint_prop_bboxes_scores.unsqueeze_(1)
             self.joint_prop_bboxes = torch.cat([joint_prop_bboxes, joint_prop_bboxes_scores], 1)
@@ -284,7 +284,7 @@ class FrameItem:
         p = PurePosixPath(self.img_path)
         
         out_dir = os.path.join(nise_cfg.PATH.JOINTS_DIR + "_single" + (
-            '_gt' if nise_cfg.TEST.USE_GT_VALID_BOX else ''), p.parts[-2] + '_task_' + str(self.task))
+            '_gt' if nise_cfg.TEST.USE_GT_PEOPLE_BOX else ''), p.parts[-2] + '_task_' + str(self.task))
         mkdir(out_dir)
         torch_img = im_to_torch(self.bgr_img).unsqueeze(0)
         if not self.bboxes_unified and not self.is_first:
@@ -428,7 +428,7 @@ class FrameItem:
         training_start_time = time.strftime("%H-%M-%S", time.localtime())
         p = PurePosixPath(self.img_path)
         out_dir = os.path.join(nise_cfg.PATH.IMAGES_OUT_DIR + (
-            '_gt' if nise_cfg.TEST.USE_GT_VALID_BOX else ''), p.parts[-2] + '_task_' + str(self.task))
+            '_gt' if nise_cfg.TEST.USE_GT_PEOPLE_BOX else ''), p.parts[-2] + '_task_' + str(self.task))
         mkdir(out_dir)
         
         vis_utils.vis_one_image_for_pt(
@@ -456,7 +456,7 @@ class FrameItem:
         num_people, num_joints, _ = joints_to_show.shape
         
         out_dir = os.path.join(nise_cfg.PATH.JOINTS_DIR + (
-            '_gt' if nise_cfg.TEST.USE_GT_VALID_BOX else ''), p.parts[-2] + '_task_' + str(self.task))
+            '_gt' if nise_cfg.TEST.USE_GT_PEOPLE_BOX else ''), p.parts[-2] + '_task_' + str(self.task))
         mkdir(out_dir)
         for i in range(num_people):
             joints_i = joints_to_show[i, ...]  # 16 x 2

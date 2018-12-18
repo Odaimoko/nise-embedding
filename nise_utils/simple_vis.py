@@ -58,7 +58,7 @@ def save_single_whole_image_with_joints(torch_img, src_joints,
     # height = int(torch_img.size(2) + padding)
     # width = int(torch_img.size(3) + padding)
     num_people, num_joints, _ = src_joints.shape
-    colores = [(255, 0, 0), (255, 0, 255), (255, 255, 0), (0, 255, 255)]
+    colores = [(255, 0, 0), (255, 0, 255)]
     joint_id_offset = [(5, 5), (-5, -5)]
     for k in range(num_people):
         joints = src_joints[k]
