@@ -567,7 +567,7 @@ def intersection(boxes1, boxes2):
     return intersect_heights * intersect_widths
 
 
-def iou(boxes1, boxes2):
+def tf_iou(boxes1, boxes2):
     """Computes pairwise intersection-over-union between box collections.
     Args:
       boxes1: a numpy array with shape [N, 4] holding N boxes.
@@ -593,11 +593,13 @@ def filter_bbox_with_scores(boxes, thres = nise_cfg.ALG._HUMAN_THRES):
 
 
 def filter_bbox_with_area(boxes, thres = nise_cfg.ALG._AREA_THRES):
+    if boxes.numel() == 0:
+        return boxes, torch.tensor([])
     area = (boxes[:, 2] - boxes[:, 0]) * (boxes[:, 3] - boxes[:, 1])
     
     valid_area_idx = torch.nonzero(
         area >= thres).squeeze_().long()  # in case it's 6 x **1** x 5
-    filtered_box = boxes[valid_area_idx, :]
+    filtered_box = expand_vector_to_tensor(boxes[valid_area_idx, :])
     return filtered_box, valid_area_idx
 
 
@@ -733,7 +735,7 @@ def voc_eval_single_img(gt_boxes, pred_boxes, iou_thres = nise_cfg.TEST.MAP_TP_I
         return bin_vec
     pred_box_np = pred_boxes.numpy()[:, :4]
     gt_box_np = gt_boxes.numpy()[:, :4]
-    pred_to_gt_iou = iou(pred_box_np, gt_box_np, )
+    pred_to_gt_iou = tf_iou(pred_box_np, gt_box_np, )
     inds = get_matching_indices(to_torch(pred_to_gt_iou))
     for prev, gt in inds:
         overlap = pred_to_gt_iou[prev, gt]
@@ -751,7 +753,7 @@ def eval_load_gt_and_pred_boxes(anno_file_names, pred_anno_dir = None):
     if pred_anno_dir is None:
         pred_anno_dir = nise_cfg.PATH.UNIFIED_JSON_DIR
     debug_print('Evaluating', pred_anno_dir)
-    for i, file_name in enumerate(anno_file_names):
+    for i, file_name in enumerate(anno_file_names[:]):
         debug_print(i, file_name)
         
         with open(file_name, 'r') as f:
@@ -765,7 +767,7 @@ def eval_load_gt_and_pred_boxes(anno_file_names, pred_anno_dir = None):
             j += start
             img_file_path = frame['image'][0]['name']
             img_file_path = os.path.join(nise_cfg.PATH.POSETRACK_ROOT, img_file_path)
-            debug_print(j, img_file_path, indent = 1)
+            # debug_print(j, img_file_path, indent = 1)
             annorects = frame['annorect']
             if (annorects is not None and len(annorects) != 0):
                 gt_joints = get_joints_from_annorects(annorects)
@@ -774,8 +776,8 @@ def eval_load_gt_and_pred_boxes(anno_file_names, pred_anno_dir = None):
                 continue
             gt_boxes = joints_to_boxes(gt_joints[:, :, :2], gt_joints[:, :, 2])
             pred_boxes = pred_anno[j][img_file_path]
-            gt_boxes, _ = filter_bbox_with_area(gt_boxes,10)
-            pred_boxes, _ = filter_bbox_with_area(pred_boxes,10)
+            gt_boxes, _ = filter_bbox_with_area(gt_boxes)
+            pred_boxes, _ = filter_bbox_with_area(pred_boxes)
             bin_vec = voc_eval_single_img(gt_boxes, pred_boxes)
             gt_boxes_list.append(gt_boxes)
             pred_boxes_list.append(pred_boxes)
@@ -850,5 +852,5 @@ if __name__ == '__main__':
     print(top_boxes)
     print(all_boxes)
     # iou's input is [x,y,w,h]
-    top_to_all_overlaps = iou(top_boxes, all_boxes, np.zeros(1))
+    top_to_all_overlaps = tf_iou(top_boxes, all_boxes, np.zeros(1))
     print(top_to_all_overlaps)
