@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-w=3
-export CUDA_VISIBLE_DEVICES=1
-~/anaconda3/bin/python batch_run_singleGPU.py --f 0 --t 12  --workers=$w&
-export CUDA_VISIBLE_DEVICES=2
-~/anaconda3/bin/python batch_run_singleGPU.py --f 12 --t 24  --workers=$w&
-export CUDA_VISIBLE_DEVICES=3
-~/anaconda3/bin/python batch_run_singleGPU.py --f 24 --t 36  --workers=$w&
-export CUDA_VISIBLE_DEVICES=0
-~/anaconda3/bin/python batch_run_singleGPU.py --f 36 --t 50 --workers=$w
+for t1 in $(seq 0.05 .1 .3)
+do
+    for t2 in $(seq .3 .1 .7)
+    do
+        echo Running posetrack 17: NMS thresholds are $t1, $t2.
+        bash run-all-workers-4.sh $t1 $t2
+        echo NMS thresholds $t1, $t2 have been tested.
+    done
+done

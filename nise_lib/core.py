@@ -1,4 +1,3 @@
-import json
 import threading
 from collections import deque
 
@@ -35,7 +34,7 @@ def nise_pred_task_1_debug(gt_anno_dir, vis_dataset, hunam_detector, joint_estim
         flow_path = os.path.join(nise_cfg.PATH.FLOW_JSON_DIR, p.stem + '.pkl')
         est_path = os.path.join(nise_cfg.PATH.DET_EST_JSON_DIR, p.stem + '.pkl')
         json_path = os.path.join(nise_cfg.PATH.JSON_SAVE_DIR, p.parts[-1])
-        uni_path  = os.path.join(nise_cfg.PATH.UNIFIED_JSON_DIR, p.stem + '.pkl')
+        uni_path = os.path.join(nise_cfg.PATH.UNIFIED_JSON_DIR, p.stem + '.pkl')
         with open(file_name, 'r') as f:
             gt = json.load(f)['annolist']
         pred_frames = []
@@ -43,7 +42,7 @@ def nise_pred_task_1_debug(gt_anno_dir, vis_dataset, hunam_detector, joint_estim
         flow_result_to_record = []
         est_result_to_record = []
         uni_result_to_record = []
-
+        
         # with
         if nise_cfg.DEBUG.USE_DETECTION_RESULT:
             with open(det_path, 'r')as f:
@@ -87,8 +86,8 @@ def nise_pred_task_1_debug(gt_anno_dir, vis_dataset, hunam_detector, joint_estim
             detect_result_to_record.append({img_file_path: fi.detect_results()})
             flow_result_to_record.append({img_file_path: fi.flow_result()})
             est_result_to_record.append({img_file_path: fi.det_est_result()})
-            uni_result_to_record.append({img_file_path:fi.unfied_result()})
-
+            uni_result_to_record.append({img_file_path: fi.unfied_result()})
+            
             pred_frames.append(fi.to_dict())
             Q.append(fi)
         
@@ -109,7 +108,7 @@ def nise_pred_task_1_debug(gt_anno_dir, vis_dataset, hunam_detector, joint_estim
                 'Detection\'s estimation saved', est_path
             )
         if nise_cfg.DEBUG.SAVE_NMS_TENSOR:
-            torch.save(uni_result_to_record,uni_path)
+            torch.save(uni_result_to_record, uni_path)
             debug_print('NMSed boxes saved: ', uni_path)
 
 
@@ -230,10 +229,9 @@ def nise_flow_debug(gt_anno_dir, vis_dataset, hunam_detector, joint_estimator, f
         det_path = os.path.join(nise_cfg.PATH.DETECT_JSON_DIR, p.parts[-1])
         flow_path = os.path.join(nise_cfg.PATH.FLOW_JSON_DIR, p.stem + '.pkl')
         est_path = os.path.join(nise_cfg.PATH.DET_EST_JSON_DIR, p.stem + '.pkl')
-        uni_path  = os.path.join(nise_cfg.PATH.UNIFIED_JSON_DIR, p.stem + '.pkl')
+        uni_path = os.path.join(nise_cfg.PATH.UNIFIED_JSON_DIR, p.stem + '.pkl')
         
         uni_result_to_record = []
-
         
         if nise_cfg.DEBUG.USE_DETECTION_RESULT:
             with open(det_path, 'r')as f:
@@ -241,21 +239,17 @@ def nise_flow_debug(gt_anno_dir, vis_dataset, hunam_detector, joint_estimator, f
             assert len(detection_result_from_json) == len(gt)
         else:
             detection_result_from_json = {}
-        
+        debug_print('Precomputed detection result loaded', flow_path)
+
         if nise_cfg.DEBUG.USE_FLOW_RESULT or flow_model is None:
             flow_result_from_json = torch.load(flow_path)
-            debug_print('Precomputed flow result loaded', flow_path)
             assert len(flow_result_from_json) == len(gt)
         else:
             flow_result_from_json = {}
-        
-        if nise_cfg.DEBUG.USE_DET_EST_RESULT or joint_estimator is None:
-            det_est_result_from_json = torch.load(est_path)
-            assert len(det_est_result_from_json) == len(gt)
-        else:
-            det_est_result_from_json = {}
+        debug_print('Precomputed flow result loaded', flow_path)
         
         Q = deque(maxlen = nise_cfg.ALG._DEQUE_CAPACITY)
+
         for j, frame in enumerate(gt):
             # frame dict_keys(['image', 'annorect', 'imgnum', 'is_labeled', 'ignore_regions'])
             img_file_path = frame['image'][0]['name']
@@ -278,11 +272,7 @@ def nise_flow_debug(gt_anno_dir, vis_dataset, hunam_detector, joint_estimator, f
                 pre_com_flow = flow_result_from_json[j][img_file_path]
             else:
                 pre_com_flow = torch.tensor([])
-            
-            if nise_cfg.DEBUG.USE_DET_EST_RESULT:
-                pre_com_det_est = det_est_result_from_json[j][img_file_path]
-            else:
-                pre_com_det_est = torch.tensor([])
+             
             
             if j == 0:  # first frame doesnt have flow, joint prop
                 fi = FrameItem(img_file_path, is_first = True, gt_joints = gt_joints)
@@ -302,15 +292,18 @@ def nise_flow_debug(gt_anno_dir, vis_dataset, hunam_detector, joint_estimator, f
                 fi.unify_bbox()
                 fi.est_joints(joint_estimator)
             pred_frames.append(fi.to_dict())
-            uni_result_to_record.append({img_file_path:fi.unfied_result()})
+            uni_result_to_record.append({img_file_path: fi.unfied_result()})
             Q.append(fi)
         
         with open(json_path, 'w') as f:
             json.dump({'annolist': pred_frames}, f)
             debug_print('json saved:', json_path)
         if nise_cfg.DEBUG.SAVE_NMS_TENSOR:
-            torch.save(uni_result_to_record,uni_path)
+            torch.save(uni_result_to_record, uni_path)
             debug_print('NMSed boxes saved: ', uni_path)
+        
+        # voc_eval_for_pt(gt_anno_dir, nise_cfg.PATH.UNIFIED_JSON_DIR)
+
 
 def nise_pred_task_3(gt_anno_dir, vis_dataset, hunam_detector, joint_estimator, flow_model):
     # PREDICT ON TRAINING SET OF 2017

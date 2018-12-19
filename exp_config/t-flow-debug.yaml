@@ -1,24 +1,28 @@
 ALG:
-  PROP_HUMAN_THRES: .5
   FILTER_HUMAN_WHEN_DETECT: False
   _HUMAN_THRES: 0.9
-  JOINT_PROP_WITH_FILTERED_HUMAN: False
-  ASSGIN_ID_TO_FILTERED_BOX: False
 
+  JOINT_PROP_WITH_FILTERED_HUMAN: False
+  PROP_HUMAN_THRES: .5
+
+  USE_COCO_IOU_IN_NMS: False
   UNIFY_NMS_THRES_1: .05
   UNIFY_NMS_THRES_2: .5
+
+  ASSGIN_ID_TO_FILTERED_BOX: False
+
 TEST:
   USE_GT_PEOPLE_BOX: False
   USE_GT_JOINTS_TO_PROP: False
   USE_ALL_GT_JOINTS_TO_PROP: False
   GT_BOX_SCORE: .7
-  FROM: 7
-  TO: 8
+  FROM: 0
+  TO: 2
+#  ONLY_TEST:
+#    - 3742_m
+#    - 17839_mpii_relpath_5sec_testsub
+#    -  20880_mpii_relpath_5sec_testsub
 
-  #  ONLY_TEST:
-  #    - '15302'
-  #    - '20880'
-  #    - '15860'
   TASK: -1
   MODE: valid
 DEBUG:

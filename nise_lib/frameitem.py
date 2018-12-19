@@ -1,6 +1,5 @@
 import sys
 
-
 sys.path.append('..')
 import scipy
 from nise_lib.nise_functions import *
@@ -74,8 +73,8 @@ class FrameItem:
             gt_box = expand_vector_to_tensor(gt_box)
             gt_scores = torch.ones([gt_box.shape[0]])
             gt_scores.unsqueeze_(1)
-            self.gt_boxes = torch.cat([gt_box, gt_scores], 1)
-            self.gt_joints = gt_joints
+            self.gt_boxes, idx = filter_bbox_with_area(torch.cat([gt_box, gt_scores], 1))
+            self.gt_joints = expand_vector_to_tensor(gt_joints[idx, :],3)
         else:
             self.gt_boxes = torch.tensor([])
             self.gt_joints = torch.tensor([])
@@ -221,14 +220,8 @@ class FrameItem:
                 # match一下，只用检测到的gt的joint
                 prev_box_np = prev_filtered_box.numpy()[:, :4]
                 gt_box_np = prev_frame.gt_boxes.numpy()[:, :4]
-                prev_to_gt_iou = iou(prev_box_np, gt_box_np, )
-                # gt_scores = prev_frame.gt_boxes[:, 4]
-                # mask = prev_to_gt_iou >= nise_cfg.TEST.GT_JOINTS_PROP_IOU_THRES
-                # matched_gt_ind = np.nonzero(np.sum(mask, 0))[0]
-                # prev_frame_joints = prev_frame.gt_joints[matched_gt_ind.astype(np.uint8)][:, :, :2]
-                # prev_frame_joints = expand_vector_to_tensor(prev_frame_joints, 3)
-                # prev_frame_joints_vis = prev_frame.gt_joints[matched_gt_ind.astype(np.uint8)][:, :, 2]
-                # prev_frame_joints_vis = expand_vector_to_tensor(prev_frame_joints_vis)
+                prev_to_gt_iou = tf_iou(prev_box_np, gt_box_np, )
+                
                 # prev_box_scores = gt_scores[matched_gt_ind.astype(np.uint8)]  # 从这里下来的score如果是一个，会是向量而不是scalar
                 inds = get_matching_indices(to_torch(prev_to_gt_iou))
                 num_matched_people = len(inds)
@@ -355,22 +348,24 @@ class FrameItem:
             nms_thres_2 = nise_cfg.ALG.UNIFY_NMS_THRES_2
             k_1 = np.where(scores >= nms_thres_1)[0]
             filtered_scores = scores[k_1]
-            boxes = all_bboxes[k_1, :4].numpy()
-            order = np.argsort(-filtered_scores)
-            keep = []
-            ious = iou(boxes, boxes )
-            while order.numel() > 0:
-                i = order[0].item()
-                keep.append(i)
-                ovr = ious[i, order[1:]]
-                inds_to_keep = np.where(ovr <= nms_thres_2)[0]
-                order = order[inds_to_keep + 1]
-            
-            self.unified_boxes = all_bboxes[k_1][keep]
-            # Although we dont filter out boxes with low score, we leave out those with small areas
-            # QQ 这里这样正确吗，需不需要filter？thres参数又是怎么样？
-            if nise_cfg.ALG.FILTER_BBOX_WITH_SMALL_AREA:
-                self.unified_boxes, _ = filter_bbox_with_area(self.unified_boxes)
+            if filtered_scores.numel()!=0:
+                
+                boxes = all_bboxes[k_1, :4].numpy()
+                order = np.argsort(-filtered_scores)
+                keep = []
+                if nise_cfg.ALG.USE_COCO_IOU_IN_NMS:
+                    from pycocotools.mask import iou
+                    ious = iou(boxes, boxes, np.zeros(0))
+                else:
+                    ious = tf_iou(boxes, boxes)
+                while order.numel() > 0:
+                    i = order[0].item()
+                    keep.append(i)
+                    ovr = ious[i, order[1:]]
+                    inds_to_keep = np.where(ovr <= nms_thres_2)[0]
+                    order = order[inds_to_keep + 1]
+                
+                self.unified_boxes = all_bboxes[k_1][keep]
             self.unified_boxes = expand_vector_to_tensor(self.unified_boxes)
             if self.unified_boxes.numel() == 0:
                 set_empty_unified_box()
