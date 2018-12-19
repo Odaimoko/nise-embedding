@@ -1,5 +1,21 @@
 # nise-embedding
 
+My baseline
+
+Task 1. `valid_task_1_DETbox_propfiltered_propthres_0.5_propGT`. This is obtained by not nms the detected box (i.e. use all detected box to estimate joints).
+
+```
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 79.8 & 78.5 & 70.7 & 59.2 & 70.1 & 65.5 & 58.3 & 69.6 \\
+```
+
+Use GT box to estimate。
+
+```
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 85.8 & 82.3 & 73.8 & 62.6 & 73.4 & 69.5 & 64.5 & 74.0 \\
+```
+
 
 
 # TODOLIST
@@ -17,18 +33,6 @@
     + [ ] 上一帧的 score*joint 的 score
 + [ ] 达到pt17 task 3 的state-of-the-art
 + [x] 使用data parallel 加速，现在太慢了。
-
-  + [ ] 2018-12-11：看了时间之后，发现并没有什么可以减少时间的？可能在 jointprop 和 est的时候整个batch 一起走。
-
-  + [ ] Detected 8 boxes.发现主要是存储图像花时间了。
-    人检测…… 1.136 s.
-  	 	生成flow…… 0.121 s.
-  	 	Proped 5 boxes
-  	 	Joint prop…… 0.512 s.
-  	 	Before NMS: 13 people. 	After NMS: 8 people
-  	 	NMS…… 0.000 s.
-  	 	关节预测…… 0.483 s.
-  	 	ID分配…… 0.001 s
 
   + [ ] detect可以parallel？好像不行。
 
@@ -61,25 +65,96 @@ $ diff my_e2e_mask_rcnn_X-101-64x4d-FPN_1x.yaml ../Detectron.pytorch/tron_config
 
 
 
+## 2018-12-19
+
+### 目标
+
+- [ ] 调参代码，用一个py完成。
+
+### 实验
+
+使用tensorflow 的 iou， 和 pycocotools 对比，做三个完全相同的实验。
+
++ [x] 重新跑一次 detect，no nms 的 estimation 结果。
+
+    + [x] 正确，就是我现在的最高点（69.4）
+
++ [ ] 使用土法 nms，得到 box 的 ap
+
+    + [x] 对task 1进行 nms。[根本就没有滤掉好吧，但是 mAP 又有提升]
+
+    ```
+    valid_task_1_DETbox_allBox_tfIoU_nmsThres_0.05_0.5
+    [INFO] - In total 56920 predictions, 18536 gts.
+    [INFO] - AP: tensor(0.7656)
+    & Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+    & 80.3 & 79.0 & 71.1 & 59.6 & 70.5 & 65.8 & 58.5 & 70.0 \\
+    ```
+
+    + [x] prop 的时候使用重合度高的 gtpose。
+
+    ```
+    valid_task_-1_DETbox_allBox_propAll_propGT_tfIoU_nmsThres_0.05_0.5
+    [INFO] - In total 58440 predictions, 18536 gts.
+    [INFO] - AP: tensor(0.7841)
+    & Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+    & 80.7 & 79.4 & 71.6 & 59.9 & 71.1 & 66.6 & 59.5 & 70.6 \\
+    ```
+
+    + [x] prop 的时候使用人检测和关节检测的结果。
+
+    ```
+    valid_task_-1_DETbox_allBox_propAll_propDET_tfIoU_nmsThres_0.05_0.5
+    [INFO] - In total 59101 predictions, 18536 gts.
+    [INFO] - AP: tensor(0.7662)
+    & Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+    & 80.0 & 78.8 & 71.0 & 59.4 & 70.4 & 65.7 & 58.5 & 69.8 \\
+    ```
+
+
+
+
+按道理，TensorFlow 版本计算的 iou 是正确的，点应该要比 pycocotools 高。
+
+### 实验
+
+对 nms 的两个 threshold 调参
+
+- `thres_1`: 0.05:0.05:0.5
+- `thres_2`: 0.3:0.1:0.9
+
+
+
+
+
 
 
 ## 2018-12-18
 
 ### baseline
 
-仅仅使用 people detector 的时候，box 的 AP。
+现在nms 的时候使用的iou 全部都是pycocotools.mask.iou，而不是使用 TensorFlow 里面的。这个感觉更不准确，但是更有效。
+
+- [ ] 仅仅使用 people detector 的时候，box 的 AP。【待实验是否这样】
+
+without nms
+
+```
+[INFO] - In total 56920 predictions, 18538 gts.
+[INFO] - AP: tensor(0.7656)
+```
 
 需要 nms。nms 两个 thres 分别是 0.05和0.5 。
 
 ```
 valid_task_1_DETbox_allBox_propAll_propDET_nmsThres_0.05_0.5
-[INFO] - In total 22807 predictions, 18966 gts.
-[INFO] - AP: tensor(0.5362)
+[INFO] - In total 25282 predictions, 18536 gts.
+[INFO] - AP: tensor(0.5803)
 ```
 
-
-
 ### 实验
+
+现在nms 的时候使用的iou 全部都是pycocotools.mask.iou，而不是使用 TensorFlow 里面的。这个感觉更不准确，但是更有效。
 
 prop 的时候不 filter。注意并不是所有图都有 annotation，所以虽然说是 gtpose， 有一部分仍然是 det pose。
 
@@ -89,18 +164,26 @@ prop 的时候不 filter。注意并不是所有图都有 annotation，所以虽
 
     - [x] score 使用原 box score * gtpose 里关节 visible 的平均值。
 
+    ```
+    valid_task_-1_DETbox_allBox_propAll_propGT_nmsThres_0.05_0.5
+    [INFO] - In total 23301 predictions, 18536 gts.
+    [INFO] - AP: tensor(0.5734)
+    ```
+
 - [x] prop 的时候使用人检测和关节检测的结果。
 
     - [x] score 使用原 box score * 新 joints 的平均值。
 
-    - [ ] ```
-      valid_task_-1_DETbox_allBox_propAll_propDET_nmsThres_0.05_0.5
-      [INFO] - In total 23196 predictions, 18966 gts.
-      [INFO] - AP: tensor(0.5408)
+    - [ ] ```valid_task_-1_DETbox_allBox_propAll_propDET_nmsThres_0.05_0.5
+      [INFO] - In total 23154 predictions, 18536 gts.
+      [INFO] - AP: tensor(0.5552)
       ```
-    ```
-    
-    ```
+
+~~过滤~~
+
+- [ ] ~~使用重合度高的 gtpose~~
+- [ ] ~~prop 的时候使用人检测和关节检测的结果。~~
+
 
 
 
