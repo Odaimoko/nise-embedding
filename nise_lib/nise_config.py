@@ -15,11 +15,6 @@ from plogs.plogs import get_logger
 
 def get_nise_arg_parser():
     parser = argparse.ArgumentParser(description = 'NISE PT')
-    # parser.add_argument('-j', '--workers', default = 4, type = int, metavar = 'N',
-    #                     help = 'number of data loading workers (default: 12)')
-    # parser.add_argument('-g', '--num_gpus', default = 1, type = int, metavar = 'N',
-    #                     help = 'number of GPU to use (default: 1)')
-    
     parser.add_argument('--nise_config', type = str, metavar = 'nise config file',
                         help = 'path to yaml format config file', default = 'exp_config/t.yaml')
     parser.add_argument('--simple-model-file', type = str, )
@@ -89,23 +84,32 @@ def set_path_from_nise_cfg(nise_cfg):
     else:
         prop_part.append('propDET')
     
-    unify_part = [
-        'nmsThres',
-        str(nise_cfg.ALG.UNIFY_NMS_THRES_1),
-        str(nise_cfg.ALG.UNIFY_NMS_THRES_2)
-    ]
+    if not nise_cfg.DEBUG.NO_NMS:
+        if nise_cfg.ALG.USE_COCO_IOU_IN_NMS:
+            unify_part = ['cocoIoU']
+        else:
+            unify_part = ['tfIoU']
+        unify_part.extend([
+            'nmsThres',
+            str(nise_cfg.ALG.UNIFY_NMS_THRES_1),
+            str(nise_cfg.ALG.UNIFY_NMS_THRES_2)
+        ])
+    
+    else:
+        unify_part = ['noNMS']
     
     detect_part = '_'.join(detect_part)
-    prop_part = '_'.join(prop_part)
+    prop_part = '_'.join(prop_part) if nise_cfg.TEST.TASK == 2 or nise_cfg.TEST.TASK == -1 else ''
     unify_part = '_'.join(unify_part)
-    suffix = '_'.join([
+    
+    suffix_list = [
         nise_cfg.TEST.MODE,
         'task',
-        str(nise_cfg.TEST.TASK),
-        detect_part,
-        prop_part,
-        unify_part,
-    ])
+        str(nise_cfg.TEST.TASK), ]
+    if detect_part: suffix_list.append(detect_part)
+    if prop_part: suffix_list.append(prop_part)
+    if unify_part: suffix_list.append(unify_part)
+    suffix = '_'.join(suffix_list)
     suffix_range = '_'.join(['RANGE',
                              str(nise_cfg.TEST.FROM),
                              str(nise_cfg.TEST.TO)] if not nise_cfg.TEST.ONLY_TEST else nise_cfg.TEST.ONLY_TEST)
@@ -114,7 +118,7 @@ def set_path_from_nise_cfg(nise_cfg):
     nise_cfg.PATH.UNIFIED_JSON_DIR = os.path.join(nise_cfg.PATH.UNIFIED_JSON_DIR, suffix)
     nise_cfg.PATH.JOINTS_DIR = os.path.join(nise_cfg.PATH.JOINTS_DIR, suffix_with_range)
     nise_cfg.PATH.IMAGES_OUT_DIR = os.path.join(nise_cfg.PATH.IMAGES_OUT_DIR, suffix_with_range)
-    return suffix_with_range
+    return suffix, suffix_with_range
 
 
 def create_nise_logger(nise_cfg, cfg_name, phase = 'train'):
@@ -205,7 +209,7 @@ class NiseConfig:
             self._HUMAN_THRES = .5
             self.PROP_HUMAN_THRES = .5
             # only bbox area over this are recognized as human
-            self._AREA_THRES = 32 * 32
+            self._AREA_THRES = 32
             # only bbox ratio not over this are recognized as human
             self._ASPECT_RATIO_THRES = 0.75
             # if want more joint prop boxes, set this to false
@@ -281,7 +285,7 @@ nise_cfg = get_edcfg_from_nisecfg(cfg)
 nise_args = get_nise_arg_parser()
 update_config(nise_cfg, nise_args.nise_config)
 
-suffix = set_path_from_nise_cfg(nise_cfg)
-print('SUFFIX', suffix)
+suffix, suffix_with_range = set_path_from_nise_cfg(nise_cfg)
+print('SUFFIX', suffix_with_range)
 nise_logger = create_nise_logger(nise_cfg, suffix)
 mkrs = Munkres()
