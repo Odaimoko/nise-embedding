@@ -90,6 +90,8 @@ NMS's procedure:
 
 - filter those < thres 1
 
+    - if nothing left, set empty boxes
+
 - compute IoU between each pair
 
 - sort the rest boxes scores in descending order.
