@@ -18,7 +18,8 @@ torch.cuda.set_device(gm.auto_choice())
 import os
 import torch
 import threading
-from nise_lib.nise_debugging_func import debug_print
+from multiprocessing import Lock
+from nise_lib.nise_functions import debug_print
 
 
 def parse(line, qargs):
@@ -69,7 +70,7 @@ def by_power(d):
     '''
     power_infos = (d['power.draw'], d['power.limit'])
     if any(v == 1 for v in power_infos):
-        print('Power management unable for GPU {}'.format(d['index']))
+        debug_print('Power management unable for GPU {}'.format(d['index']))
         return 1
     return float(d['power.draw']) / d['power.limit']
 
@@ -94,16 +95,16 @@ class GPUManager():
         for gpu in self.gpus:
             gpu['specified'] = False
         self.gpu_num = len(self.gpus)
-        self.gpu_locks = [threading.Lock() for _ in range(self.gpu_num)]
+        self.gpu_locks = [Lock() for _ in range(self.gpu_num)]
     
     def _sort_by_memory(self, gpus, by_size = False):
-        print('Free memory:', '; '.join(['GPU %s: %s MB' % (g['index'], g['memory.free'])
-                                         for g in gpus]))
+        debug_print('Free memory:', '; '.join(['GPU %s: %s MB' % (g['index'], g['memory.free'])
+                                               for g in gpus]))
         if by_size:
-            print('Sorted by free memory size')
+            debug_print('Sorted by free memory size')
             return sorted(gpus, key = lambda d: d['memory.free'], reverse = True)
         else:
-            print('Sorted by free memory rate')
+            debug_print('Sorted by free memory rate')
             return sorted(gpus, key = lambda d: float(d['memory.free']) / d['memory.total'], reverse = True)
     
     def _sort_by_power(self, gpus):
@@ -124,12 +125,40 @@ class GPUManager():
                 return i
     
     def lock_acquire_by_index(self, index):
-        self.gpu_locks[self.get_i_by_index(index)].acquire()
-        debug_print('GPU %s\'s lock ACQuired.' % index)
+        i = self.get_i_by_index(index)
+        debug_print('GM is', id(self), 'thread', threading.get_ident(), 'acquiring the', i, 'th lock, the index is',
+                    index,
+                    id(self.gpu_locks[self.get_i_by_index(index)]), )
+        self.gpu_locks[i].acquire()
+        debug_print('GPU %s\'s lock ACQuired.' % index, 'thread', threading.get_ident(), 'gets lock',
+                    id(self.gpu_locks[self.get_i_by_index(index)]))
     
     def lock_release_by_index(self, index):
-        self.gpu_locks[self.get_i_by_index(index)].release()
-        debug_print('GPU %s\'s lock RELeased.' % index)
+        i = self.get_i_by_index(index)
+        debug_print('GM is', id(self), 'thread', threading.get_ident(), 'releasing the', i, 'th lock, the index is',
+                    index,
+                    id(self.gpu_locks[self.get_i_by_index(index)]), )
+        self.gpu_locks[i].release()
+        debug_print('GPU %s\'s lock RELeased.' % index, 'thread', threading.get_ident(), 'releases lock',
+                    id(self.gpu_locks[self.get_i_by_index(index)]))
+    
+    def lock_acquire_by_index_ex(self, gpu_locks, index):
+        i = self.get_i_by_index(index)
+        debug_print('GM is', id(self), 'thread', threading.get_ident(), 'acquiring the', i, 'th lock, the index is',
+                    index,
+                    id(self.gpu_locks[self.get_i_by_index(index)]), )
+        gpu_locks[i].acquire()
+        debug_print('GPU %s\'s lock ACQuired.' % index, 'thread', threading.get_ident(), 'gets lock',
+                    id(self.gpu_locks[self.get_i_by_index(index)]))
+    
+    def lock_release_by_index_ex(self, gpu_locks, index):
+        i = self.get_i_by_index(index)
+        debug_print('GM is', id(self), 'thread', threading.get_ident(), 'releasing the', i, 'th lock, the index is',
+                    index,
+                    id(self.gpu_locks[self.get_i_by_index(index)]), )
+        gpu_locks[i].release()
+        debug_print('GPU %s\'s lock RELeased.' % index, 'thread', threading.get_ident(), 'releases lock',
+                    id(self.gpu_locks[self.get_i_by_index(index)]))
     
     def auto_choice(self, mode = 0):
         '''
@@ -142,36 +171,33 @@ class GPUManager():
         自动选择最空闲GPU,返回索引
         '''
         debug_print('Choosing GPU ... ')
-        for index in [gpu['index'] for gpu in self.gpus]:
-            self.lock_acquire_by_index(index)
         for old_infos, new_infos in zip(self.gpus, query_gpu(self.qargs)):
             old_infos.update(new_infos)
         # unspecified_gpus = [gpu for gpu in self.gpus if not gpu['specified']] or self.gpus
-        unspecified_gpus =  self.gpus
-
+        unspecified_gpus = self.gpus
+        
         if mode == 0:
-            print('Choosing the GPU device has largest free memory...')
+            debug_print('Choosing the GPU device has largest free memory...')
             chosen_gpu = self._sort_by_memory(unspecified_gpus, True)[0]
         elif mode == 1:
-            print('Choosing the GPU device has highest free memory rate...')
+            debug_print('Choosing the GPU device has highest free memory rate...')
             chosen_gpu = self._sort_by_power(unspecified_gpus)[0]
         elif mode == 2:
-            print('Choosing the GPU device by power...')
+            debug_print('Choosing the GPU device by power...')
             chosen_gpu = self._sort_by_power(unspecified_gpus)[0]
         else:
-            print('Given an unaviliable mode, will be chosen by memory')
+            debug_print('Given an unaviliable mode, will be chosen by memory')
             chosen_gpu = self._sort_by_memory(unspecified_gpus)[0]
         chosen_gpu['specified'] = True
         chosen_index = chosen_gpu['index']
-        print('GPU Chosen {i}:\n{info}'.format(i = chosen_index, info = '\n'.join(
-            [str(k) + ':' + str(v) for k, v in chosen_gpu.items()])))
+        msg = 'GPU Chosen {i}:\n{info}'.format(i = chosen_index, info = '\n'.join(
+            [str(k) + ':' + str(v) for k, v in chosen_gpu.items()]))
+        for m in msg.split('\n'): debug_print(m)
         locks_reverse = list(self.gpus)
         locks_reverse.reverse()
-        
-        for index in [gpu['index'] for gpu in locks_reverse]:
-            self.lock_release_by_index(index)
         
         return int(chosen_index)
 
 
+global gm
 gm = GPUManager()
