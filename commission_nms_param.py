@@ -36,7 +36,7 @@ if __name__ == '__main__':
     # ─── FROM SIMPLE BASELINE ───────────────────────────────────────────────────────
     if nise_cfg.DEBUG.load_joint_est_model:
         simple_args, simple_joint_est_model = load_simple_model()
-        # simple_joint_est_model = nn.DataParallel(simple_joint_est_model)
+        simple_joint_est_model = nn.DataParallel(simple_joint_est_model).cuda()
         debug_print('Simple pose detector loaded.')
     
     # ─── HUMAN DETECT ───────────────────────────────────────────────────────────────

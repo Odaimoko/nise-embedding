@@ -24,7 +24,7 @@ debug_print(pp.pformat(nise_cfg))
 flow_model = None
 maskRCNN = None
 simple_joint_est_model = None
-human_det_dataset=None
+human_det_dataset = None
 # viz = visdom.Visdom(env = 'run-with-flownet')
 # ─── FROM FLOWNET 2.0 ───────────────────────────────────────────────────────────
 if nise_cfg.DEBUG.load_flow_model:
@@ -62,15 +62,10 @@ if nise_cfg.TEST.TASK == 1:
 elif nise_cfg.TEST.TASK == 2:
     
     nise_pred_task_2_debug(dataset_path,
-                           
+    
                            human_det_dataset,
                            maskRCNN,
                            simple_joint_est_model, flow_model)
 elif nise_cfg.TEST.TASK == -1:
     
-    nise_flow_debug(dataset_path,
-                           
-                           human_det_dataset,
-                           maskRCNN,
-                           simple_joint_est_model, flow_model)
-
+    nise_flow_debug(dataset_path, simple_joint_est_model, flow_model)
