@@ -19,6 +19,7 @@ from nise_lib.nise_config import mkrs
 # local packages
 from nise_lib.nise_debugging_func import *
 from nise_utils.imutils import *
+import yaml
 
 
 # DECORATORS
@@ -720,6 +721,42 @@ def get_joints_from_annorects(annorects):
     joints = torch.tensor(all_joints).float()
     
     return joints
+
+
+def create_yaml(series):
+    with open('exp_config/t-flow-debug.yaml', 'r')as f:
+        c = yaml.load(f)
+    training_start_time = time.strftime("%m_%d-%H_%M", time.localtime())
+    
+    out_dir = 'exp_config/%s-batch' % (training_start_time,)  # series[0][0], series[-1][-1])
+    mkdir(out_dir)
+    batch_files = []
+    for s in series:
+        nc = copy.deepcopy(c)
+        nc['TEST']['FROM'] = s[0]
+        nc['TEST']['TO'] = s[1]
+        nc['ALG']['UNIFY_NMS_THRES_1'] = a.nms_thres_1
+        nc['ALG']['UNIFY_NMS_THRES_2'] = a.nms_thres_2
+        file_name = 'batch_%02d_%02d-nmsthres-%.2f,%.2f.yaml' % (s[0], s[1], a.nms_thres_1, a.nms_thres_2)
+        long_file_name = os.path.join(out_dir, file_name)
+        batch_files.append(long_file_name)
+        with open(long_file_name, 'w')as f:
+            yaml.dump(nc, f)
+    return batch_files
+
+
+def is_skip_video(nise_cfg, i, file_name):
+    s = True
+    for fn in nise_cfg.TEST.ONLY_TEST:
+        if fn in file_name:  # priority
+            s = False
+            break
+    if nise_cfg.TEST.ONLY_TEST:
+        return s
+    if s == True:
+        if i >= nise_cfg.TEST.FROM and i < nise_cfg.TEST.TO:
+            s = False
+    return s
 
 
 # ─── EVALUATION ──────────────────────────────────────────────────────────

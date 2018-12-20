@@ -22,7 +22,7 @@ def get_nise_arg_parser():
     return args
 
 
-def update_config(_config, config_file):
+def nise_update_config(_config, config_file):
     if config_file is None: return
     
     def update_dict(_config, k, v):
@@ -283,7 +283,7 @@ class NiseConfig:
 cfg = NiseConfig()
 nise_cfg = get_edcfg_from_nisecfg(cfg)
 nise_args = get_nise_arg_parser()
-update_config(nise_cfg, nise_args.nise_config)
+nise_update_config(nise_cfg, nise_args.nise_config)
 
 suffix, suffix_with_range = set_path_from_nise_cfg(nise_cfg)
 print('SUFFIX', suffix_with_range)
