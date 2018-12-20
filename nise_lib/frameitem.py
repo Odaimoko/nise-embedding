@@ -13,8 +13,6 @@ from simple_lib.core.inference import get_final_preds
 from simple_lib.core.config import config as simple_cfg
 from nise_utils.transforms import get_affine_transform
 
-from nise_lib.nise_config import nise_cfg
-
 
 class FrameItem:
     max_id = 0
@@ -25,12 +23,12 @@ class FrameItem:
     '''
     
     # @log_time('\tInit FI……')
-    def __init__(self, img_path, task = 2, is_first = False, gt_joints = None):
+    def __init__(self, nise_cfg, img_path, task = 2, is_first = False, gt_joints = None):
         '''
 
         :param is_first: is this frame the first of the sequence
         '''
-        
+        self.cfg = nise_cfg
         self.task = task  # 1 for single-frame, 2 for multi-frame and tracking
         self.is_first = is_first
         self.img_path = img_path
@@ -42,11 +40,11 @@ class FrameItem:
         # 依然是W/H， 回忆model第一个192是宽。
         self.img_ratio = simple_cfg.MODEL.IMAGE_SIZE[0] / simple_cfg.MODEL.IMAGE_SIZE[1]
         
-        if nise_cfg.TEST.USE_GT_PEOPLE_BOX and self.task == 1:
+        if self.cfg.TEST.USE_GT_PEOPLE_BOX and self.task == 1:
             self.flow_img = self.original_img
         else:
-            if nise_cfg.ALG.FLOW_MODE == nise_cfg.ALG.FLOW_PADDING_END:
-                multiple = nise_cfg.ALG.FLOW_MULTIPLE
+            if self.cfg.ALG.FLOW_MODE == self.cfg.ALG.FLOW_PADDING_END:
+                multiple = self.cfg.ALG.FLOW_MULTIPLE
                 h, w, _ = self.original_img.shape
                 extra_right = (multiple - (w % multiple)) % multiple
                 extra_bottom = (multiple - (h % multiple)) % multiple
@@ -56,10 +54,10 @@ class FrameItem:
             else:
                 self.flow_img = scipy.misc.imresize(  # h and w is reversed
                     self.original_img,
-                    (nise_cfg.DATA.flow_input_size[1], nise_cfg.DATA.flow_input_size[0])
+                    (self.cfg.DATA.flow_input_size[1], self.cfg.DATA.flow_input_size[0])
                 )
         
-        if nise_cfg.ALG.FLOW_MODE == nise_cfg.ALG.FLOW_PADDING_END:
+        if self.cfg.ALG.FLOW_MODE == self.cfg.ALG.FLOW_PADDING_END:
             self.img_outside_flow = self.original_img
         else:
             self.img_outside_flow = self.flow_img
@@ -74,7 +72,7 @@ class FrameItem:
             gt_scores = torch.ones([gt_box.shape[0]])
             gt_scores.unsqueeze_(1)
             self.gt_boxes, idx = filter_bbox_with_area(torch.cat([gt_box, gt_scores], 1))
-            self.gt_joints = expand_vector_to_tensor(gt_joints[idx, :],3)
+            self.gt_joints = expand_vector_to_tensor(gt_joints[idx, :], 3)
         else:
             self.gt_boxes = torch.tensor([])
             self.gt_joints = torch.tensor([])
@@ -109,14 +107,14 @@ class FrameItem:
     
     # def get_box_from_joints
     
-    @log_time('\t人检测……')
+    # @log_time('\t人检测……')
     def detect_human(self, detector, prepared_detection = None):
         '''
         :param detector:
         :return: people is represented as tensor of size num_people x 4. The result is NMSed.
         '''
         
-        if nise_cfg.TEST.USE_GT_PEOPLE_BOX:
+        if self.cfg.TEST.USE_GT_PEOPLE_BOX:
             self.detected_boxes = self.gt_boxes
         elif prepared_detection is not None and prepared_detection.numel() >= 5:
             self.detected_boxes = prepared_detection
@@ -125,7 +123,7 @@ class FrameItem:
             human_bboxes = torch.from_numpy(cls_boxes[1])  # people is the first class of coco， 0 for background
             self.detected_boxes = human_bboxes
         
-        if nise_cfg.ALG.FILTER_HUMAN_WHEN_DETECT:
+        if self.cfg.ALG.FILTER_HUMAN_WHEN_DETECT:
             # Dont use all, only high confidence
             self.detected_boxes, _ = filter_bbox_with_scores(self.detected_boxes)
             # 有可能出现没检测到的情况，大部分不可能，但是工程起见。
@@ -135,7 +133,7 @@ class FrameItem:
         debug_print('Detected', self.detected_boxes.shape[0], 'boxes', indent = 1)
         self.human_detected = True
     
-    @log_time('\t生成flow……')
+    # @log_time('\t生成flow……')
     def gen_flow(self, flow_model, prev_frame_img = None):
         """ - Normalize people crop to some size to fit flow input
         
@@ -156,7 +154,7 @@ class FrameItem:
         self.flow_to_current = self.flow_to_current[:, :self.ori_img_h, :self.ori_img_w]
         self.flow_calculated = True
     
-    @log_time('\tJoint prop……')
+    # @log_time('\tJoint prop……')
     def joint_prop(self, Q, use_pre_com_det_est = False, pre_com_det_est = None):
         '''
          WHAT IS PROP BOX SCORE???
@@ -173,11 +171,11 @@ class FrameItem:
         
         def check_joints_format(prev_frame_joints):
             prev_frame_joints = expand_vector_to_tensor(prev_frame_joints, 3)
-            if not ((prev_frame_joints.shape[2] == nise_cfg.DATA.num_joints and prev_frame_joints.shape[0] == 2) or (
-                    prev_frame_joints.shape[2] == 2 and prev_frame_joints.shape[1] == nise_cfg.DATA.num_joints)):
+            if not ((prev_frame_joints.shape[2] == self.cfg.DATA.num_joints and prev_frame_joints.shape[0] == 2) or (
+                    prev_frame_joints.shape[2] == 2 and prev_frame_joints.shape[1] == self.cfg.DATA.num_joints)):
                 raise ValueError(
                     'Size not matched, current size ' + str(prev_frame_joints.shape))
-            if prev_frame_joints.shape[2] == nise_cfg.DATA.num_joints:
+            if prev_frame_joints.shape[2] == self.cfg.DATA.num_joints:
                 # :param prev_frame_joints: 2x num_people x num_joints. to num_people x num_joints x 2
                 prev_frame_joints = torch.transpose(prev_frame_joints, 0, 1)
                 prev_frame_joints = torch.transpose(prev_frame_joints, 1, 2)
@@ -187,16 +185,16 @@ class FrameItem:
         prev_frame_joints = prev_frame.joints
         prev_frame_joints_scores = prev_frame.joints_score
         # preprocess
-        if nise_cfg.TEST.USE_ALL_GT_JOINTS_TO_PROP and prev_frame.gt_boxes.numel() != 0:
+        if self.cfg.TEST.USE_ALL_GT_JOINTS_TO_PROP and prev_frame.gt_boxes.numel() != 0:
             # dont care about prev_joints
             prev_frame_joints = prev_frame.gt_joints[:, :, :2]
             prev_frame_joints_vis = prev_frame.gt_joints[:, :, 2]
-            prev_box_scores = torch.ones([prev_frame_joints.shape[0]]) * nise_cfg.TEST.GT_BOX_SCORE
+            prev_box_scores = torch.ones([prev_frame_joints.shape[0]]) * self.cfg.TEST.GT_BOX_SCORE
             prev_frame_joints_scores = prev_frame_joints_vis  # visible, score=1; not visible, score=0
         elif prev_frame_joints.numel() != 0:
             # if there are joints to propagate, use filtered ones
-            if nise_cfg.ALG.JOINT_PROP_WITH_FILTERED_HUMAN:
-                prev_filtered_box, filtered_idx = prev_frame.get_filtered_bboxes(thres = nise_cfg.ALG.PROP_HUMAN_THRES)
+            if self.cfg.ALG.JOINT_PROP_WITH_FILTERED_HUMAN:
+                prev_filtered_box, filtered_idx = prev_frame.get_filtered_bboxes(thres = self.cfg.ALG.PROP_HUMAN_THRES)
                 if prev_filtered_box.numel() == 0:
                     set_empty_joint()
                     debug_print('Proped', 0, 'boxes', indent = 1)
@@ -216,7 +214,7 @@ class FrameItem:
             
             # if prev_box_scores.numel() == 1:  # 从这里下来的 score，如果只有一个的话，是一个scalar，而不是一个size为1 的向量
             #     prev_box_scores.unsqueeze_(0)
-            if nise_cfg.TEST.USE_GT_JOINTS_TO_PROP and prev_frame.gt_boxes.numel() != 0:
+            if self.cfg.TEST.USE_GT_JOINTS_TO_PROP and prev_frame.gt_boxes.numel() != 0:
                 # match一下，只用检测到的gt的joint
                 prev_box_np = prev_filtered_box.numpy()[:, :4]
                 gt_box_np = prev_frame.gt_boxes.numpy()[:, :4]
@@ -226,8 +224,8 @@ class FrameItem:
                 inds = get_matching_indices(to_torch(prev_to_gt_iou))
                 num_matched_people = len(inds)
                 # Overwrite
-                prev_frame_joints = torch.zeros([num_matched_people, nise_cfg.DATA.num_joints, 2])
-                prev_frame_joints_vis = torch.zeros([num_matched_people, nise_cfg.DATA.num_joints])
+                prev_frame_joints = torch.zeros([num_matched_people, self.cfg.DATA.num_joints, 2])
+                prev_frame_joints_vis = torch.zeros([num_matched_people, self.cfg.DATA.num_joints])
                 prev_box_scores = torch.zeros([num_matched_people])
                 for i, ind in enumerate(inds):
                     prev, gt = ind
@@ -251,7 +249,7 @@ class FrameItem:
             
             for people in range(new_joints.shape[0]):
                 # debug_print('people', people)
-                for joint in range(nise_cfg.DATA.num_joints):
+                for joint in range(self.cfg.DATA.num_joints):
                     joint_pos = prev_frame_joints[people, joint, :]  # x,y
                     joint_vis = prev_frame_joints_vis[people, joint]
                     new_joint_vis = joint_pos[0] < self.img_w and joint_pos[1] < self.img_h \
@@ -279,9 +277,9 @@ class FrameItem:
             
             self.prop_boxes = torch.cat([prop_boxes, final_prop_box_scores], 1)
             self.prop_boxes = expand_vector_to_tensor(self.prop_boxes)
-            if nise_cfg.DEBUG.VIS_PROPED_JOINTS:
+            if self.cfg.DEBUG.VIS_PROPED_JOINTS:
                 p = PurePosixPath(self.img_path)
-                out_dir = os.path.join(nise_cfg.PATH.JOINTS_DIR + '_flowproped', p.parts[-2])
+                out_dir = os.path.join(self.cfg.PATH.JOINTS_DIR + '_flowproped', p.parts[-2])
                 mkdir(out_dir)
                 num_people, num_joints, _ = self.new_joints.shape
                 joints_to_draw = torch.zeros([2 * num_people, num_joints, 2])
@@ -304,7 +302,7 @@ class FrameItem:
             debug_print('Proped 0 boxes', indent = 1)
         self.joints_proped = True
     
-    @log_time('\tNMS……')
+    # @log_time('\tNMS……')
     def unify_bbox(self):
         """ - merge bbox; nms; """
         
@@ -313,7 +311,7 @@ class FrameItem:
             self.unified_boxes = torch.tensor([])
             self.NO_BBOXES = True
         
-        if nise_cfg.DEBUG.NO_NMS:
+        if self.cfg.DEBUG.NO_NMS:
             self.unified_boxes = self.detected_boxes
             self.boxes_unified = True
             debug_print('Use all detection results in NMS.', indent = 1)
@@ -344,16 +342,17 @@ class FrameItem:
             
             # self.unified_boxes = to_torch(cls_boxes[1])  # 0 for bg, num_nmsed x 5
             # 土法nms
-            nms_thres_1 = nise_cfg.ALG.UNIFY_NMS_THRES_1
-            nms_thres_2 = nise_cfg.ALG.UNIFY_NMS_THRES_2
+            nms_thres_1 = self.cfg.ALG.UNIFY_NMS_THRES_1
+            nms_thres_2 = self.cfg.ALG.UNIFY_NMS_THRES_2
+            debug_print('IN FI', nms_thres_1, nms_thres_2)
             k_1 = np.where(scores >= nms_thres_1)[0]
             filtered_scores = scores[k_1]
-            if filtered_scores.numel()!=0:
+            if filtered_scores.numel() != 0:
                 
                 boxes = all_bboxes[k_1, :4].numpy()
                 order = np.argsort(-filtered_scores)
                 keep = []
-                if nise_cfg.ALG.USE_COCO_IOU_IN_NMS:
+                if self.cfg.ALG.USE_COCO_IOU_IN_NMS:
                     from pycocotools.mask import iou
                     ious = iou(boxes, boxes, np.zeros(0))
                 else:
@@ -382,20 +381,20 @@ class FrameItem:
         final_valid_idx = valid_score_idx
         return filtered, final_valid_idx
     
-    @log_time('\t关节预测……')
+    # @log_time('\t关节预测……')
     def est_joints(self, joint_detector):
         """detect current image's bboxes' joints pos using people-pose-estimation - """
         
         p = PurePosixPath(self.img_path)
         
-        out_dir = os.path.join(nise_cfg.PATH.JOINTS_DIR + "_single", p.parts[-2])
+        out_dir = os.path.join(self.cfg.PATH.JOINTS_DIR + "_single", p.parts[-2])
         mkdir(out_dir)
         torch_img = im_to_torch(self.img_outside_flow).unsqueeze(0)
         if not self.boxes_unified and not self.is_first:
             # if first, no unified box because no flow to prop, so dont raise
             raise ValueError('Should unify bboxes first')
-        self.joints = torch.zeros(self.unified_boxes.shape[0], nise_cfg.DATA.num_joints, 2)  # FloatTensor
-        self.joints_score = torch.zeros(self.unified_boxes.shape[0], nise_cfg.DATA.num_joints)  # FloatTensor
+        self.joints = torch.zeros(self.unified_boxes.shape[0], self.cfg.DATA.num_joints, 2)  # FloatTensor
+        self.joints_score = torch.zeros(self.unified_boxes.shape[0], self.cfg.DATA.num_joints)  # FloatTensor
         # if no people boxes, self.joints is tensor([])
         joint_detector.eval()
         for i in range(self.unified_boxes.shape[0]):
@@ -414,7 +413,7 @@ class FrameItem:
                 trans,
                 (int(simple_cfg.MODEL.IMAGE_SIZE[0]), int(simple_cfg.MODEL.IMAGE_SIZE[1])),
                 flags = cv2.INTER_LINEAR)
-            if nise_cfg.DEBUG.VIS_SINGLE_NO_JOINTS == True:
+            if self.cfg.DEBUG.VIS_SINGLE_NO_JOINTS == True:
                 cv2.imwrite(os.path.join(out_dir, p.stem + "_nojoints_" + str(i) + '.jpg'), resized_human_np)
             
             # 'images_joint/valid/015860_mpii_single_person/00000001_0.jpg'
@@ -431,7 +430,7 @@ class FrameItem:
             self.joints[i, :, :] = to_torch(preds).squeeze()
             self.joints_score[i, :] = to_torch(max_val).squeeze() * human_score
             
-            if nise_cfg.DEBUG.VIS_EST_SINGLE:
+            if self.cfg.DEBUG.VIS_EST_SINGLE:
                 # debug_print(i, indent = 1)
                 img_with_joints = get_batch_image_with_joints(torch_img, to_torch(preds), torch.ones(1, 15, 1))
                 resized_human_np_with_joints = cv2.warpAffine(
@@ -445,13 +444,13 @@ class FrameItem:
         
         self.joints_detected = True
     
-    @log_time('\tID分配……')
+    # @log_time('\tID分配……')
     def assign_id(self, Q, get_dist_mat = None):
         """ input: distance matrix; output: correspondence   """
         """ - Associate ids. question: how to associate using more than two frames?between each 2?- """
         if not self.joints_detected:
             raise ValueError('Should detect joints first')
-        if nise_cfg.ALG.ASSGIN_ID_TO_FILTERED_BOX:
+        if self.cfg.ALG.ASSGIN_ID_TO_FILTERED_BOX:
             self.id_boxes, self.id_idx_in_unified = self.get_filtered_bboxes()
             self.id_boxes = expand_vector_to_tensor(self.id_boxes)  # in case only one people ,then we have 5 index
         else:
@@ -473,18 +472,18 @@ class FrameItem:
                 raise NotImplementedError('Should pass a matrix function function in')
             prev_frame = Q[-1]
             # proped from prev frame. since we want prev ids, we should get filter ones.
-            # if nise_cfg.ALG.JOINT_PROP_WITH_FILTERED_HUMAN:
+            # if self.cfg.ALG.JOINT_PROP_WITH_FILTERED_HUMAN:
             #     proped_joints = self.new_joints.squeeze()  # squeeze is not for the first dim
             #     # TODO:如果 propthres 和 human_thres 不一样，那么这里 id 的数量就是 humanthres 的，new_joints 就是 propthres 的。
             #     prev_filtered_id_box, filtered_idx = filter_bbox_with_scores(prev_frame.id_bboxes,
-            #                                                                  thres = nise_cfg.ALG.PROP_HUMAN_THRES)
+            #                                                                  thres = self.cfg.ALG.PROP_HUMAN_THRES)
             #     proped_ids = prev_frame.human_ids[filtered_idx]
             # else:
             #     prev_boxes_filtered, prev_boxes_idx = prev_frame.get_filtered_bboxes()
             #     proped_joints = self.new_joints[prev_boxes_idx].squeeze()  # squeeze is not for the first dim
             #     proped_ids = prev_frame.human_ids
             
-            prev_boxes_filtered, prev_boxes_idx = prev_frame.get_filtered_bboxes(thres = nise_cfg.ALG.PROP_HUMAN_THRES)
+            prev_boxes_filtered, prev_boxes_idx = prev_frame.get_filtered_bboxes(thres = self.cfg.ALG.PROP_HUMAN_THRES)
             proped_joints = self.new_joints.squeeze()  # squeeze is not for the first dim
             proped_ids = prev_frame.human_ids
             
@@ -513,13 +512,13 @@ class FrameItem:
         # debug_print('ID Assigned')
         self.id_assigned = True
     
-    @log_time('\tID分配……')
+    # @log_time('\tID分配……')
     def assign_id_task_1_2(self, Q, get_dist_mat = None):
         """ input: distance matrix; output: correspondence   """
         """ - Associate ids. question: how to associate using more than two frames?between each 2?- """
         if not self.joints_detected:
             raise ValueError('Should detect joints first')
-        if nise_cfg.ALG.ASSGIN_ID_TO_FILTERED_BOX:
+        if self.cfg.ALG.ASSGIN_ID_TO_FILTERED_BOX:
             self.id_boxes, self.id_idx_in_unified = self.get_filtered_bboxes()
             self.id_boxes = expand_vector_to_tensor(self.id_boxes)  # in case only one people ,then we have 5 index
         else:
@@ -550,17 +549,17 @@ class FrameItem:
         resized_joints[:, :, 1] = self._resize_y(joints[:, :, 1])
         return resized_joints
     
-    @log_time('\t画图……')
+    # @log_time('\t画图……')
     def visualize(self, dataset):
         if self.id_assigned is False and self.task != 1:
             raise ValueError('Should assign id first.')
-        if nise_cfg.DEBUG.VIS_BOX:
+        if self.cfg.DEBUG.VIS_BOX:
             class_boxes = [[]] * 81
             # filter for showing joints
             class_boxes[1] = self.id_boxes
             training_start_time = time.strftime("%H-%M-%S", time.localtime())
             p = PurePosixPath(self.img_path)
-            out_dir = os.path.join(nise_cfg.PATH.IMAGES_OUT_DIR, p.parts[-2])
+            out_dir = os.path.join(self.cfg.PATH.IMAGES_OUT_DIR, p.parts[-2])
             mkdir(out_dir)
             
             vis_utils.vis_one_image_for_pt(
@@ -573,14 +572,14 @@ class FrameItem:
                 dataset = dataset,
                 box_alpha = 0.3,  # opacity
                 show_class = True,
-                thresh = nise_cfg.DEBUG.VIS_HUMAN_THRES,
+                thresh = self.cfg.DEBUG.VIS_HUMAN_THRES,
                 human_ids = self.people_ids,
                 kp_thresh = 2,
                 ext = 'jpg'
             )
         
         # SHOW JOINTS
-        if nise_cfg.DEBUG.VIS_JOINTS_FULL:
+        if self.cfg.DEBUG.VIS_JOINTS_FULL:
             if self.joints.numel() == 0 or self.id_idx_in_unified.numel() == 0:
                 # Essentially no joints or no joints after filtering
                 return
@@ -588,7 +587,7 @@ class FrameItem:
             joints_to_show = self._resize_joints(joints_to_show)
             num_people, num_joints, _ = joints_to_show.shape
             
-            out_dir = os.path.join(nise_cfg.PATH.JOINTS_DIR, p.parts[-2])
+            out_dir = os.path.join(self.cfg.PATH.JOINTS_DIR, p.parts[-2])
             mkdir(out_dir)
             
             joint_visible = torch.ones([num_people, num_joints, 1])
@@ -651,7 +650,7 @@ class FrameItem:
                                         'x': [self.joints[i, j, 0].item() * self.ori_img_w / self.img_w],
                                         'y': [self.joints[i, j, 1].item() * self.ori_img_h / self.img_h],
                                         'score': [self.joints_score[i, j].item()]
-                                    } for j in range(nise_cfg.DATA.num_joints)
+                                    } for j in range(self.cfg.DATA.num_joints)
                                 ]
                             }
                         ]
@@ -684,7 +683,7 @@ class FrameItem:
                                         'x': [self.joints[i, j, 0].item() * self.ori_img_w / self.img_w],
                                         'y': [self.joints[i, j, 1].item() * self.ori_img_h / self.img_h],
                                         'score': [self.joints_score[i, j].item()]
-                                    } for j in range(nise_cfg.DATA.num_joints)
+                                    } for j in range(self.cfg.DATA.num_joints)
                                 ]
                             }
                         ]

@@ -6,6 +6,7 @@ import sys
 import time
 from functools import wraps
 from pathlib import PurePosixPath
+import yaml
 
 import colorama
 import flow_datasets
@@ -19,7 +20,18 @@ from nise_lib.nise_config import mkrs
 # local packages
 from nise_lib.nise_debugging_func import *
 from nise_utils.imutils import *
-import yaml
+from plogs.logutils import Levels
+
+
+# DEBUGGING
+
+
+def debug_print(*args, indent = 0, lvl = Levels.INFO):
+    args = [str(a) for a in args]
+    msg = ''.join(['\t'] * indent) + ' '.join(args)
+    if nise_cfg.DEBUG.PRINT:
+        global nise_logger
+        nise_logger._log(msg, lvl)
 
 
 # DECORATORS
@@ -31,10 +43,10 @@ def log_time(*text, record = None):
             r = debug_print if not record else record  # 如果没有record，默认print
             t = (func.__name__,) if not text else text
             start = time.time()
-            func(*args, **kw)
+            result = func(*args, **kw)
             end = time.time()
-            r(*t, '%.3f s.' % (end - start,), printer = nise_logger.status)
-            # r(' Start time: %.3f s. End time: %.3f s'%(start, end))
+            r(*t, '%.3f s.' % (end - start,), lvl = Levels.STATUS)
+            return result
         
         return impl
     
@@ -723,26 +735,22 @@ def get_joints_from_annorects(annorects):
     return joints
 
 
-def create_yaml(series):
-    with open('exp_config/t-flow-debug.yaml', 'r')as f:
+def create_yaml(series, thres, original_yaml = 'exp_config/t-flow-debug.yaml'):
+    with open(original_yaml, 'r')as f:
         c = yaml.load(f)
     training_start_time = time.strftime("%m_%d-%H_%M", time.localtime())
     
-    out_dir = 'exp_config/%s-batch' % (training_start_time,)  # series[0][0], series[-1][-1])
-    mkdir(out_dir)
-    batch_files = []
-    for s in series:
-        nc = copy.deepcopy(c)
-        nc['TEST']['FROM'] = s[0]
-        nc['TEST']['TO'] = s[1]
-        nc['ALG']['UNIFY_NMS_THRES_1'] = a.nms_thres_1
-        nc['ALG']['UNIFY_NMS_THRES_2'] = a.nms_thres_2
-        file_name = 'batch_%02d_%02d-nmsthres-%.2f,%.2f.yaml' % (s[0], s[1], a.nms_thres_1, a.nms_thres_2)
-        long_file_name = os.path.join(out_dir, file_name)
-        batch_files.append(long_file_name)
-        with open(long_file_name, 'w')as f:
-            yaml.dump(nc, f)
-    return batch_files
+    nc = copy.deepcopy(c)
+    nc['TEST']['FROM'] = series[0]
+    nc['TEST']['TO'] = series[1]
+    nc['TEST']['ONLY_TEST'] = []
+    nc['ALG']['UNIFY_NMS_THRES_1'] = thres[0]
+    nc['ALG']['UNIFY_NMS_THRES_2'] = thres[1]
+    long_file_name = 'exp_config/%s-batch-%02d_%02d-nmsthres-%.2f,%.2f.yaml' % (
+        training_start_time, series[0], series[-1], thres[0], thres[1])
+    with open(long_file_name, 'w')as f:
+        yaml.dump(nc, f)
+    return long_file_name
 
 
 def is_skip_video(nise_cfg, i, file_name):

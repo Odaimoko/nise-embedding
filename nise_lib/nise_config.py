@@ -22,7 +22,7 @@ def get_nise_arg_parser():
     return args
 
 
-def nise_update_config(_config, config_file):
+def update_nise_config(_config, config_file):
     if config_file is None: return
     
     def update_dict(_config, k, v):
@@ -91,8 +91,8 @@ def set_path_from_nise_cfg(nise_cfg):
             unify_part = ['tfIoU']
         unify_part.extend([
             'nmsThres',
-            str(nise_cfg.ALG.UNIFY_NMS_THRES_1),
-            str(nise_cfg.ALG.UNIFY_NMS_THRES_2)
+            '%.2f' % (nise_cfg.ALG.UNIFY_NMS_THRES_1),
+            '%.2f' % (nise_cfg.ALG.UNIFY_NMS_THRES_2)
         ])
     
     else:
@@ -114,14 +114,21 @@ def set_path_from_nise_cfg(nise_cfg):
                              str(nise_cfg.TEST.FROM),
                              str(nise_cfg.TEST.TO)] if not nise_cfg.TEST.ONLY_TEST else nise_cfg.TEST.ONLY_TEST)
     suffix_with_range = '_'.join([suffix, suffix_range])
-    nise_cfg.PATH.JSON_SAVE_DIR = os.path.join(nise_cfg.PATH.JSON_SAVE_DIR, suffix)
-    nise_cfg.PATH.UNIFIED_JSON_DIR = os.path.join(nise_cfg.PATH.UNIFIED_JSON_DIR, suffix)
-    nise_cfg.PATH.JOINTS_DIR = os.path.join(nise_cfg.PATH.JOINTS_DIR, suffix_with_range)
-    nise_cfg.PATH.IMAGES_OUT_DIR = os.path.join(nise_cfg.PATH.IMAGES_OUT_DIR, suffix_with_range)
+    nise_cfg.PATH.JSON_SAVE_DIR = os.path.join(nise_cfg.PATH._JSON_SAVE_DIR, suffix)
+    nise_cfg.PATH.UNIFIED_JSON_DIR = os.path.join(nise_cfg.PATH._UNIFIED_JSON_DIR, suffix)
+    nise_cfg.PATH.JOINTS_DIR = os.path.join(nise_cfg.PATH._JOINTS_DIR, suffix_with_range)
+    nise_cfg.PATH.IMAGES_OUT_DIR = os.path.join(nise_cfg.PATH._IMAGES_OUT_DIR, suffix_with_range)
     return suffix, suffix_with_range
 
 
 def create_nise_logger(nise_cfg, cfg_name, phase = 'train'):
+    ploger = get_logger()
+    update_nise_logger(ploger, nise_cfg, cfg_name)
+    
+    return ploger
+
+
+def update_nise_logger(ploger, nise_cfg, cfg_name, phase = 'train'):
     root_output_dir = Path(nise_cfg.PATH.LOG_SAVE_DIR)
     # set up logger
     if not root_output_dir.exists():
@@ -132,14 +139,11 @@ def create_nise_logger(nise_cfg, cfg_name, phase = 'train'):
     time_str = time.strftime("%m_%d-%H_%M", time.localtime())
     
     log_file = '{}_{}.log'.format(time_str, cfg_name)
-    ploger = get_logger()
     ploger.config(to_file = True,
                   file_location = nise_cfg.PATH.LOG_SAVE_DIR,
                   filename = log_file, show_levels = True,
                   show_time = True)
     ploger.format('[{level}] - {msg}')
-    
-    return ploger
 
 
 class NiseConfig:
@@ -235,11 +239,18 @@ class NiseConfig:
             self.POSETRACK_ROOT = 'data/pt17/'
             self.GT_TRAIN_ANNOTATION_DIR = os.path.join(self.POSETRACK_ROOT, 'train_anno_json/')
             self.GT_VAL_ANNOTATION_DIR = os.path.join(self.POSETRACK_ROOT, 'valid_anno_json/')
-            self.JOINTS_DIR = 'images_joint/'
-            self.IMAGES_OUT_DIR = 'images_out/'
-            self.JSON_SAVE_DIR = 'pred_json/'
+            
+            self._JOINTS_DIR = 'images_joint/'
+            self._IMAGES_OUT_DIR = 'images_out/'
+            self._JSON_SAVE_DIR = 'pred_json/'
+            self._UNIFIED_JSON_DIR = 'unifed_boxes/'
+            
+            self.JOINTS_DIR = ''
+            self.IMAGES_OUT_DIR = ''
+            self.JSON_SAVE_DIR = ''
+            self.UNIFIED_JSON_DIR = ''
+            
             self.DETECT_JSON_DIR = 'pre_com/det_json/'
-            self.UNIFIED_JSON_DIR = 'unifed_boxes/'
             self.FLOW_JSON_DIR = 'pre_com/flow/'
             self.DET_EST_JSON_DIR = 'pre_com/det_est/'
     
@@ -283,9 +294,15 @@ class NiseConfig:
 cfg = NiseConfig()
 nise_cfg = get_edcfg_from_nisecfg(cfg)
 nise_args = get_nise_arg_parser()
-nise_update_config(nise_cfg, nise_args.nise_config)
+update_nise_config(nise_cfg, nise_args.nise_config)
 
 suffix, suffix_with_range = set_path_from_nise_cfg(nise_cfg)
 print('SUFFIX', suffix_with_range)
-nise_logger = create_nise_logger(nise_cfg, suffix)
+nise_logger = get_logger()
+update_nise_logger(nise_logger, nise_cfg, suffix)
+# print('original cfg and logger', id(nise_cfg), id(nise_logger))
 mkrs = Munkres()
+nise_cfg_pack = {
+    'cfg': nise_cfg,
+    'logger': nise_logger
+}

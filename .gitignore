@@ -125,3 +125,4 @@ exp_config/t.yaml
 pre_com/
 
 unifed_boxes/
+exp_config/12*nmsthres*.yaml

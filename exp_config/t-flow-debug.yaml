@@ -6,18 +6,18 @@ ALG:
   PROP_HUMAN_THRES: .5
 
   USE_COCO_IOU_IN_NMS: False
-  UNIFY_NMS_THRES_1: .45
+  UNIFY_NMS_THRES_1: .3
   UNIFY_NMS_THRES_2: .5
 
   ASSGIN_ID_TO_FILTERED_BOX: False
 
 TEST:
   USE_GT_PEOPLE_BOX: False
-  USE_GT_JOINTS_TO_PROP: False
+  USE_GT_JOINTS_TO_PROP: True
   USE_ALL_GT_JOINTS_TO_PROP: False
   GT_BOX_SCORE: .7
   FROM: 0
-  TO: 20
+  TO: 3
 #  ONLY_TEST:
 #    - 3742_m
 #    - 17839_mpii_relpath_5sec_testsub
@@ -42,5 +42,5 @@ DEBUG:
   USE_DETECTION_RESULT: True
   USE_FLOW_RESULT: True
   USE_DET_EST_RESULT: False
-  load_joint_est_model: True
+  load_joint_est_model: true
   load_human_det_model: False

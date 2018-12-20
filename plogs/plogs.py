@@ -37,14 +37,6 @@ class _Logger:
         self._filename = 'plogs_01.log'
         self._fstr = None
         self._logger = None
-        
-        # define log function for each log level
-        self.info = lambda msg: self._log(msg, Levels.INFO)
-        self.status = lambda msg: self._log(msg, Levels.STATUS)
-        self.success = lambda msg: self._log(msg, Levels.SUCCESS)
-        self.warning = lambda msg: self._log(msg, Levels.WARNING)
-        self.error = lambda msg: self._log(msg, Levels.ERROR)
-        self.critical = lambda msg: self._log(msg, Levels.CRITICAL)
     
     def config(self, pretty = True, show_levels = False, show_time = False, to_file = False,
                file_location = '/var/log/plogs/', filename = 'plogs_01.log'):
@@ -64,15 +56,15 @@ class _Logger:
     def format(self, fstr):
         self._fstr = fstr
     
-    def bind(self, logger):
-        self.logger = logger
-        
-        self.info = self.logger.info
-        self.status = self.logger.status
-        self.succeses = self.logger.success
-        self.warning = self.logger.warning
-        self.error = self.logger.error
-        self.critical = self.logger.critical
+    # def bind(self, logger):
+    #     self.logger = logger
+    #
+    #     self.info = self.logger.info
+    #     self.status = self.logger.status
+    #     self.succeses = self.logger.success
+    #     self.warning = self.logger.warning
+    #     self.error = self.logger.error
+    #     self.critical = self.logger.critical
     
     def _format(self, msg, log_lvl):
         log = msg
@@ -137,6 +129,14 @@ class _Logger:
         # find size of header & footer
         # print columns
 
+
+# define log function for each log level
+plog_info = lambda msg: get_logger()._log(msg, Levels.INFO)
+plog_status = lambda msg: get_logger()._log(msg, Levels.STATUS)
+plog_success = lambda msg: get_logger()._log(msg, Levels.SUCCESS)
+plog_warning = lambda msg: get_logger()._log(msg, Levels.WARNING)
+plog_error = lambda msg: get_logger()._log(msg, Levels.ERROR)
+plog_critical = lambda msg: get_logger()._log(msg, Levels.CRITICAL)
 
 if __name__ == '__main__':
     ploger = get_logger()

@@ -1,6 +1,7 @@
 import torch
 
 from nise_lib.nise_config import nise_cfg, nise_logger
+from plogs.logutils import Levels
 
 
 def gen_rand_flow(batch_size, h, w):
@@ -36,10 +37,3 @@ def gen_rand_joints(num_people, h, w):
         h / 2), size = [num_people, nise_cfg.DATA.num_joints])
     joints = torch.stack([x1, y1], 2)
     return joints  # ng
-
-
-def debug_print(*args, indent = 0, printer = nise_logger.info):
-    args = [str(a) for a in args]
-    msg = ''.join(['\t'] * indent) + ' '.join(args)
-    if nise_cfg.DEBUG.PRINT:
-        printer(msg)
