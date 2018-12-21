@@ -71,10 +71,11 @@ $ diff my_e2e_mask_rcnn_X-101-64x4d-FPN_1x.yaml ../Detectron.pytorch/tron_config
 
 + [ ] 全部的cfg 和logger传入。
 + [x] 整理实验数据，选出合适的 nms 参数，并用之于 DETBOX 看效果。
-    + [x] 全部都比baseline 还要低。哪里有出问题了？【Done】
+    + [x] 全部都比baseline 还要低。哪里有出问题了？【[Done](Questions.md/#2018-12-21)】
     + [x] 现在看来是输出的问题，输出成了`self.people_ids`个数，实际应该是`unified_box`。判断条件那里没有加`task==-1`，改一下吧。。。
     + [x] 2018-12-21 10:51:17的程序：验证是否输出那里条件判断的问题。
     + [x] 并不是。
++ [ ] 有两个选项，一是直接用 unifiedbox作为`run_one_video_flow_debug`的 detect_box，不加 flow 跑。第二个是相当于重新用 flow 算一遍。我不知道第一个能不能兼容多GPU， 因为我多 GPU 的目的是载入足够多的 flow。~~暂时试试第一个。~~重新计算，因为之前的 joint est 有误，所以 box 并不准确。
 + [ ] 试着阅读`tracking_engine_DAT`（应该是 Detect-and-Track，3d mask-rcnn 的那个）。
 
 

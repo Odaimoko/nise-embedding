@@ -155,3 +155,8 @@ for l in range(len(c6)):
 所以还需要把 simple_cfg 给传到 FrameItem里面去。
 
 DEbug 完毕。
+
+
+
+
+

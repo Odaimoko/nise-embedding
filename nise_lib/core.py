@@ -240,7 +240,7 @@ def nise_flow_debug(gt_anno_dir, joint_estimator, flow_model):
         num_process = 12
     global locks
     locks = [Lock() for _ in range(gm.gpu_num)]
-    with Pool(1, initializer = init_gm, initargs = (locks, nise_cfg)) as po:
+    with Pool(num_process - 1, initializer = init_gm, initargs = (locks, nise_cfg)) as po:
         debug_print('Pool created.')
         po.starmap(run_one_video_flow_debug, all_video, chunksize = 4)
 
@@ -291,7 +291,6 @@ def run_one_video_flow_debug(_nise_cfg, _simple_cfg, i, file_name, joint_estimat
         except Exception as e:
             print(e)
         finally:
-            
             locks_reverse = list(locks)
             locks_reverse.reverse()
             for l in locks_reverse:

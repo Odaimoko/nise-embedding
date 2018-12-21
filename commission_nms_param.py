@@ -48,7 +48,7 @@ if __name__ == '__main__':
         dataset_path = nise_cfg.PATH.GT_TRAIN_ANNOTATION_DIR
     
     for t1 in np.arange(.05, .5, .1):
-        for t2 in np.arange(.3, .91, .2):
+        for t2 in np.arange(.3, .71, .2):
             t1 = float(t1)
             t2 = float(t2)
             
