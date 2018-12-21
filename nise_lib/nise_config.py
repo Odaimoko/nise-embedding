@@ -242,8 +242,8 @@ class NiseConfig:
             
             self._JOINTS_DIR = 'images_joint/'
             self._IMAGES_OUT_DIR = 'images_out/'
-            self._JSON_SAVE_DIR = 'pred_json-debug/'
-            self._UNIFIED_JSON_DIR = 'unifed_boxes-debug/'
+            self._JSON_SAVE_DIR = 'pred_json/'
+            self._UNIFIED_JSON_DIR = 'unifed_boxes/'
             
             self.JOINTS_DIR = ''
             self.IMAGES_OUT_DIR = ''

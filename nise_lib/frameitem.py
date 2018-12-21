@@ -23,7 +23,7 @@ class FrameItem:
     '''
     
     # @log_time('\tInit FI……')
-    def __init__(self, nise_cfg, img_path, task = 2, is_first = False, gt_joints = None):
+    def __init__(self, nise_cfg, simple_cfg, img_path, task = 2, is_first = False, gt_joints = None):
         '''
 
         :param is_first: is this frame the first of the sequence
@@ -38,7 +38,8 @@ class FrameItem:
         self.original_img = cv2.imread(self.img_path)  # with original size? YES
         self.ori_img_h, self.ori_img_w, _ = self.original_img.shape
         # 依然是W/H， 回忆model第一个192是宽。
-        self.img_ratio = simple_cfg.MODEL.IMAGE_SIZE[0] / simple_cfg.MODEL.IMAGE_SIZE[1]
+        self.joint_est_mode_size = simple_cfg.MODEL.IMAGE_SIZE
+        self.img_ratio = self.joint_est_mode_size[0] / self.joint_est_mode_size[1]
         
         if self.cfg.TEST.USE_GT_PEOPLE_BOX and self.task == 1:
             self.flow_img = self.original_img
@@ -344,7 +345,7 @@ class FrameItem:
             # 土法nms
             nms_thres_1 = self.cfg.ALG.UNIFY_NMS_THRES_1
             nms_thres_2 = self.cfg.ALG.UNIFY_NMS_THRES_2
-            debug_print('IN FI', nms_thres_1, nms_thres_2)
+            # debug_print('IN FI', nms_thres_1, nms_thres_2)
             k_1 = np.where(scores >= nms_thres_1)[0]
             filtered_scores = scores[k_1]
             if filtered_scores.numel() != 0:
@@ -405,13 +406,13 @@ class FrameItem:
             center, scale = box2cs(bb, self.img_ratio)  # 2TODO: is this right?
             rotation = 0
             # from simple/JointDataset.py
-            trans = get_affine_transform(center, scale, rotation, simple_cfg.MODEL.IMAGE_SIZE)
+            trans = get_affine_transform(center, scale, rotation, self.joint_est_mode_size)
             # In simple_cfg, 0 is h/1 for w. in warpAffine should be (w,h)
             # 哦是因为192是宽256是高
             resized_human_np = cv2.warpAffine(
                 self.img_outside_flow,  # hw3
                 trans,
-                (int(simple_cfg.MODEL.IMAGE_SIZE[0]), int(simple_cfg.MODEL.IMAGE_SIZE[1])),
+                (int(self.joint_est_mode_size[0]), int(self.joint_est_mode_size[1])),
                 flags = cv2.INTER_LINEAR)
             if self.cfg.DEBUG.VIS_SINGLE_NO_JOINTS == True:
                 cv2.imwrite(os.path.join(out_dir, p.stem + "_nojoints_" + str(i) + '.jpg'), resized_human_np)
@@ -436,7 +437,7 @@ class FrameItem:
                 resized_human_np_with_joints = cv2.warpAffine(
                     img_with_joints,  # hw3
                     trans,
-                    (int(simple_cfg.MODEL.IMAGE_SIZE[0]), int(simple_cfg.MODEL.IMAGE_SIZE[1])),
+                    (int(self.joint_est_mode_size[0]), int(self.joint_est_mode_size[1])),
                     flags = cv2.INTER_LINEAR)
                 cv2.imwrite(os.path.join(out_dir, p.stem + "_" + "{:02d}".format(i) + '.jpg'),
                             resized_human_np_with_joints)
