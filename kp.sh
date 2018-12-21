@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
-p=0
+export PYTHONPATH=~/disk/posetrack/poseval/py-motmetrics:$PYTHONPATH
 
-until [$p==1]
+files=$(ls pred_json)
+for f in $files
 do
-    kill $(pgrep -f python)
+    echo $f
+    ~/anaconda3/bin/python ~/disk/posetrack/poseval/py/evaluate.py --groundTruth=pred_json-pre-commissioning/val_gt_task2/ --predictions=pred_json/$f/ --evalPoseEstimation
 done

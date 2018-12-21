@@ -65,16 +65,77 @@ $ diff my_e2e_mask_rcnn_X-101-64x4d-FPN_1x.yaml ../Detectron.pytorch/tron_config
 
 
 
+## 2018-12-21
+
+### 目标
+
++ [ ] 全部的cfg 和logger传入。
++ [x] 整理实验数据，选出合适的 nms 参数，并用之于 DETBOX 看效果。
+    + [ ] 全部都比baseline 还要低。哪里有出问题了？
+    + [ ] 现在看来是输出的问题，输出成了`self.people_ids`个数，实际应该是`unified_box`。判断条件那里没有加`task==-1`，改一下吧。。。
+    + [ ] 2018-12-21 10:51:17的程序：验证是否输出那里条件判断的问题。
++ [ ] 试着阅读`tracking_engine_DAT`（应该是 Detect-and-Track，3d mask-rcnn 的那个）。
+
+
+
+### 实验结果
+
+logs 文件夹里的evaluate-boxes-all文件。
+
+```
+[OUT] - 0.05_0.30
+[OUT] - In total 37494 predictions.	AP: 0.7435
+[OUT] - 0.05_0.50
+[OUT] - In total 59101 predictions.	AP: 0.7834
+Imoko:py oda$ /usr/local/bin/python2.7 /Users/oda/posetrack/poseval/py/evaluate.py --groundTruth=../../nise_embedding/pred_json/val_gt_task1/ --predictions=../../nise_embedding/pred_json/valid_task_-1_DETbox_allBox_propAll_propGT_tfIoU_nmsThres_0.05_0.50/ --evalPoseEstimation
+('# gt frames  :', 2607, '# pred frames:', 2607)
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 74.7 & 73.6 & 64.4 & 52.7 & 63.6 & 59.5 & 52.4 & 63.8 \\
+
+[OUT] - 0.05_0.70
+[OUT] - In total 66543 predictions.	AP: 0.6707
+[OUT] - 0.05_0.90
+[OUT] - In total 79194 predictions.	AP: 0.2879
+[OUT] - 0.15_0.30
+[OUT] - In total 30249 predictions.	AP: 0.7399
+[OUT] - 0.15_0.50
+[OUT] - In total 41299 predictions.	AP: 0.7843
+[OUT] - 0.15_0.70
+[OUT] - In total 46846 predictions.	AP: 0.6794
+[OUT] - 0.15_0.90
+[OUT] - In total 57524 predictions.	AP: 0.3137
+[OUT] - 0.25_0.30
+[OUT] - In total 27323 predictions.	AP: 0.7373
+[OUT] - 0.25_0.50
+[OUT] - In total 34511 predictions.	AP: 0.7818
+[OUT] - 0.25_0.70
+[OUT] - In total 39060 predictions.	AP: 0.6831
+[OUT] - 0.25_0.90
+[OUT] - In total 48673 predictions.	AP: 0.3301
+[OUT] - 0.30_0.50
+[OUT] - In total 25334 predictions.	AP: 0.7352
+[OUT] - 0.35_0.30
+[OUT] - In total 30386 predictions.	AP: 0.7774
+[OUT] - 0.35_0.50
+[OUT] - In total 34194 predictions.	AP: 0.6854
+[OUT] - 0.35_0.70
+[OUT] - In total 43030 predictions.	AP: 0.3451
+[OUT] - 0.35_0.90
+[OUT] - In total 23798 predictions.	AP: 0.7326
+[OUT] - 0.45_0.30
+[OUT] - In total 27502 predictions.	AP: 0.7719
+[OUT] - 0.45_0.50
+[OUT] - In total 30593 predictions.	AP: 0.6899
+[OUT] - 0.45_0.70
+[OUT] - In total 38591 predictions.	AP: 0.3660
+```
+
+找不回去——我他妈下次一定要备份了。
+
 ## 2018-12-20
 
 - [x] 【昨日】调参代码，用一个py完成。
 - [ ] 全部的cfg 和logger 传入。
-
-
-
-### 调参实验结果
-
-
 
 
 
@@ -94,7 +155,7 @@ $ diff my_e2e_mask_rcnn_X-101-64x4d-FPN_1x.yaml ../Detectron.pytorch/tron_config
 
     + [x] 正确，就是我现在的最高点（69.4）
 
-+ [ ] 使用土法 nms，得到 box 的 ap
++ [x] 使用土法 nms，得到 box 的 ap
 
     + [x] 对task 1进行 nms。[根本就没有滤掉好吧，但是 mAP 又有提升]
 
@@ -112,6 +173,8 @@ $ diff my_e2e_mask_rcnn_X-101-64x4d-FPN_1x.yaml ../Detectron.pytorch/tron_config
     valid_task_-1_DETbox_allBox_propAll_propGT_tfIoU_nmsThres_0.05_0.5
     [INFO] - In total 58440 predictions, 18536 gts.
     [INFO] - AP: tensor(0.7841)
+    Imoko:py oda$  /usr/local/bin/python2.7 /Users/oda/posetrack/poseval/py/evaluate.py --groundTruth=../../nise_embedding/pred_json/val_gt_task1/ --predictions=../../nise_embedding/pred_json/valid_task_-1_DETbox_allBox_propAll_propGT_tfIoU_nmsThres_0.05_0.5/ --evalPoseEstimation
+    ('# gt frames  :', 2607, '# pred frames:', 2607)
     & Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
     & 80.7 & 79.4 & 71.6 & 59.9 & 71.1 & 66.6 & 59.5 & 70.6 \\
     ```
@@ -141,39 +204,6 @@ $ diff my_e2e_mask_rcnn_X-101-64x4d-FPN_1x.yaml ../Detectron.pytorch/tron_config
 
 
 
-
-### 并行代码思路
-
-有三个可以并行的点
-
-- 多个参数
-- 多个视频
-- 多帧图
-
-目的
-
-- 一个参数跑完了再跑另一个（似乎并没有必要？）——为了之后的方便。
-- 一个视频只能串行跑，但是多个视频可以同时跑。
-
-思路
-
-- 先在一个参数下，跑多个视频。怎样达到？剥离每个视频的运行代码到一个函数里，多线程执行这个函数，不知道一张卡可以跑几次（依然是3次）。
-- 然后 for循环参数。
-
-现在的问题，每个线程里的`nise_cfg`都会被重新import一次，从而参数复原。print id出来的结果是，这个`run_video`在某一个线程里，他的`nise_cfg`就用的是这个线程里的。看起来pool是把传入的参数还是什么，全部弄成pickle，然后在各自的线程里load出来。
-
-直接向`run_video`传入`nise_cfg`和`nise_logger`可以保证参数更新。但是这样就会很快地加载flow，lock根本没有起到效果？
-
-···是因为多个线程同时acquire了同一个锁——同样，不同的thread的lock也会新建。
-
-```
-[INFO] - Choosing GPU  1 to load flow result.
-[INFO] - GPU 1's lock ACQuired. thread 140201651635968 gets lock 140199530644264
-[INFO] - Choosing GPU  1 to load flow result.
-[INFO] - GPU 1's lock ACQuired. thread 140343018931968 gets lock 140340898536784
-```
-
-如果只用一个GPU还好，如果用了多个GPU，就算用了multiprocessing.Lock，也会出现多个锁，从而起不到加锁的效果。
 
 
 

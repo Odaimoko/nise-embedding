@@ -202,15 +202,19 @@ def nise_pred_task_2_debug(gt_anno_dir, vis_dataset, hunam_detector, joint_estim
             debug_print('json saved:', json_path)
 
 
-def init_gm(_gm, cfg, logger):
+def init_gm(_gm, cfg):
     global locks, nise_cfg, nise_logger
     locks = _gm
     nise_cfg = cfg
-    nise_logger = logger
+    # nise_logger = logger
 
 
+@log_time('validation 跑了')
 def nise_flow_debug(gt_anno_dir, joint_estimator, flow_model):
     # PREDICT ON POSETRACK 2017
+    pp = pprint.PrettyPrinter(indent = 2)
+    debug_print(pp.pformat(nise_cfg))
+    
     anno_file_names = get_type_from_dir(gt_anno_dir, ['.json'])
     anno_file_names = sorted(anno_file_names)
     mkdir(nise_cfg.PATH.JSON_SAVE_DIR)
@@ -228,7 +232,7 @@ def nise_flow_debug(gt_anno_dir, joint_estimator, flow_model):
         num_process = 12
     global locks
     locks = [Lock() for _ in range(gm.gpu_num)]
-    with Pool(num_process - 1, initializer = init_gm, initargs = (locks, nise_cfg, nise_logger)) as po:
+    with Pool(  1, initializer = init_gm, initargs = (locks, nise_cfg)) as po:
         debug_print('Pool created.')
         po.starmap(run_one_video_flow_debug, all_video, chunksize = 4)
 

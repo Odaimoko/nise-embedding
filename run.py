@@ -7,6 +7,7 @@
 import visdom
 from pathlib import PurePosixPath
 import pprint
+import torch.multiprocessing as mp
 
 # local packages
 import nise_lib._init_paths
@@ -18,54 +19,55 @@ from nise_lib.core import *
 from tron_lib.core.config import cfg as tron_cfg
 from simple_lib.core.config import config as simple_cfg
 
-pp = pprint.PrettyPrinter(indent = 2)
-debug_print(pp.pformat(nise_cfg))
-
-flow_model = None
-maskRCNN = None
-simple_joint_est_model = None
-human_det_dataset = None
-# viz = visdom.Visdom(env = 'run-with-flownet')
-# ─── FROM FLOWNET 2.0 ───────────────────────────────────────────────────────────
-if nise_cfg.DEBUG.load_flow_model:
-    parser = argparse.ArgumentParser()
-    flow_init_parser_and_tools(parser, tools)
-    flow_args, rest = parser.parse_known_args()
-    flow_model = load_flow_model(flow_args, parser, tools)
-    # flow_model = nn.DataParallel(flow_model)
-
-# ─── FROM SIMPLE BASELINE ───────────────────────────────────────────────────────
-if nise_cfg.DEBUG.load_joint_est_model:
-    simple_args, simple_joint_est_model = load_simple_model()
-    # simple_joint_est_model = nn.DataParallel(simple_joint_est_model)
-    debug_print('Simple pose detector loaded.')
-
-# ─── HUMAN DETECT ───────────────────────────────────────────────────────────────
-if nise_cfg.DEBUG.load_human_det_model:
-    human_detect_args = human_detect_parse_args()
-    maskRCNN, human_det_dataset = load_human_detect_model(human_detect_args, tron_cfg)
-    # maskRCNN = nn.DataParallel(maskRCNN)
-
-make_nise_dirs()
-
-if nise_cfg.TEST.MODE == 'valid':
-    dataset_path = nise_cfg.PATH.GT_VAL_ANNOTATION_DIR
-elif nise_cfg.TEST.MODE == 'train':
-    dataset_path = nise_cfg.PATH.GT_TRAIN_ANNOTATION_DIR
-
-if nise_cfg.TEST.TASK == 1:
+if __name__ == '__main__':
     
-    nise_pred_task_1_debug(dataset_path,
-                           human_det_dataset,
-                           maskRCNN,
-                           simple_joint_est_model, flow_model)
-elif nise_cfg.TEST.TASK == 2:
+    mp.set_start_method('spawn', force = True)
     
-    nise_pred_task_2_debug(dataset_path,
+    flow_model = None
+    maskRCNN = None
+    simple_joint_est_model = None
+    human_det_dataset = None
+    # viz = visdom.Visdom(env = 'run-with-flownet')
+    # ─── FROM FLOWNET 2.0 ───────────────────────────────────────────────────────────
+    if nise_cfg.DEBUG.load_flow_model:
+        parser = argparse.ArgumentParser()
+        flow_init_parser_and_tools(parser, tools)
+        flow_args, rest = parser.parse_known_args()
+        flow_model = load_flow_model(flow_args, parser, tools)
+        # flow_model = nn.DataParallel(flow_model)
     
-                           human_det_dataset,
-                           maskRCNN,
-                           simple_joint_est_model, flow_model)
-elif nise_cfg.TEST.TASK == -1:
+    # ─── FROM SIMPLE BASELINE ───────────────────────────────────────────────────────
+    if nise_cfg.DEBUG.load_joint_est_model:
+        simple_args, simple_joint_est_model = load_simple_model()
+        # simple_joint_est_model = nn.DataParallel(simple_joint_est_model)
+        debug_print('Simple pose detector loaded.')
     
-    nise_flow_debug(dataset_path, simple_joint_est_model, flow_model)
+    # ─── HUMAN DETECT ───────────────────────────────────────────────────────────────
+    if nise_cfg.DEBUG.load_human_det_model:
+        human_detect_args = human_detect_parse_args()
+        maskRCNN, human_det_dataset = load_human_detect_model(human_detect_args, tron_cfg)
+        # maskRCNN = nn.DataParallel(maskRCNN)
+    
+    make_nise_dirs()
+    
+    if nise_cfg.TEST.MODE == 'valid':
+        dataset_path = nise_cfg.PATH.GT_VAL_ANNOTATION_DIR
+    elif nise_cfg.TEST.MODE == 'train':
+        dataset_path = nise_cfg.PATH.GT_TRAIN_ANNOTATION_DIR
+    
+    if nise_cfg.TEST.TASK == 1:
+        
+        nise_pred_task_1_debug(dataset_path,
+                               human_det_dataset,
+                               maskRCNN,
+                               simple_joint_est_model, flow_model)
+    elif nise_cfg.TEST.TASK == 2:
+        
+        nise_pred_task_2_debug(dataset_path,
+        
+                               human_det_dataset,
+                               maskRCNN,
+                               simple_joint_est_model, flow_model)
+    elif nise_cfg.TEST.TASK == -1:
+        
+        nise_flow_debug(dataset_path, simple_joint_est_model, flow_model)

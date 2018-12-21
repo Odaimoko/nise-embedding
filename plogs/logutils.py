@@ -15,6 +15,7 @@ class Levels(Enum):
     CRITICAL = 4
     ERROR = 5
     STATUS = 6
+    SKY_BLUE = 7
 
 
 class Colors:
@@ -26,6 +27,7 @@ class Colors:
         Levels.WARNING: '\033[93m',
         Levels.ERROR: '\033[91m',
         Levels.CRITICAL: '\u001b[41;1m',
+        Levels.SKY_BLUE:'\033[46;30m',
         'end': '\033[0m',
     }
 
@@ -43,6 +45,7 @@ class LogLevel:
         Levels.WARNING: 'WARNING',
         Levels.ERROR: 'ERROR',
         Levels.CRITICAL: 'CRITICAL',
+        Levels.SKY_BLUE: 'OUT',
     }
 
     @staticmethod

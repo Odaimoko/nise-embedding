@@ -6,7 +6,7 @@ ALG:
   PROP_HUMAN_THRES: .5
 
   USE_COCO_IOU_IN_NMS: False
-  UNIFY_NMS_THRES_1: .3
+  UNIFY_NMS_THRES_1: .05
   UNIFY_NMS_THRES_2: .5
 
   ASSGIN_ID_TO_FILTERED_BOX: False
@@ -17,7 +17,7 @@ TEST:
   USE_ALL_GT_JOINTS_TO_PROP: False
   GT_BOX_SCORE: .7
   FROM: 0
-  TO: 3
+  TO: 2
 #  ONLY_TEST:
 #    - 3742_m
 #    - 17839_mpii_relpath_5sec_testsub

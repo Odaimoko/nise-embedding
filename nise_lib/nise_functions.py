@@ -798,7 +798,7 @@ def eval_load_gt_and_pred_boxes(anno_file_names, pred_anno_dir = None):
     if pred_anno_dir is None:
         pred_anno_dir = nise_cfg.PATH.UNIFIED_JSON_DIR
     debug_print('Evaluating', pred_anno_dir)
-    for i, file_name in enumerate(anno_file_names[:]):
+    for i, file_name in enumerate(anno_file_names[:1]):
         debug_print(i, file_name)
         
         with open(file_name, 'r') as f:
@@ -868,7 +868,6 @@ def voc_eval_for_pt(gt_anno_dir, pred_anno_dir = None):
     anno_file_names = get_type_from_dir(gt_anno_dir, ['.json'])
     anno_file_names = sorted(anno_file_names)
     total_pred_boxes_scores, total_bin_vec, npos = eval_load_gt_and_pred_boxes(anno_file_names, pred_anno_dir)
-    debug_print('In total %d predictions, %d gts.' % (total_pred_boxes_scores.shape[0], npos))
     sorted_scores, sorted_idx = torch.sort(total_pred_boxes_scores, descending = True)
     tp = total_bin_vec[sorted_idx]
     fp = 1 - tp
@@ -877,7 +876,7 @@ def voc_eval_for_pt(gt_anno_dir, pred_anno_dir = None):
     rec = tp / float(npos)
     prec = tp / torch.max(tp + fp, torch.tensor(np.finfo(float).eps))
     ap = voc_ap_for_pt(rec, prec)
-    return rec, prec, ap
+    return rec, prec, ap, sorted_scores,npos
 
 
 if __name__ == '__main__':
