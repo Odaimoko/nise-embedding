@@ -17,7 +17,7 @@ TEST:
   USE_ALL_GT_JOINTS_TO_PROP: False
   GT_BOX_SCORE: .7
   FROM: 0
-  TO: 1
+  TO: 6
 #  ONLY_TEST:
 #    - 3742_m
 #    - 17839_mpii_relpath_5sec_testsub

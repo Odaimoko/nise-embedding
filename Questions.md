@@ -104,3 +104,54 @@ pred_json-debug/valid_task_1_DETbox_allBox_tfIoU_nmsThres_0.05_0.50/000342_mpii_
 & 80.5 & 79.3 & 71.4 & 59.8 & 71.1 & 66.5 & 59.5 & 70.5 \\
 ```
 
+![image-20181221185838933](assets/image-20181221185838933.png)
+
+第一个是用run with cfg t-flow-debug跑出来的。第二个用第一个的 unified box 当做gtbox 跑出来的；第三个是之前的 baseline。
+
+```
+import  os,torch
+first='000342_mpii_relpath_5sec_testsub.pkl'
+p6='unifed_boxes-debug/61.7-valid_task_-1_DETbox_allBox_propAll_propGT_tfIoU_nmsThres_0.05_0.50'
+p75='unifed_boxes-debug/70.5-valid_task_1_DETbox_allBox_tfIoU_nmsThres_0.05_0.50'
+c6=torch.load(os.path.join(p6,first))
+c75=torch.load(os.path.join(p75,first))
+
+for l in range(len(c6)):
+    for k,v in c6[l].items():
+        print(c6[l][k]==c75[l][k])
+
+```
+
+通过以上的代码可以验证70.5和61.7里两个 unifiedbox 完全一样。
+
+思路：跟踪70.5的 task 1和61.7的 task-1两个的 joint-est 过程。
+
+于是发现了不同之处。同一张图，同一个 bb，居然 scale 不一样？上面是61.7的。
+
+![image-20181221192058832](assets/image-20181221192058832.png)
+
+![IMG_8678](assets/IMG_8678.PNG)
+
+由于 scale 的计算是：`center, scale = box2cs(bb, self.img_ratio)`，那肯定只有 `img_ratio`的问题了。
+
+| | 70.5 |  61.7     |
+| ---- | ---- | ---- |
+| image_ratio | .75 | 1 |
+
+于是来看 image_ratio 的计算，是`self.img_ratio = simple_cfg.MODEL.IMAGE_SIZE[0] / simple_cfg.MODEL.IMAGE_SIZE[1]`。61.7使用的设定完全就不对！上图是61，下图是70。
+
+![image-20181221192607628](assets/image-20181221192607628.png)
+
+![IMG_8679](assets/IMG_8679.PNG)
+
+所以其实这个也因为线程的复制而重新载入了。可是为什么呢？我在主线程的哪里修改了 simple 呢？我选择从头开始看 simple cfg 的变化。
+
+原来如此，主线程里调用了`load_simple_model`，此刻就把主线程里的 simple cfg 给修改了。
+
+| 修改前                                                       | 修改后                                                       |
+| ------------------------------------------------------------ | ------------------------------------------------------------ |
+| ![image-20181221193532811](assets/image-20181221193532811.png) | ![image-20181221193542221](assets/image-20181221193542221.png) |
+
+所以还需要把 simple_cfg 给传到 FrameItem里面去。
+
+DEbug 完毕。
