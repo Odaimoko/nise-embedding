@@ -60,5 +60,47 @@ pred_json-pre-commissioning/valid_task_-1_DETbox_allBox_propAll_propGT_tfIoU_nms
 & 50.4 & 54.3 & 25.4 & 19.5 & 28.8 & 52.2 & 29.8 & 38.1 \\
 ```
 
-wait 让我们先分个支，因为这个居然可以提高这么多（gt 是45.2）
+wait 让我们先分个支，因为这个居然可以提高这么多（gt 是45.2）。
+
+使用70.6的 unifiedbox，看能不能达到效果。
+
+```
+pred_json-debug/valid_task_1_DETbox_allBox_tfIoU_nmsThres_0.05_0.50/000342_mpii_relpath_5sec_testsub.json
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 39.8 & 39.2 & 19.5 & 14.9 & 35.3 & 23.2 & 12.9 & 27.3 \\
+没毛病
+```
+
+然后是61.6的 box。
+
+一样。
+
+但是 box 明明有区别的？？说明这个 box 的区别并不大。现在来跑一个新的，只用两个的 unified box
+
+70.6的前六
+
+```
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 82.8 & 77.8 & 62.4 & 42.6 & 66.6 & 49.2 & 36.2 & 61.2 \\
+```
+
+61.6的前六。
+
+```
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 82.2 & 77.6 & 62.4 & 42.6 & 66.6 & 49.2 & 36.2 & 61.1 \\
+```
+
+那么只要把前六弄成一样就好。来看下前六的区别。
+
+![image-20181221174447811](assets/image-20181221174447811.png)
+
+的确就是box 差异。具体为什么会有 box 的差异？
+
+用61.6的 unified box 跑出来的结果，并没有差很多。换句话说，box其实差得很小，最后的 est 结果也理应差得很小。
+
+```
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 80.5 & 79.3 & 71.4 & 59.8 & 71.1 & 66.5 & 59.5 & 70.5 \\
+```
 

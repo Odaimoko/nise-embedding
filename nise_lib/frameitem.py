@@ -344,7 +344,7 @@ class FrameItem:
             # 土法nms
             nms_thres_1 = self.cfg.ALG.UNIFY_NMS_THRES_1
             nms_thres_2 = self.cfg.ALG.UNIFY_NMS_THRES_2
-            debug_print('IN FI', nms_thres_1, nms_thres_2)
+            # debug_print('IN FI', nms_thres_1, nms_thres_2)
             k_1 = np.where(scores >= nms_thres_1)[0]
             filtered_scores = scores[k_1]
             if filtered_scores.numel() != 0:
