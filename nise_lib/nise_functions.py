@@ -602,6 +602,7 @@ def filter_bbox_with_scores(boxes, thres = nise_cfg.ALG._HUMAN_THRES):
     scores = boxes[:, -1]
     valid_scores_idx = torch.nonzero(scores >= thres).squeeze_().long()  # in case it's 6 x **1** x 5
     filtered_box = boxes[valid_scores_idx, :]
+    filtered_box = expand_vector_to_tensor(filtered_box)
     return filtered_box, valid_scores_idx
 
 
@@ -798,7 +799,7 @@ def eval_load_gt_and_pred_boxes(anno_file_names, pred_anno_dir = None):
     if pred_anno_dir is None:
         pred_anno_dir = nise_cfg.PATH.UNIFIED_JSON_DIR
     debug_print('Evaluating', pred_anno_dir)
-    for i, file_name in enumerate(anno_file_names[:1]):
+    for i, file_name in enumerate(anno_file_names[:]):
         debug_print(i, file_name)
         
         with open(file_name, 'r') as f:
@@ -876,7 +877,7 @@ def voc_eval_for_pt(gt_anno_dir, pred_anno_dir = None):
     rec = tp / float(npos)
     prec = tp / torch.max(tp + fp, torch.tensor(np.finfo(float).eps))
     ap = voc_ap_for_pt(rec, prec)
-    return rec, prec, ap, sorted_scores,npos
+    return rec, prec, ap, sorted_scores, npos
 
 
 if __name__ == '__main__':

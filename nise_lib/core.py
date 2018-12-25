@@ -62,14 +62,14 @@ def nise_pred_task_1_debug(gt_anno_dir, vis_dataset, hunam_detector, joint_estim
             else:
                 gt_joints = torch.tensor([])
             #
-            # if nise_cfg.DEBUG.USE_DETECTION_RESULT:
-            #     detect_box = detection_result_from_json[j][img_file_path]
-            #     detect_box = torch.tensor(detect_box)
-            # else:
-            #     detect_box = torch.tensor([])
+            if nise_cfg.DEBUG.USE_DETECTION_RESULT:
+                detect_box = detection_result_from_json[j][img_file_path]
+                detect_box = torch.tensor(detect_box)
+            else:
+                detect_box = torch.tensor([])
             
             # debugging..., will delete
-            detect_box = uni_box[j][img_file_path]
+            # detect_box = uni_box[j][img_file_path]
             
             fi = FrameItem(nise_cfg, simple_cfg, img_file_path, 1, True, gt_joints)
             fi.detect_human(hunam_detector, detect_box)
@@ -240,9 +240,13 @@ def nise_flow_debug(gt_anno_dir, joint_estimator, flow_model):
         num_process = 12
     global locks
     locks = [Lock() for _ in range(gm.gpu_num)]
+    if nise_cfg.TEST.TASK == -1:
+        fun = run_one_video_flow_debug
+    elif nise_cfg.TEST.TASK == 1:
+        fun = run_one_video_flow_debug
     with Pool(num_process - 1, initializer = init_gm, initargs = (locks, nise_cfg)) as po:
         debug_print('Pool created.')
-        po.starmap(run_one_video_flow_debug, all_video, chunksize = 4)
+        po.starmap(fun, all_video, chunksize = 4)
 
 
 @log_time('一个视频跑了')
@@ -279,7 +283,7 @@ def run_one_video_flow_debug(_nise_cfg, _simple_cfg, i, file_name, joint_estimat
         detection_result_from_json = {}
     debug_print('Precomputed detection result loaded', flow_path)
     
-    if _nise_cfg.DEBUG.USE_FLOW_RESULT or flow_model is None:
+    if _nise_cfg.DEBUG.USE_FLOW_RESULT:
         global locks
         for l in locks:
             l.acquire()
@@ -325,11 +329,10 @@ def run_one_video_flow_debug(_nise_cfg, _simple_cfg, i, file_name, joint_estimat
         else:
             pre_com_flow = torch.tensor([])
         
-        if j == 0:  # first frame doesnt have flow, joint prop
+        if j == 0 or _nise_cfg.TEST.TASK == 1:  # first frame doesnt have flow, joint prop
             fi = FrameItem(_nise_cfg, _simple_cfg, img_file_path, is_first = True, gt_joints = gt_joints)
             fi.detected_boxes = detect_box
             fi.human_detected = True
-            
             fi.unify_bbox()
             fi.est_joints(joint_estimator)
         else:

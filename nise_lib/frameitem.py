@@ -452,9 +452,9 @@ class FrameItem:
         if not self.joints_detected:
             raise ValueError('Should detect joints first')
         if self.cfg.ALG.ASSGIN_ID_TO_FILTERED_BOX:
-            self.id_boxes, self.id_idx_in_unified = self.get_filtered_bboxes()
-            self.id_boxes = expand_vector_to_tensor(self.id_boxes)  # in case only one people ,then we have 5 index
+            self.id_boxes, self.id_idx_in_unified = self.get_filtered_bboxes(self.cfg.ALG.ASSIGN_BOX_THRES)
         else:
+            
             self.id_boxes = self.unified_boxes
             self.id_boxes = expand_vector_to_tensor(self.id_boxes)
             self.id_idx_in_unified = torch.tensor(range(self.unified_boxes.shape[0])).long()
@@ -521,7 +521,6 @@ class FrameItem:
             raise ValueError('Should detect joints first')
         if self.cfg.ALG.ASSGIN_ID_TO_FILTERED_BOX:
             self.id_boxes, self.id_idx_in_unified = self.get_filtered_bboxes()
-            self.id_boxes = expand_vector_to_tensor(self.id_boxes)  # in case only one people ,then we have 5 index
         else:
             self.id_boxes = self.unified_boxes
             self.id_boxes = expand_vector_to_tensor(self.id_boxes)

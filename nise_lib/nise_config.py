@@ -224,9 +224,10 @@ class NiseConfig:
             self.UNIFY_NMS_THRES_1 = .3
             self.UNIFY_NMS_THRES_2 = .5
             
-            self.ASSGIN_ID_TO_FILTERED_BOX = False  # self.JOINT_PROP_WITH_FILTERED_HUMAN
-            self.USE_ALL_PROPED_BOX_TO_ASSIGN_ID = True
-            # padding image s.t. w/h to be multiple of 32
+            self.ASSGIN_ID_TO_FILTERED_BOX = True  # self.JOINT_PROP_WITH_FILTERED_HUMAN
+            self.ASSIGN_BOX_THRES = .5  # from simple baseline
+            self.ASSGIN_JOINT_THRES = .4
+            # padding image s.t. w/h to be multiple of 64
             self.FLOW_MULTIPLE = 2 ** 6
             self.FLOW_PADDING_END = 0
             self.FLOW_MODE = self.FLOW_PADDING_END

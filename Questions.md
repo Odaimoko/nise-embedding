@@ -158,5 +158,19 @@ DEbug 完毕。
 
 
 
+## 2018-12-18
+
+### 计算 AP 的步骤
+
+1. 在每一张图里确定 pred 是否 tp。
+2. 把所有图里的pred和 gt 收集起来，gt 的总数就是总共的 positive 数量。
+3. 把所有的 pred 按照 confidence排序，然后仿照voc里的。
+
+
+
+DONE。
+
+
+
 
 

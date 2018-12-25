@@ -39,37 +39,38 @@ info_level = Levels.SKY_BLUE
 
 eval_dir = debugging_706
 # eval_dir = nise_cfg.PATH._UNIFIED_JSON_DIR + 'valid_task_-1_DETbox_allBox_propAll_propGT_tfIoU_nmsThres_0.05_0.90'
-rec, prec, ap, total_pred_boxes_scores, npos = voc_eval_for_pt(dataset_path, eval_dir)
-torch.save([rec, prec, ap], os.path.join(*[eval_dir, 'ap.pkl']))
-debug_print("Pkl saved. Evaluate box AP", eval_dir, lvl = info_level)
-debug_print('In total %d predictions, %d gts.' % (total_pred_boxes_scores.shape[0], npos), lvl = info_level)
-debug_print('AP: %.4f' % ap.item(), lvl = info_level)
+# rec, prec, ap, total_pred_boxes_scores, npos = voc_eval_for_pt(dataset_path, eval_dir)
+# torch.save([rec, prec, ap], os.path.join(*[eval_dir, 'ap.pkl']))
+# debug_print("Pkl saved. Evaluate box AP", eval_dir, lvl = info_level)
+# debug_print('In total %d predictions, %d gts.' % (total_pred_boxes_scores.shape[0], npos), lvl = info_level)
+# debug_print('AP: %.4f' % ap.item(), lvl = info_level)
+root=nise_cfg.PATH._UNIFIED_JSON_DIR
+root='unifed_boxes-commi-onlydet'
+eval_dirs = os.listdir(root)
+eval_dirs = [f for f in eval_dirs if not 'png' in f]
+eval_dirs = sorted(eval_dirs)
+print(eval_dirs)
+APs = []
+num_preds = []
+npos = 0
+for eval_dir in eval_dirs:
+    eval_dir = os.path.join(root, eval_dir)
+    pks = os.listdir(eval_dir)
+    if len(pks) < 50:
+        debug_print("skip", eval_dir)
+        continue
+    rec, prec, ap, total_pred_boxes_scores, npos = voc_eval_for_pt(dataset_path, eval_dir)
+    torch.save([rec, prec, ap], os.path.join(*[eval_dir, 'ap.pkl']))
+    num_preds.append(total_pred_boxes_scores.shape[0])
+    debug_print("Pkl saved. Evaluate box AP", eval_dir, lvl = info_level)
+    debug_print('In total %d predictions, %d gts.' % (total_pred_boxes_scores.shape[0], npos), lvl = info_level)
+    debug_print('AP: %.4f' % ap.item(), lvl = info_level)
+    APs.append(ap)
+    propgt_plot = plt.plot(rec.numpy(), prec.numpy())
+    plt.savefig(os.path.join(eval_dir + '_PRcurve.png'))
+    debug_print("PR curve saved.")
 
-# eval_dirs = os.listdir(nise_cfg.PATH._UNIFIED_JSON_DIR)
-# eval_dirs = [f for f in eval_dirs if not 'png' in f]
-# eval_dirs = sorted(eval_dirs)
-# print(eval_dirs)
-# APs = []
-# num_preds = []
-# npos = 0
-# for eval_dir in eval_dirs:
-#     eval_dir = os.path.join(nise_cfg.PATH._UNIFIED_JSON_DIR, eval_dir)
-#     pks = os.listdir(eval_dir)
-#     if len(pks) < 50:
-#         debug_print("skip", eval_dir)
-#         continue
-#     rec, prec, ap, total_pred_boxes_scores, npos = voc_eval_for_pt(dataset_path, eval_dir)
-#     torch.save([rec, prec, ap], os.path.join(*[eval_dir, 'ap.pkl']))
-#     num_preds.append(total_pred_boxes_scores.shape[0])
-#     debug_print("Pkl saved. Evaluate box AP", eval_dir, lvl = info_level)
-#     debug_print('In total %d predictions, %d gts.' % (total_pred_boxes_scores.shape[0], npos), lvl = info_level)
-#     debug_print('AP: %.4f' % ap.item(), lvl = info_level)
-#     APs.append(ap)
-#     propgt_plot = plt.plot(rec.numpy(), prec.numpy())
-#     plt.savefig(os.path.join(eval_dir + '_PRcurve.png'))
-#     debug_print("PR curve saved.")
-#
-# for dir, ap, num_pred in zip(eval_dirs, APs, num_preds):
-#     debug_print(dir, lvl = info_level)
-#     debug_print('In total %d predictions, %d gts.\tAP: %.4f' % (num_pred, npos, ap.item()),
-#                 lvl = info_level)
+for dir, ap, num_pred in zip(eval_dirs, APs, num_preds):
+    debug_print(dir, lvl = info_level)
+    debug_print('In total %d predictions, %d gts.\tAP: %.4f' % (num_pred, npos, ap.item()),
+                lvl = info_level)

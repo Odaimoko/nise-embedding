@@ -1,7 +1,3 @@
-Python /Users/oda/posetrack/nise_embedding/run.py --model FlowNet2S --flownet_resume ../flownet2-pytorch/FlowNet2-S_checkpoint.pth.tar --simple_cfg ../simple-baseline-pytorch/experiments/pt17/res50-coco-256x192_d256x3_adam_lr1e-3.yaml --gpus 0 --simple-model-file /home/zhangxt/disk/posetrack/simple-baseline-pytorch/output-pt17/pt17/pose_resnet_50/res50-coco-256x192_d256x3_adam_lr1e-3/pt17-epoch-20-87.92076779477024 --tron_cfg /home/zhangxt/disk/posetrack/nise_embedding/my_e2e_mask_rcnn_X-101-64x4d-FPN_1x.yaml --load_detectron /home/zhangxt/disk/pretrained/e2e_mask_rcnn_X-101-64x4d-FPN_1x.pkl --dataset coco2017 --nise_config exp_config/t-flow-debug.yaml
-
-
-
 ALG:
   FILTER_HUMAN_WHEN_DETECT: False
   _HUMAN_THRES: 0.9
@@ -21,13 +17,13 @@ TEST:
   USE_ALL_GT_JOINTS_TO_PROP: False
   GT_BOX_SCORE: .7
   FROM: 0
-  TO: 1
+  TO: 6
 #  ONLY_TEST:
 #    - 3742_m
 #    - 17839_mpii_relpath_5sec_testsub
 #    -  20880_mpii_relpath_5sec_testsub
 
-  TASK: -1
+  TASK: 1
   MODE: valid
 DEBUG:
   VISUALIZE: False
@@ -44,7 +40,7 @@ DEBUG:
   SAVE_NMS_TENSOR: True
   NO_NMS: False
   USE_DETECTION_RESULT: True
-  USE_FLOW_RESULT: True
+  USE_FLOW_RESULT: false
   USE_DET_EST_RESULT: False
   load_joint_est_model: true
   load_human_det_model: False

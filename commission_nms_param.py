@@ -12,7 +12,7 @@ import pprint
 # local packages
 import nise_lib._init_paths
 from flownet_utils import tools
-from nise_lib.nise_config import nise_cfg, nise_logger, update_nise_config, set_path_from_nise_cfg, update_nise_logger
+from nise_lib.nise_config import nise_cfg, nise_logger, update_nise_config, set_path_from_nise_cfg, update_nise_logger,nise_args
 from nise_lib.nise_functions import *
 from nise_lib.nise_debugging_func import *
 from nise_lib.core import *
@@ -48,11 +48,11 @@ if __name__ == '__main__':
         dataset_path = nise_cfg.PATH.GT_TRAIN_ANNOTATION_DIR
     
     for t1 in np.arange(.05, .5, .1):
-        for t2 in np.arange(.3, .71, .2):
+        for t2 in np.arange(0.3, .71, .2):
             t1 = float(t1)
             t2 = float(t2)
             
-            y = create_yaml([0, 50], (t1, t2))
+            y = create_yaml([0, 50], (t1, t2),original_yaml = nise_args.nise_config)
             # debug_print('New Yaml:', y)
             update_nise_config(nise_cfg, y)
             suffix, suffix_with_range = set_path_from_nise_cfg(nise_cfg)
