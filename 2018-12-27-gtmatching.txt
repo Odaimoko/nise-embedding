@@ -1,0 +1,962 @@
+ssh://zhangxt@10.19.124.24:22/home/zhangxt/anaconda3/bin/python -u /home/zhangxt/disk/posetrack/poseval/py/evaluate.py --groundTruth=pred_json-pre-commissioning/val_gt_task3/ --predictions=pred_json-track/valid_task_-2_GTbox_allBox_tfIoU_nmsThres_0.35_0.70_IoUMetric_mkrs/ --evalPoseEstimation --evalPoseTracking --saveEvalPerSequence
+# gt frames  : 2607 # pred frames: 2607
+seqidx: 1/50
+seqidx: 2/50
+seqidx: 3/50
+seqidx: 4/50
+seqidx: 5/50
+seqidx: 6/50
+seqidx: 7/50
+seqidx: 8/50
+seqidx: 9/50
+seqidx: 10/50
+seqidx: 11/50
+seqidx: 12/50
+seqidx: 13/50
+seqidx: 14/50
+seqidx: 15/50
+seqidx: 16/50
+seqidx: 17/50
+seqidx: 18/50
+seqidx: 19/50
+seqidx: 20/50
+seqidx: 21/50
+seqidx: 22/50
+seqidx: 23/50
+seqidx: 24/50
+seqidx: 25/50
+seqidx: 26/50
+seqidx: 27/50
+seqidx: 28/50
+seqidx: 29/50
+seqidx: 30/50
+seqidx: 31/50
+seqidx: 32/50
+seqidx: 33/50
+seqidx: 34/50
+seqidx: 35/50
+seqidx: 36/50
+seqidx: 37/50
+seqidx: 38/50
+seqidx: 39/50
+seqidx: 40/50
+seqidx: 41/50
+seqidx: 42/50
+seqidx: 43/50
+seqidx: 44/50
+seqidx: 45/50
+seqidx: 46/50
+seqidx: 47/50
+seqidx: 48/50
+seqidx: 49/50
+seqidx: 50/50
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 97.0 & 98.3 & 98.6 & 98.5 & 98.5 & 98.6 & 98.4 & 98.2 \\
+Evaluation of video-based  multi-person pose tracking
+seqidx: 1/50
+03742_mpii_relpath_5sec_testsub
+Joint 0 right_ankle num_misses: 5	num_switches: 35	num_false_positives: 0	num_objects: 302	num_detections: 297
+Joint 1 right_knee num_misses: 3	num_switches: 36	num_false_positives: 0	num_objects: 295	num_detections: 292
+Joint 2 right_hip num_misses: 4	num_switches: 35	num_false_positives: 0	num_objects: 296	num_detections: 292
+Joint 3 left_hip num_misses: 6	num_switches: 40	num_false_positives: 0	num_objects: 310	num_detections: 304
+Joint 4 left_knee num_misses: 6	num_switches: 39	num_false_positives: 0	num_objects: 300	num_detections: 294
+Joint 5 left_ankle num_misses: 7	num_switches: 39	num_false_positives: 0	num_objects: 294	num_detections: 287
+Joint 6 right_wrist num_misses: 3	num_switches: 34	num_false_positives: 0	num_objects: 269	num_detections: 266
+Joint 7 right_elbow num_misses: 3	num_switches: 34	num_false_positives: 0	num_objects: 268	num_detections: 265
+Joint 8 right_shoulder num_misses: 6	num_switches: 34	num_false_positives: 0	num_objects: 303	num_detections: 297
+Joint 9 left_shoulder num_misses: 7	num_switches: 36	num_false_positives: 0	num_objects: 327	num_detections: 320
+Joint 10 left_elbow num_misses: 7	num_switches: 33	num_false_positives: 0	num_objects: 286	num_detections: 279
+Joint 11 left_wrist num_misses: 4	num_switches: 27	num_false_positives: 0	num_objects: 272	num_detections: 268
+Joint 12 neck num_misses: 6	num_switches: 27	num_false_positives: 0	num_objects: 288	num_detections: 282
+Joint 13 nose num_misses: 6	num_switches: 44	num_false_positives: 0	num_objects: 343	num_detections: 337
+Joint 14 head_top num_misses: 8	num_switches: 26	num_false_positives: 0	num_objects: 288	num_detections: 280
+saving results to ./out/03742_mpii_relpath_5sec_testsub_MOT_metrics.json
+seqidx: 2/50
+16662_mpii_relpath_5sec_testsub
+Joint 0 right_ankle num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 106	num_detections: 106
+Joint 1 right_knee num_misses: 4	num_switches: 6	num_false_positives: 0	num_objects: 238	num_detections: 234
+Joint 2 right_hip num_misses: 18	num_switches: 7	num_false_positives: 0	num_objects: 323	num_detections: 305
+Joint 3 left_hip num_misses: 19	num_switches: 6	num_false_positives: 0	num_objects: 296	num_detections: 277
+Joint 4 left_knee num_misses: 15	num_switches: 4	num_false_positives: 0	num_objects: 230	num_detections: 215
+Joint 5 left_ankle num_misses: 14	num_switches: 0	num_false_positives: 0	num_objects: 147	num_detections: 133
+Joint 6 right_wrist num_misses: 4	num_switches: 5	num_false_positives: 0	num_objects: 205	num_detections: 201
+Joint 7 right_elbow num_misses: 0	num_switches: 5	num_false_positives: 0	num_objects: 189	num_detections: 189
+Joint 8 right_shoulder num_misses: 12	num_switches: 3	num_false_positives: 0	num_objects: 226	num_detections: 214
+Joint 9 left_shoulder num_misses: 11	num_switches: 3	num_false_positives: 0	num_objects: 242	num_detections: 231
+Joint 10 left_elbow num_misses: 11	num_switches: 4	num_false_positives: 0	num_objects: 267	num_detections: 256
+Joint 11 left_wrist num_misses: 2	num_switches: 4	num_false_positives: 0	num_objects: 186	num_detections: 184
+Joint 12 neck num_misses: 11	num_switches: 3	num_false_positives: 0	num_objects: 213	num_detections: 202
+Joint 13 nose num_misses: 9	num_switches: 3	num_false_positives: 0	num_objects: 215	num_detections: 206
+Joint 14 head_top num_misses: 28	num_switches: 3	num_false_positives: 0	num_objects: 213	num_detections: 185
+saving results to ./out/16662_mpii_relpath_5sec_testsub_MOT_metrics.json
+seqidx: 3/50
+16180_mpii_relpath_5sec_testsub
+Joint 0 right_ankle num_misses: 7	num_switches: 0	num_false_positives: 7	num_objects: 502	num_detections: 495
+Joint 1 right_knee num_misses: 7	num_switches: 0	num_false_positives: 7	num_objects: 502	num_detections: 495
+Joint 2 right_hip num_misses: 7	num_switches: 0	num_false_positives: 7	num_objects: 457	num_detections: 450
+Joint 3 left_hip num_misses: 7	num_switches: 0	num_false_positives: 7	num_objects: 457	num_detections: 450
+Joint 4 left_knee num_misses: 7	num_switches: 0	num_false_positives: 7	num_objects: 502	num_detections: 495
+Joint 5 left_ankle num_misses: 7	num_switches: 0	num_false_positives: 7	num_objects: 457	num_detections: 450
+Joint 6 right_wrist num_misses: 7	num_switches: 0	num_false_positives: 7	num_objects: 502	num_detections: 495
+Joint 7 right_elbow num_misses: 7	num_switches: 0	num_false_positives: 7	num_objects: 547	num_detections: 540
+Joint 8 right_shoulder num_misses: 7	num_switches: 0	num_false_positives: 7	num_objects: 592	num_detections: 585
+Joint 9 left_shoulder num_misses: 7	num_switches: 0	num_false_positives: 7	num_objects: 547	num_detections: 540
+Joint 10 left_elbow num_misses: 7	num_switches: 0	num_false_positives: 7	num_objects: 502	num_detections: 495
+Joint 11 left_wrist num_misses: 7	num_switches: 0	num_false_positives: 7	num_objects: 457	num_detections: 450
+Joint 12 neck num_misses: 10	num_switches: 0	num_false_positives: 7	num_objects: 550	num_detections: 540
+Joint 13 nose num_misses: 7	num_switches: 0	num_false_positives: 7	num_objects: 593	num_detections: 586
+Joint 14 head_top num_misses: 100	num_switches: 0	num_false_positives: 7	num_objects: 640	num_detections: 540
+saving results to ./out/16180_mpii_relpath_5sec_testsub_MOT_metrics.json
+seqidx: 4/50
+024165_mpii_relpath_5sec_testsub
+Joint 0 right_ankle num_misses: 7	num_switches: 39	num_false_positives: 0	num_objects: 419	num_detections: 412
+Joint 1 right_knee num_misses: 4	num_switches: 40	num_false_positives: 0	num_objects: 412	num_detections: 408
+Joint 2 right_hip num_misses: 6	num_switches: 38	num_false_positives: 0	num_objects: 407	num_detections: 401
+Joint 3 left_hip num_misses: 5	num_switches: 40	num_false_positives: 0	num_objects: 440	num_detections: 435
+Joint 4 left_knee num_misses: 5	num_switches: 42	num_false_positives: 0	num_objects: 452	num_detections: 447
+Joint 5 left_ankle num_misses: 6	num_switches: 39	num_false_positives: 0	num_objects: 420	num_detections: 414
+Joint 6 right_wrist num_misses: 3	num_switches: 32	num_false_positives: 0	num_objects: 341	num_detections: 338
+Joint 7 right_elbow num_misses: 4	num_switches: 37	num_false_positives: 0	num_objects: 365	num_detections: 361
+Joint 8 right_shoulder num_misses: 8	num_switches: 37	num_false_positives: 0	num_objects: 414	num_detections: 406
+Joint 9 left_shoulder num_misses: 12	num_switches: 41	num_false_positives: 0	num_objects: 475	num_detections: 463
+Joint 10 left_elbow num_misses: 9	num_switches: 25	num_false_positives: 0	num_objects: 372	num_detections: 363
+Joint 11 left_wrist num_misses: 2	num_switches: 22	num_false_positives: 0	num_objects: 347	num_detections: 345
+Joint 12 neck num_misses: 4	num_switches: 37	num_false_positives: 0	num_objects: 405	num_detections: 401
+Joint 13 nose num_misses: 5	num_switches: 40	num_false_positives: 0	num_objects: 479	num_detections: 474
+Joint 14 head_top num_misses: 6	num_switches: 37	num_false_positives: 0	num_objects: 405	num_detections: 399
+saving results to ./out/024165_mpii_relpath_5sec_testsub_MOT_metrics.json
+seqidx: 5/50
+24575_mpii_step2_relpath_5sec_testsub
+Joint 0 right_ankle num_misses: 0	num_switches: 2	num_false_positives: 0	num_objects: 389	num_detections: 389
+Joint 1 right_knee num_misses: 0	num_switches: 2	num_false_positives: 0	num_objects: 377	num_detections: 377
+Joint 2 right_hip num_misses: 0	num_switches: 2	num_false_positives: 0	num_objects: 403	num_detections: 403
+Joint 3 left_hip num_misses: 0	num_switches: 2	num_false_positives: 0	num_objects: 402	num_detections: 402
+Joint 4 left_knee num_misses: 0	num_switches: 2	num_false_positives: 0	num_objects: 392	num_detections: 392
+Joint 5 left_ankle num_misses: 0	num_switches: 2	num_false_positives: 0	num_objects: 400	num_detections: 400
+Joint 6 right_wrist num_misses: 0	num_switches: 2	num_false_positives: 0	num_objects: 362	num_detections: 362
+Joint 7 right_elbow num_misses: 0	num_switches: 2	num_false_positives: 0	num_objects: 414	num_detections: 414
+Joint 8 right_shoulder num_misses: 0	num_switches: 2	num_false_positives: 0	num_objects: 468	num_detections: 468
+Joint 9 left_shoulder num_misses: 0	num_switches: 2	num_false_positives: 0	num_objects: 467	num_detections: 467
+Joint 10 left_elbow num_misses: 0	num_switches: 2	num_false_positives: 0	num_objects: 459	num_detections: 459
+Joint 11 left_wrist num_misses: 0	num_switches: 2	num_false_positives: 0	num_objects: 452	num_detections: 452
+Joint 12 neck num_misses: 0	num_switches: 2	num_false_positives: 0	num_objects: 467	num_detections: 467
+Joint 13 nose num_misses: 0	num_switches: 2	num_false_positives: 0	num_objects: 468	num_detections: 468
+Joint 14 head_top num_misses: 0	num_switches: 2	num_false_positives: 0	num_objects: 467	num_detections: 467
+saving results to ./out/24575_mpii_step2_relpath_5sec_testsub_MOT_metrics.json
+seqidx: 6/50
+02277_mpii_step2_relpath_5sec_testsub
+Joint 0 right_ankle num_misses: 4	num_switches: 0	num_false_positives: 0	num_objects: 373	num_detections: 369
+Joint 1 right_knee num_misses: 1	num_switches: 0	num_false_positives: 0	num_objects: 434	num_detections: 433
+Joint 2 right_hip num_misses: 3	num_switches: 0	num_false_positives: 0	num_objects: 458	num_detections: 455
+Joint 3 left_hip num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 482	num_detections: 482
+Joint 4 left_knee num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 441	num_detections: 441
+Joint 5 left_ankle num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 367	num_detections: 367
+Joint 6 right_wrist num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 346	num_detections: 346
+Joint 7 right_elbow num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 394	num_detections: 394
+Joint 8 right_shoulder num_misses: 1	num_switches: 0	num_false_positives: 0	num_objects: 476	num_detections: 475
+Joint 9 left_shoulder num_misses: 1	num_switches: 0	num_false_positives: 0	num_objects: 471	num_detections: 470
+Joint 10 left_elbow num_misses: 0	num_switches: 2	num_false_positives: 0	num_objects: 398	num_detections: 398
+Joint 11 left_wrist num_misses: 8	num_switches: 2	num_false_positives: 0	num_objects: 412	num_detections: 404
+Joint 12 neck num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 402	num_detections: 402
+Joint 13 nose num_misses: 38	num_switches: 0	num_false_positives: 0	num_objects: 574	num_detections: 536
+Joint 14 head_top num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 402	num_detections: 402
+saving results to ./out/02277_mpii_step2_relpath_5sec_testsub_MOT_metrics.json
+seqidx: 7/50
+03943_mpii_step2_relpath_5sec_testsub
+Joint 0 right_ankle num_misses: 4	num_switches: 17	num_false_positives: 0	num_objects: 251	num_detections: 247
+Joint 1 right_knee num_misses: 4	num_switches: 17	num_false_positives: 0	num_objects: 271	num_detections: 267
+Joint 2 right_hip num_misses: 5	num_switches: 17	num_false_positives: 0	num_objects: 238	num_detections: 233
+Joint 3 left_hip num_misses: 4	num_switches: 17	num_false_positives: 0	num_objects: 246	num_detections: 242
+Joint 4 left_knee num_misses: 5	num_switches: 22	num_false_positives: 0	num_objects: 274	num_detections: 269
+Joint 5 left_ankle num_misses: 11	num_switches: 19	num_false_positives: 0	num_objects: 281	num_detections: 270
+Joint 6 right_wrist num_misses: 4	num_switches: 12	num_false_positives: 0	num_objects: 235	num_detections: 231
+Joint 7 right_elbow num_misses: 4	num_switches: 15	num_false_positives: 0	num_objects: 266	num_detections: 262
+Joint 8 right_shoulder num_misses: 5	num_switches: 18	num_false_positives: 0	num_objects: 283	num_detections: 278
+Joint 9 left_shoulder num_misses: 6	num_switches: 19	num_false_positives: 0	num_objects: 290	num_detections: 284
+Joint 10 left_elbow num_misses: 5	num_switches: 17	num_false_positives: 0	num_objects: 258	num_detections: 253
+Joint 11 left_wrist num_misses: 10	num_switches: 11	num_false_positives: 0	num_objects: 227	num_detections: 217
+Joint 12 neck num_misses: 7	num_switches: 15	num_false_positives: 0	num_objects: 256	num_detections: 249
+Joint 13 nose num_misses: 1	num_switches: 17	num_false_positives: 0	num_objects: 268	num_detections: 267
+Joint 14 head_top num_misses: 37	num_switches: 12	num_false_positives: 0	num_objects: 256	num_detections: 219
+saving results to ./out/03943_mpii_step2_relpath_5sec_testsub_MOT_metrics.json
+seqidx: 8/50
+018725_mpii_relpath_5sec_testsub
+Joint 0 right_ankle num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 110	num_detections: 110
+Joint 1 right_knee num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 110	num_detections: 110
+Joint 2 right_hip num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 110	num_detections: 110
+Joint 3 left_hip num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 110	num_detections: 110
+Joint 4 left_knee num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 110	num_detections: 110
+Joint 5 left_ankle num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 110	num_detections: 110
+Joint 6 right_wrist num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 110	num_detections: 110
+Joint 7 right_elbow num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 110	num_detections: 110
+Joint 8 right_shoulder num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 110	num_detections: 110
+Joint 9 left_shoulder num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 110	num_detections: 110
+Joint 10 left_elbow num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 110	num_detections: 110
+Joint 11 left_wrist num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 110	num_detections: 110
+Joint 12 neck num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 110	num_detections: 110
+Joint 13 nose num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 110	num_detections: 110
+Joint 14 head_top num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 110	num_detections: 110
+saving results to ./out/018725_mpii_relpath_5sec_testsub_MOT_metrics.json
+seqidx: 9/50
+05833_mpii_relpath_5sec_testsub
+Joint 0 right_ankle num_misses: 21	num_switches: 22	num_false_positives: 0	num_objects: 108	num_detections: 87
+Joint 1 right_knee num_misses: 21	num_switches: 22	num_false_positives: 0	num_objects: 108	num_detections: 87
+Joint 2 right_hip num_misses: 21	num_switches: 20	num_false_positives: 0	num_objects: 107	num_detections: 86
+Joint 3 left_hip num_misses: 21	num_switches: 23	num_false_positives: 0	num_objects: 108	num_detections: 87
+Joint 4 left_knee num_misses: 21	num_switches: 22	num_false_positives: 0	num_objects: 108	num_detections: 87
+Joint 5 left_ankle num_misses: 21	num_switches: 22	num_false_positives: 0	num_objects: 108	num_detections: 87
+Joint 6 right_wrist num_misses: 20	num_switches: 22	num_false_positives: 0	num_objects: 106	num_detections: 86
+Joint 7 right_elbow num_misses: 20	num_switches: 22	num_false_positives: 0	num_objects: 97	num_detections: 77
+Joint 8 right_shoulder num_misses: 20	num_switches: 22	num_false_positives: 0	num_objects: 102	num_detections: 82
+Joint 9 left_shoulder num_misses: 20	num_switches: 20	num_false_positives: 0	num_objects: 105	num_detections: 85
+Joint 10 left_elbow num_misses: 20	num_switches: 22	num_false_positives: 0	num_objects: 97	num_detections: 77
+Joint 11 left_wrist num_misses: 19	num_switches: 22	num_false_positives: 0	num_objects: 95	num_detections: 76
+Joint 12 neck num_misses: 20	num_switches: 18	num_false_positives: 0	num_objects: 102	num_detections: 82
+Joint 13 nose num_misses: 20	num_switches: 18	num_false_positives: 0	num_objects: 104	num_detections: 84
+Joint 14 head_top num_misses: 20	num_switches: 20	num_false_positives: 0	num_objects: 102	num_detections: 82
+saving results to ./out/05833_mpii_relpath_5sec_testsub_MOT_metrics.json
+seqidx: 10/50
+16239_mpii_step2_relpath_5sec_testsub
+Joint 0 right_ankle num_misses: 3	num_switches: 19	num_false_positives: 0	num_objects: 236	num_detections: 233
+Joint 1 right_knee num_misses: 2	num_switches: 19	num_false_positives: 0	num_objects: 245	num_detections: 243
+Joint 2 right_hip num_misses: 6	num_switches: 19	num_false_positives: 0	num_objects: 289	num_detections: 283
+Joint 3 left_hip num_misses: 6	num_switches: 20	num_false_positives: 0	num_objects: 262	num_detections: 256
+Joint 4 left_knee num_misses: 3	num_switches: 23	num_false_positives: 0	num_objects: 233	num_detections: 230
+Joint 5 left_ankle num_misses: 6	num_switches: 21	num_false_positives: 0	num_objects: 232	num_detections: 226
+Joint 6 right_wrist num_misses: 4	num_switches: 10	num_false_positives: 0	num_objects: 207	num_detections: 203
+Joint 7 right_elbow num_misses: 3	num_switches: 8	num_false_positives: 0	num_objects: 183	num_detections: 180
+Joint 8 right_shoulder num_misses: 4	num_switches: 21	num_false_positives: 0	num_objects: 253	num_detections: 249
+Joint 9 left_shoulder num_misses: 3	num_switches: 20	num_false_positives: 0	num_objects: 216	num_detections: 213
+Joint 10 left_elbow num_misses: 3	num_switches: 20	num_false_positives: 0	num_objects: 239	num_detections: 236
+Joint 11 left_wrist num_misses: 9	num_switches: 19	num_false_positives: 0	num_objects: 229	num_detections: 220
+Joint 12 neck num_misses: 2	num_switches: 18	num_false_positives: 0	num_objects: 191	num_detections: 189
+Joint 13 nose num_misses: 2	num_switches: 17	num_false_positives: 0	num_objects: 186	num_detections: 184
+Joint 14 head_top num_misses: 6	num_switches: 15	num_false_positives: 0	num_objects: 191	num_detections: 185
+saving results to ./out/16239_mpii_step2_relpath_5sec_testsub_MOT_metrics.json
+seqidx: 11/50
+14384_mpii_step2_relpath_5sec_testsub
+Joint 0 right_ankle num_misses: 19	num_switches: 76	num_false_positives: 0	num_objects: 364	num_detections: 345
+Joint 1 right_knee num_misses: 8	num_switches: 88	num_false_positives: 0	num_objects: 388	num_detections: 380
+Joint 2 right_hip num_misses: 8	num_switches: 74	num_false_positives: 0	num_objects: 370	num_detections: 362
+Joint 3 left_hip num_misses: 17	num_switches: 78	num_false_positives: 0	num_objects: 364	num_detections: 347
+Joint 4 left_knee num_misses: 17	num_switches: 65	num_false_positives: 0	num_objects: 356	num_detections: 339
+Joint 5 left_ankle num_misses: 18	num_switches: 66	num_false_positives: 1	num_objects: 350	num_detections: 332
+Joint 6 right_wrist num_misses: 14	num_switches: 39	num_false_positives: 0	num_objects: 236	num_detections: 222
+Joint 7 right_elbow num_misses: 12	num_switches: 45	num_false_positives: 0	num_objects: 249	num_detections: 237
+Joint 8 right_shoulder num_misses: 14	num_switches: 79	num_false_positives: 0	num_objects: 352	num_detections: 338
+Joint 9 left_shoulder num_misses: 16	num_switches: 80	num_false_positives: 0	num_objects: 384	num_detections: 368
+Joint 10 left_elbow num_misses: 15	num_switches: 57	num_false_positives: 0	num_objects: 310	num_detections: 295
+Joint 11 left_wrist num_misses: 16	num_switches: 50	num_false_positives: 0	num_objects: 276	num_detections: 260
+Joint 12 neck num_misses: 14	num_switches: 56	num_false_positives: 0	num_objects: 284	num_detections: 270
+Joint 13 nose num_misses: 17	num_switches: 87	num_false_positives: 0	num_objects: 402	num_detections: 385
+Joint 14 head_top num_misses: 14	num_switches: 56	num_false_positives: 0	num_objects: 285	num_detections: 271
+saving results to ./out/14384_mpii_step2_relpath_5sec_testsub_MOT_metrics.json
+seqidx: 12/50
+15301_mpii_relpath_5sec_testsub
+Joint 0 right_ankle num_misses: 6	num_switches: 2	num_false_positives: 0	num_objects: 323	num_detections: 317
+Joint 1 right_knee num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 366	num_detections: 366
+Joint 2 right_hip num_misses: 1	num_switches: 0	num_false_positives: 0	num_objects: 390	num_detections: 389
+Joint 3 left_hip num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 387	num_detections: 387
+Joint 4 left_knee num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 374	num_detections: 374
+Joint 5 left_ankle num_misses: 1	num_switches: 1	num_false_positives: 0	num_objects: 320	num_detections: 319
+Joint 6 right_wrist num_misses: 5	num_switches: 0	num_false_positives: 0	num_objects: 377	num_detections: 372
+Joint 7 right_elbow num_misses: 6	num_switches: 0	num_false_positives: 0	num_objects: 387	num_detections: 381
+Joint 8 right_shoulder num_misses: 7	num_switches: 0	num_false_positives: 0	num_objects: 356	num_detections: 349
+Joint 9 left_shoulder num_misses: 3	num_switches: 0	num_false_positives: 0	num_objects: 333	num_detections: 330
+Joint 10 left_elbow num_misses: 1	num_switches: 0	num_false_positives: 0	num_objects: 281	num_detections: 280
+Joint 11 left_wrist num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 339	num_detections: 339
+Joint 12 neck num_misses: 3	num_switches: 0	num_false_positives: 0	num_objects: 322	num_detections: 319
+Joint 13 nose num_misses: 2	num_switches: 0	num_false_positives: 0	num_objects: 315	num_detections: 313
+Joint 14 head_top num_misses: 44	num_switches: 0	num_false_positives: 0	num_objects: 322	num_detections: 278
+saving results to ./out/15301_mpii_relpath_5sec_testsub_MOT_metrics.json
+seqidx: 13/50
+001735_mpii_relpath_5sec_testsub
+Joint 0 right_ankle num_misses: 2	num_switches: 10	num_false_positives: 0	num_objects: 200	num_detections: 198
+Joint 1 right_knee num_misses: 2	num_switches: 10	num_false_positives: 0	num_objects: 200	num_detections: 198
+Joint 2 right_hip num_misses: 1	num_switches: 10	num_false_positives: 0	num_objects: 192	num_detections: 191
+Joint 3 left_hip num_misses: 4	num_switches: 11	num_false_positives: 0	num_objects: 226	num_detections: 222
+Joint 4 left_knee num_misses: 4	num_switches: 11	num_false_positives: 0	num_objects: 240	num_detections: 236
+Joint 5 left_ankle num_misses: 7	num_switches: 12	num_false_positives: 0	num_objects: 251	num_detections: 244
+Joint 6 right_wrist num_misses: 1	num_switches: 10	num_false_positives: 0	num_objects: 188	num_detections: 187
+Joint 7 right_elbow num_misses: 1	num_switches: 11	num_false_positives: 0	num_objects: 191	num_detections: 190
+Joint 8 right_shoulder num_misses: 1	num_switches: 11	num_false_positives: 0	num_objects: 211	num_detections: 210
+Joint 9 left_shoulder num_misses: 9	num_switches: 11	num_false_positives: 0	num_objects: 258	num_detections: 249
+Joint 10 left_elbow num_misses: 4	num_switches: 13	num_false_positives: 0	num_objects: 225	num_detections: 221
+Joint 11 left_wrist num_misses: 3	num_switches: 12	num_false_positives: 0	num_objects: 240	num_detections: 237
+Joint 12 neck num_misses: 1	num_switches: 10	num_false_positives: 0	num_objects: 199	num_detections: 198
+Joint 13 nose num_misses: 4	num_switches: 13	num_false_positives: 0	num_objects: 253	num_detections: 249
+Joint 14 head_top num_misses: 1	num_switches: 10	num_false_positives: 0	num_objects: 199	num_detections: 198
+saving results to ./out/001735_mpii_relpath_5sec_testsub_MOT_metrics.json
+seqidx: 14/50
+17839_mpii_relpath_5sec_testsub
+Joint 0 right_ankle num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 0	num_detections: 0
+Joint 1 right_knee num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 0	num_detections: 0
+Joint 2 right_hip num_misses: 1	num_switches: 1	num_false_positives: 0	num_objects: 70	num_detections: 69
+Joint 3 left_hip num_misses: 0	num_switches: 1	num_false_positives: 0	num_objects: 59	num_detections: 59
+Joint 4 left_knee num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 0	num_detections: 0
+Joint 5 left_ankle num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 0	num_detections: 0
+Joint 6 right_wrist num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 0	num_detections: 0
+Joint 7 right_elbow num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 0	num_detections: 0
+Joint 8 right_shoulder num_misses: 1	num_switches: 0	num_false_positives: 0	num_objects: 66	num_detections: 65
+Joint 9 left_shoulder num_misses: 1	num_switches: 0	num_false_positives: 0	num_objects: 80	num_detections: 79
+Joint 10 left_elbow num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 57	num_detections: 57
+Joint 11 left_wrist num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 54	num_detections: 54
+Joint 12 neck num_misses: 1	num_switches: 0	num_false_positives: 0	num_objects: 66	num_detections: 65
+Joint 13 nose num_misses: 4	num_switches: 0	num_false_positives: 0	num_objects: 79	num_detections: 75
+Joint 14 head_top num_misses: 16	num_switches: 0	num_false_positives: 0	num_objects: 66	num_detections: 50
+saving results to ./out/17839_mpii_relpath_5sec_testsub_MOT_metrics.json
+seqidx: 15/50
+23653_mpii_step2_relpath_5sec_testsub
+Joint 0 right_ankle num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 220	num_detections: 220
+Joint 1 right_knee num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 220	num_detections: 220
+Joint 2 right_hip num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 220	num_detections: 220
+Joint 3 left_hip num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 220	num_detections: 220
+Joint 4 left_knee num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 170	num_detections: 170
+Joint 5 left_ankle num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 220	num_detections: 220
+Joint 6 right_wrist num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 116	num_detections: 116
+Joint 7 right_elbow num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 142	num_detections: 142
+Joint 8 right_shoulder num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 218	num_detections: 218
+Joint 9 left_shoulder num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 220	num_detections: 220
+Joint 10 left_elbow num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 110	num_detections: 110
+Joint 11 left_wrist num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 154	num_detections: 154
+Joint 12 neck num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 218	num_detections: 218
+Joint 13 nose num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 217	num_detections: 217
+Joint 14 head_top num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 218	num_detections: 218
+saving results to ./out/23653_mpii_step2_relpath_5sec_testsub_MOT_metrics.json
+seqidx: 16/50
+014531_mpii_relpath_5sec_testsub
+Joint 0 right_ankle num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 102	num_detections: 102
+Joint 1 right_knee num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 102	num_detections: 102
+Joint 2 right_hip num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 102	num_detections: 102
+Joint 3 left_hip num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 102	num_detections: 102
+Joint 4 left_knee num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 102	num_detections: 102
+Joint 5 left_ankle num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 102	num_detections: 102
+Joint 6 right_wrist num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 84	num_detections: 84
+Joint 7 right_elbow num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 102	num_detections: 102
+Joint 8 right_shoulder num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 102	num_detections: 102
+Joint 9 left_shoulder num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 102	num_detections: 102
+Joint 10 left_elbow num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 98	num_detections: 98
+Joint 11 left_wrist num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 99	num_detections: 99
+Joint 12 neck num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 102	num_detections: 102
+Joint 13 nose num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 99	num_detections: 99
+Joint 14 head_top num_misses: 8	num_switches: 0	num_false_positives: 0	num_objects: 102	num_detections: 94
+saving results to ./out/014531_mpii_relpath_5sec_testsub_MOT_metrics.json
+seqidx: 17/50
+04622_mpii_relpath_5sec_testsub
+Joint 0 right_ankle num_misses: 6	num_switches: 29	num_false_positives: 0	num_objects: 729	num_detections: 723
+Joint 1 right_knee num_misses: 6	num_switches: 28	num_false_positives: 0	num_objects: 686	num_detections: 680
+Joint 2 right_hip num_misses: 6	num_switches: 34	num_false_positives: 0	num_objects: 796	num_detections: 790
+Joint 3 left_hip num_misses: 6	num_switches: 32	num_false_positives: 0	num_objects: 760	num_detections: 754
+Joint 4 left_knee num_misses: 6	num_switches: 27	num_false_positives: 0	num_objects: 748	num_detections: 742
+Joint 5 left_ankle num_misses: 7	num_switches: 29	num_false_positives: 1	num_objects: 732	num_detections: 725
+Joint 6 right_wrist num_misses: 6	num_switches: 26	num_false_positives: 0	num_objects: 589	num_detections: 583
+Joint 7 right_elbow num_misses: 6	num_switches: 21	num_false_positives: 0	num_objects: 530	num_detections: 524
+Joint 8 right_shoulder num_misses: 6	num_switches: 31	num_false_positives: 0	num_objects: 785	num_detections: 779
+Joint 9 left_shoulder num_misses: 6	num_switches: 30	num_false_positives: 0	num_objects: 794	num_detections: 788
+Joint 10 left_elbow num_misses: 3	num_switches: 19	num_false_positives: 0	num_objects: 491	num_detections: 488
+Joint 11 left_wrist num_misses: 4	num_switches: 24	num_false_positives: 0	num_objects: 646	num_detections: 642
+Joint 12 neck num_misses: 6	num_switches: 26	num_false_positives: 0	num_objects: 754	num_detections: 748
+Joint 13 nose num_misses: 8	num_switches: 34	num_false_positives: 0	num_objects: 794	num_detections: 786
+Joint 14 head_top num_misses: 7	num_switches: 27	num_false_positives: 1	num_objects: 754	num_detections: 747
+saving results to ./out/04622_mpii_relpath_5sec_testsub_MOT_metrics.json
+seqidx: 18/50
+07128_mpii_step2_relpath_5sec_testsub
+Joint 0 right_ankle num_misses: 1	num_switches: 0	num_false_positives: 0	num_objects: 211	num_detections: 210
+Joint 1 right_knee num_misses: 6	num_switches: 0	num_false_positives: 0	num_objects: 229	num_detections: 223
+Joint 2 right_hip num_misses: 1	num_switches: 0	num_false_positives: 0	num_objects: 269	num_detections: 268
+Joint 3 left_hip num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 274	num_detections: 274
+Joint 4 left_knee num_misses: 4	num_switches: 1	num_false_positives: 0	num_objects: 239	num_detections: 235
+Joint 5 left_ankle num_misses: 0	num_switches: 1	num_false_positives: 0	num_objects: 218	num_detections: 218
+Joint 6 right_wrist num_misses: 2	num_switches: 1	num_false_positives: 0	num_objects: 241	num_detections: 239
+Joint 7 right_elbow num_misses: 1	num_switches: 0	num_false_positives: 0	num_objects: 215	num_detections: 214
+Joint 8 right_shoulder num_misses: 1	num_switches: 0	num_false_positives: 0	num_objects: 243	num_detections: 242
+Joint 9 left_shoulder num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 270	num_detections: 270
+Joint 10 left_elbow num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 254	num_detections: 254
+Joint 11 left_wrist num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 260	num_detections: 260
+Joint 12 neck num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 241	num_detections: 241
+Joint 13 nose num_misses: 7	num_switches: 1	num_false_positives: 0	num_objects: 284	num_detections: 277
+Joint 14 head_top num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 241	num_detections: 241
+saving results to ./out/07128_mpii_step2_relpath_5sec_testsub_MOT_metrics.json
+seqidx: 19/50
+16236_mpii_relpath_5sec_testsub
+Joint 0 right_ankle num_misses: 1	num_switches: 23	num_false_positives: 0	num_objects: 172	num_detections: 171
+Joint 1 right_knee num_misses: 1	num_switches: 24	num_false_positives: 0	num_objects: 187	num_detections: 186
+Joint 2 right_hip num_misses: 1	num_switches: 25	num_false_positives: 0	num_objects: 186	num_detections: 185
+Joint 3 left_hip num_misses: 0	num_switches: 24	num_false_positives: 0	num_objects: 181	num_detections: 181
+Joint 4 left_knee num_misses: 1	num_switches: 24	num_false_positives: 0	num_objects: 182	num_detections: 181
+Joint 5 left_ankle num_misses: 2	num_switches: 22	num_false_positives: 0	num_objects: 166	num_detections: 164
+Joint 6 right_wrist num_misses: 3	num_switches: 22	num_false_positives: 0	num_objects: 152	num_detections: 149
+Joint 7 right_elbow num_misses: 3	num_switches: 17	num_false_positives: 0	num_objects: 153	num_detections: 150
+Joint 8 right_shoulder num_misses: 3	num_switches: 25	num_false_positives: 0	num_objects: 195	num_detections: 192
+Joint 9 left_shoulder num_misses: 10	num_switches: 29	num_false_positives: 0	num_objects: 203	num_detections: 193
+Joint 10 left_elbow num_misses: 0	num_switches: 23	num_false_positives: 0	num_objects: 167	num_detections: 167
+Joint 11 left_wrist num_misses: 3	num_switches: 20	num_false_positives: 0	num_objects: 177	num_detections: 174
+Joint 12 neck num_misses: 2	num_switches: 25	num_false_positives: 0	num_objects: 181	num_detections: 179
+Joint 13 nose num_misses: 1	num_switches: 28	num_false_positives: 0	num_objects: 195	num_detections: 194
+Joint 14 head_top num_misses: 3	num_switches: 25	num_false_positives: 0	num_objects: 181	num_detections: 178
+saving results to ./out/16236_mpii_relpath_5sec_testsub_MOT_metrics.json
+seqidx: 20/50
+00522_mpii_relpath_5sec_testsub
+Joint 0 right_ankle num_misses: 1	num_switches: 1	num_false_positives: 0	num_objects: 457	num_detections: 456
+Joint 1 right_knee num_misses: 1	num_switches: 1	num_false_positives: 0	num_objects: 462	num_detections: 461
+Joint 2 right_hip num_misses: 1	num_switches: 1	num_false_positives: 0	num_objects: 471	num_detections: 470
+Joint 3 left_hip num_misses: 1	num_switches: 1	num_false_positives: 0	num_objects: 471	num_detections: 470
+Joint 4 left_knee num_misses: 1	num_switches: 1	num_false_positives: 0	num_objects: 465	num_detections: 464
+Joint 5 left_ankle num_misses: 1	num_switches: 1	num_false_positives: 0	num_objects: 431	num_detections: 430
+Joint 6 right_wrist num_misses: 1	num_switches: 1	num_false_positives: 0	num_objects: 422	num_detections: 421
+Joint 7 right_elbow num_misses: 1	num_switches: 1	num_false_positives: 0	num_objects: 432	num_detections: 431
+Joint 8 right_shoulder num_misses: 1	num_switches: 1	num_false_positives: 0	num_objects: 472	num_detections: 471
+Joint 9 left_shoulder num_misses: 1	num_switches: 1	num_false_positives: 0	num_objects: 440	num_detections: 439
+Joint 10 left_elbow num_misses: 1	num_switches: 1	num_false_positives: 0	num_objects: 401	num_detections: 400
+Joint 11 left_wrist num_misses: 1	num_switches: 1	num_false_positives: 0	num_objects: 400	num_detections: 399
+Joint 12 neck num_misses: 1	num_switches: 1	num_false_positives: 0	num_objects: 440	num_detections: 439
+Joint 13 nose num_misses: 1	num_switches: 1	num_false_positives: 0	num_objects: 472	num_detections: 471
+Joint 14 head_top num_misses: 1	num_switches: 1	num_false_positives: 0	num_objects: 437	num_detections: 436
+saving results to ./out/00522_mpii_relpath_5sec_testsub_MOT_metrics.json
+seqidx: 21/50
+14523_mpii_step2_relpath_5sec_testsub
+Joint 0 right_ankle num_misses: 6	num_switches: 108	num_false_positives: 0	num_objects: 344	num_detections: 338
+Joint 1 right_knee num_misses: 7	num_switches: 117	num_false_positives: 0	num_objects: 387	num_detections: 380
+Joint 2 right_hip num_misses: 16	num_switches: 127	num_false_positives: 0	num_objects: 419	num_detections: 403
+Joint 3 left_hip num_misses: 23	num_switches: 118	num_false_positives: 0	num_objects: 411	num_detections: 388
+Joint 4 left_knee num_misses: 9	num_switches: 104	num_false_positives: 0	num_objects: 356	num_detections: 347
+Joint 5 left_ankle num_misses: 10	num_switches: 102	num_false_positives: 0	num_objects: 317	num_detections: 307
+Joint 6 right_wrist num_misses: 14	num_switches: 95	num_false_positives: 0	num_objects: 324	num_detections: 310
+Joint 7 right_elbow num_misses: 7	num_switches: 115	num_false_positives: 0	num_objects: 374	num_detections: 367
+Joint 8 right_shoulder num_misses: 21	num_switches: 136	num_false_positives: 0	num_objects: 435	num_detections: 414
+Joint 9 left_shoulder num_misses: 21	num_switches: 134	num_false_positives: 0	num_objects: 438	num_detections: 417
+Joint 10 left_elbow num_misses: 17	num_switches: 122	num_false_positives: 0	num_objects: 395	num_detections: 378
+Joint 11 left_wrist num_misses: 11	num_switches: 106	num_false_positives: 0	num_objects: 334	num_detections: 323
+Joint 12 neck num_misses: 21	num_switches: 109	num_false_positives: 0	num_objects: 372	num_detections: 351
+Joint 13 nose num_misses: 12	num_switches: 120	num_false_positives: 0	num_objects: 385	num_detections: 373
+Joint 14 head_top num_misses: 156	num_switches: 59	num_false_positives: 0	num_objects: 372	num_detections: 216
+saving results to ./out/14523_mpii_step2_relpath_5sec_testsub_MOT_metrics.json
+seqidx: 22/50
+20880_mpii_relpath_5sec_testsub
+Joint 0 right_ankle num_misses: 7	num_switches: 10	num_false_positives: 0	num_objects: 180	num_detections: 173
+Joint 1 right_knee num_misses: 7	num_switches: 10	num_false_positives: 0	num_objects: 189	num_detections: 182
+Joint 2 right_hip num_misses: 7	num_switches: 8	num_false_positives: 0	num_objects: 188	num_detections: 181
+Joint 3 left_hip num_misses: 7	num_switches: 8	num_false_positives: 0	num_objects: 197	num_detections: 190
+Joint 4 left_knee num_misses: 7	num_switches: 9	num_false_positives: 0	num_objects: 202	num_detections: 195
+Joint 5 left_ankle num_misses: 6	num_switches: 9	num_false_positives: 0	num_objects: 186	num_detections: 180
+Joint 6 right_wrist num_misses: 4	num_switches: 9	num_false_positives: 0	num_objects: 142	num_detections: 138
+Joint 7 right_elbow num_misses: 6	num_switches: 8	num_false_positives: 0	num_objects: 139	num_detections: 133
+Joint 8 right_shoulder num_misses: 7	num_switches: 13	num_false_positives: 0	num_objects: 209	num_detections: 202
+Joint 9 left_shoulder num_misses: 7	num_switches: 12	num_false_positives: 0	num_objects: 212	num_detections: 205
+Joint 10 left_elbow num_misses: 7	num_switches: 9	num_false_positives: 0	num_objects: 196	num_detections: 189
+Joint 11 left_wrist num_misses: 7	num_switches: 10	num_false_positives: 0	num_objects: 180	num_detections: 173
+Joint 12 neck num_misses: 8	num_switches: 12	num_false_positives: 0	num_objects: 203	num_detections: 195
+Joint 13 nose num_misses: 7	num_switches: 13	num_false_positives: 0	num_objects: 217	num_detections: 210
+Joint 14 head_top num_misses: 8	num_switches: 12	num_false_positives: 0	num_objects: 203	num_detections: 195
+saving results to ./out/20880_mpii_relpath_5sec_testsub_MOT_metrics.json
+seqidx: 23/50
+005067_mpii_relpath_5sec_testsub
+Joint 0 right_ankle num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 254	num_detections: 254
+Joint 1 right_knee num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 278	num_detections: 278
+Joint 2 right_hip num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 285	num_detections: 285
+Joint 3 left_hip num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 285	num_detections: 285
+Joint 4 left_knee num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 284	num_detections: 284
+Joint 5 left_ankle num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 262	num_detections: 262
+Joint 6 right_wrist num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 240	num_detections: 240
+Joint 7 right_elbow num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 239	num_detections: 239
+Joint 8 right_shoulder num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 263	num_detections: 263
+Joint 9 left_shoulder num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 269	num_detections: 269
+Joint 10 left_elbow num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 260	num_detections: 260
+Joint 11 left_wrist num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 261	num_detections: 261
+Joint 12 neck num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 247	num_detections: 247
+Joint 13 nose num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 278	num_detections: 278
+Joint 14 head_top num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 247	num_detections: 247
+saving results to ./out/005067_mpii_relpath_5sec_testsub_MOT_metrics.json
+seqidx: 24/50
+02364_mpii_relpath_5sec_testsub
+Joint 0 right_ankle num_misses: 5	num_switches: 59	num_false_positives: 0	num_objects: 496	num_detections: 491
+Joint 1 right_knee num_misses: 4	num_switches: 59	num_false_positives: 0	num_objects: 506	num_detections: 502
+Joint 2 right_hip num_misses: 4	num_switches: 64	num_false_positives: 0	num_objects: 562	num_detections: 558
+Joint 3 left_hip num_misses: 4	num_switches: 64	num_false_positives: 0	num_objects: 554	num_detections: 550
+Joint 4 left_knee num_misses: 4	num_switches: 62	num_false_positives: 0	num_objects: 500	num_detections: 496
+Joint 5 left_ankle num_misses: 4	num_switches: 61	num_false_positives: 0	num_objects: 495	num_detections: 491
+Joint 6 right_wrist num_misses: 6	num_switches: 62	num_false_positives: 0	num_objects: 568	num_detections: 562
+Joint 7 right_elbow num_misses: 4	num_switches: 63	num_false_positives: 0	num_objects: 610	num_detections: 606
+Joint 8 right_shoulder num_misses: 6	num_switches: 76	num_false_positives: 0	num_objects: 646	num_detections: 640
+Joint 9 left_shoulder num_misses: 20	num_switches: 75	num_false_positives: 0	num_objects: 633	num_detections: 613
+Joint 10 left_elbow num_misses: 8	num_switches: 63	num_false_positives: 0	num_objects: 483	num_detections: 475
+Joint 11 left_wrist num_misses: 6	num_switches: 64	num_false_positives: 0	num_objects: 492	num_detections: 486
+Joint 12 neck num_misses: 6	num_switches: 71	num_false_positives: 0	num_objects: 605	num_detections: 599
+Joint 13 nose num_misses: 6	num_switches: 73	num_false_positives: 0	num_objects: 655	num_detections: 649
+Joint 14 head_top num_misses: 6	num_switches: 71	num_false_positives: 0	num_objects: 605	num_detections: 599
+saving results to ./out/02364_mpii_relpath_5sec_testsub_MOT_metrics.json
+seqidx: 25/50
+09883_mpii_step2_relpath_5sec_testsub
+Joint 0 right_ankle num_misses: 0	num_switches: 1	num_false_positives: 0	num_objects: 176	num_detections: 176
+Joint 1 right_knee num_misses: 0	num_switches: 1	num_false_positives: 0	num_objects: 168	num_detections: 168
+Joint 2 right_hip num_misses: 1	num_switches: 1	num_false_positives: 0	num_objects: 332	num_detections: 331
+Joint 3 left_hip num_misses: 0	num_switches: 1	num_false_positives: 0	num_objects: 264	num_detections: 264
+Joint 4 left_knee num_misses: 0	num_switches: 1	num_false_positives: 0	num_objects: 154	num_detections: 154
+Joint 5 left_ankle num_misses: 1	num_switches: 2	num_false_positives: 0	num_objects: 206	num_detections: 205
+Joint 6 right_wrist num_misses: 1	num_switches: 1	num_false_positives: 0	num_objects: 151	num_detections: 150
+Joint 7 right_elbow num_misses: 1	num_switches: 1	num_false_positives: 0	num_objects: 299	num_detections: 298
+Joint 8 right_shoulder num_misses: 1	num_switches: 2	num_false_positives: 0	num_objects: 331	num_detections: 330
+Joint 9 left_shoulder num_misses: 1	num_switches: 2	num_false_positives: 0	num_objects: 370	num_detections: 369
+Joint 10 left_elbow num_misses: 8	num_switches: 2	num_false_positives: 0	num_objects: 226	num_detections: 218
+Joint 11 left_wrist num_misses: 0	num_switches: 2	num_false_positives: 0	num_objects: 109	num_detections: 109
+Joint 12 neck num_misses: 4	num_switches: 2	num_false_positives: 0	num_objects: 323	num_detections: 319
+Joint 13 nose num_misses: 2	num_switches: 4	num_false_positives: 0	num_objects: 418	num_detections: 416
+Joint 14 head_top num_misses: 4	num_switches: 2	num_false_positives: 0	num_objects: 323	num_detections: 319
+saving results to ./out/09883_mpii_step2_relpath_5sec_testsub_MOT_metrics.json
+seqidx: 26/50
+22430_mpii_relpath_5sec_testsub
+Joint 0 right_ankle num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 19	num_detections: 19
+Joint 1 right_knee num_misses: 0	num_switches: 1	num_false_positives: 0	num_objects: 66	num_detections: 66
+Joint 2 right_hip num_misses: 3	num_switches: 4	num_false_positives: 0	num_objects: 113	num_detections: 110
+Joint 3 left_hip num_misses: 0	num_switches: 1	num_false_positives: 0	num_objects: 43	num_detections: 43
+Joint 4 left_knee num_misses: 0	num_switches: 1	num_false_positives: 0	num_objects: 33	num_detections: 33
+Joint 5 left_ankle num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 28	num_detections: 28
+Joint 6 right_wrist num_misses: 6	num_switches: 8	num_false_positives: 0	num_objects: 118	num_detections: 112
+Joint 7 right_elbow num_misses: 11	num_switches: 11	num_false_positives: 0	num_objects: 129	num_detections: 118
+Joint 8 right_shoulder num_misses: 6	num_switches: 12	num_false_positives: 0	num_objects: 161	num_detections: 155
+Joint 9 left_shoulder num_misses: 4	num_switches: 11	num_false_positives: 0	num_objects: 145	num_detections: 141
+Joint 10 left_elbow num_misses: 0	num_switches: 6	num_false_positives: 0	num_objects: 81	num_detections: 81
+Joint 11 left_wrist num_misses: 2	num_switches: 3	num_false_positives: 0	num_objects: 63	num_detections: 61
+Joint 12 neck num_misses: 3	num_switches: 9	num_false_positives: 0	num_objects: 125	num_detections: 122
+Joint 13 nose num_misses: 6	num_switches: 14	num_false_positives: 0	num_objects: 169	num_detections: 163
+Joint 14 head_top num_misses: 9	num_switches: 8	num_false_positives: 0	num_objects: 125	num_detections: 116
+saving results to ./out/22430_mpii_relpath_5sec_testsub_MOT_metrics.json
+seqidx: 27/50
+015860_mpii_relpath_5sec_testsub
+Joint 0 right_ankle num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 275	num_detections: 275
+Joint 1 right_knee num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 261	num_detections: 261
+Joint 2 right_hip num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 252	num_detections: 252
+Joint 3 left_hip num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 252	num_detections: 252
+Joint 4 left_knee num_misses: 7	num_switches: 0	num_false_positives: 0	num_objects: 292	num_detections: 285
+Joint 5 left_ankle num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 229	num_detections: 229
+Joint 6 right_wrist num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 242	num_detections: 242
+Joint 7 right_elbow num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 249	num_detections: 249
+Joint 8 right_shoulder num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 250	num_detections: 250
+Joint 9 left_shoulder num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 253	num_detections: 253
+Joint 10 left_elbow num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 253	num_detections: 253
+Joint 11 left_wrist num_misses: 3	num_switches: 0	num_false_positives: 0	num_objects: 285	num_detections: 282
+Joint 12 neck num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 250	num_detections: 250
+Joint 13 nose num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 252	num_detections: 252
+Joint 14 head_top num_misses: 2	num_switches: 0	num_false_positives: 0	num_objects: 250	num_detections: 248
+saving results to ./out/015860_mpii_relpath_5sec_testsub_MOT_metrics.json
+seqidx: 28/50
+14293_mpii_relpath_5sec_testsub
+Joint 0 right_ankle num_misses: 1	num_switches: 17	num_false_positives: 0	num_objects: 141	num_detections: 140
+Joint 1 right_knee num_misses: 1	num_switches: 19	num_false_positives: 0	num_objects: 143	num_detections: 142
+Joint 2 right_hip num_misses: 1	num_switches: 18	num_false_positives: 0	num_objects: 141	num_detections: 140
+Joint 3 left_hip num_misses: 1	num_switches: 18	num_false_positives: 0	num_objects: 137	num_detections: 136
+Joint 4 left_knee num_misses: 1	num_switches: 16	num_false_positives: 0	num_objects: 128	num_detections: 127
+Joint 5 left_ankle num_misses: 1	num_switches: 17	num_false_positives: 0	num_objects: 127	num_detections: 126
+Joint 6 right_wrist num_misses: 1	num_switches: 13	num_false_positives: 0	num_objects: 100	num_detections: 99
+Joint 7 right_elbow num_misses: 1	num_switches: 15	num_false_positives: 0	num_objects: 111	num_detections: 110
+Joint 8 right_shoulder num_misses: 1	num_switches: 18	num_false_positives: 0	num_objects: 118	num_detections: 117
+Joint 9 left_shoulder num_misses: 1	num_switches: 21	num_false_positives: 0	num_objects: 139	num_detections: 138
+Joint 10 left_elbow num_misses: 1	num_switches: 18	num_false_positives: 0	num_objects: 131	num_detections: 130
+Joint 11 left_wrist num_misses: 1	num_switches: 18	num_false_positives: 0	num_objects: 136	num_detections: 135
+Joint 12 neck num_misses: 1	num_switches: 18	num_false_positives: 0	num_objects: 106	num_detections: 105
+Joint 13 nose num_misses: 1	num_switches: 22	num_false_positives: 0	num_objects: 147	num_detections: 146
+Joint 14 head_top num_misses: 1	num_switches: 18	num_false_positives: 0	num_objects: 106	num_detections: 105
+saving results to ./out/14293_mpii_relpath_5sec_testsub_MOT_metrics.json
+seqidx: 29/50
+02835_mpii_relpath_5sec_testsub
+Joint 0 right_ankle num_misses: 6	num_switches: 26	num_false_positives: 1	num_objects: 309	num_detections: 303
+Joint 1 right_knee num_misses: 5	num_switches: 13	num_false_positives: 1	num_objects: 285	num_detections: 280
+Joint 2 right_hip num_misses: 7	num_switches: 19	num_false_positives: 1	num_objects: 315	num_detections: 308
+Joint 3 left_hip num_misses: 4	num_switches: 24	num_false_positives: 0	num_objects: 302	num_detections: 298
+Joint 4 left_knee num_misses: 7	num_switches: 22	num_false_positives: 0	num_objects: 309	num_detections: 302
+Joint 5 left_ankle num_misses: 5	num_switches: 22	num_false_positives: 0	num_objects: 279	num_detections: 274
+Joint 6 right_wrist num_misses: 4	num_switches: 21	num_false_positives: 0	num_objects: 320	num_detections: 316
+Joint 7 right_elbow num_misses: 5	num_switches: 19	num_false_positives: 1	num_objects: 302	num_detections: 297
+Joint 8 right_shoulder num_misses: 7	num_switches: 27	num_false_positives: 2	num_objects: 355	num_detections: 348
+Joint 9 left_shoulder num_misses: 7	num_switches: 23	num_false_positives: 0	num_objects: 301	num_detections: 294
+Joint 10 left_elbow num_misses: 2	num_switches: 21	num_false_positives: 0	num_objects: 243	num_detections: 241
+Joint 11 left_wrist num_misses: 6	num_switches: 23	num_false_positives: 0	num_objects: 316	num_detections: 310
+Joint 12 neck num_misses: 4	num_switches: 16	num_false_positives: 0	num_objects: 279	num_detections: 275
+Joint 13 nose num_misses: 5	num_switches: 18	num_false_positives: 1	num_objects: 222	num_detections: 217
+Joint 14 head_top num_misses: 4	num_switches: 16	num_false_positives: 0	num_objects: 279	num_detections: 275
+saving results to ./out/02835_mpii_relpath_5sec_testsub_MOT_metrics.json
+seqidx: 30/50
+01486_mpii_relpath_5sec_testsub
+Joint 0 right_ankle num_misses: 3	num_switches: 88	num_false_positives: 0	num_objects: 327	num_detections: 324
+Joint 1 right_knee num_misses: 13	num_switches: 86	num_false_positives: 0	num_objects: 378	num_detections: 365
+Joint 2 right_hip num_misses: 14	num_switches: 90	num_false_positives: 0	num_objects: 437	num_detections: 423
+Joint 3 left_hip num_misses: 18	num_switches: 101	num_false_positives: 0	num_objects: 475	num_detections: 457
+Joint 4 left_knee num_misses: 16	num_switches: 89	num_false_positives: 0	num_objects: 390	num_detections: 374
+Joint 5 left_ankle num_misses: 14	num_switches: 80	num_false_positives: 0	num_objects: 342	num_detections: 328
+Joint 6 right_wrist num_misses: 3	num_switches: 76	num_false_positives: 0	num_objects: 385	num_detections: 382
+Joint 7 right_elbow num_misses: 16	num_switches: 87	num_false_positives: 0	num_objects: 430	num_detections: 414
+Joint 8 right_shoulder num_misses: 16	num_switches: 105	num_false_positives: 0	num_objects: 482	num_detections: 466
+Joint 9 left_shoulder num_misses: 19	num_switches: 112	num_false_positives: 1	num_objects: 516	num_detections: 497
+Joint 10 left_elbow num_misses: 6	num_switches: 88	num_false_positives: 0	num_objects: 413	num_detections: 407
+Joint 11 left_wrist num_misses: 17	num_switches: 90	num_false_positives: 0	num_objects: 455	num_detections: 438
+Joint 12 neck num_misses: 28	num_switches: 98	num_false_positives: 0	num_objects: 473	num_detections: 445
+Joint 13 nose num_misses: 8	num_switches: 103	num_false_positives: 3	num_objects: 448	num_detections: 440
+Joint 14 head_top num_misses: 55	num_switches: 90	num_false_positives: 0	num_objects: 473	num_detections: 418
+saving results to ./out/01486_mpii_relpath_5sec_testsub_MOT_metrics.json
+seqidx: 31/50
+020910_mpii_relpath_5sec_testsub
+Joint 0 right_ankle num_misses: 3	num_switches: 16	num_false_positives: 0	num_objects: 259	num_detections: 256
+Joint 1 right_knee num_misses: 1	num_switches: 16	num_false_positives: 0	num_objects: 253	num_detections: 252
+Joint 2 right_hip num_misses: 1	num_switches: 15	num_false_positives: 0	num_objects: 273	num_detections: 272
+Joint 3 left_hip num_misses: 2	num_switches: 15	num_false_positives: 0	num_objects: 266	num_detections: 264
+Joint 4 left_knee num_misses: 1	num_switches: 15	num_false_positives: 0	num_objects: 268	num_detections: 267
+Joint 5 left_ankle num_misses: 2	num_switches: 16	num_false_positives: 0	num_objects: 271	num_detections: 269
+Joint 6 right_wrist num_misses: 1	num_switches: 6	num_false_positives: 0	num_objects: 226	num_detections: 225
+Joint 7 right_elbow num_misses: 1	num_switches: 7	num_false_positives: 0	num_objects: 236	num_detections: 235
+Joint 8 right_shoulder num_misses: 1	num_switches: 16	num_false_positives: 0	num_objects: 271	num_detections: 270
+Joint 9 left_shoulder num_misses: 1	num_switches: 16	num_false_positives: 0	num_objects: 269	num_detections: 268
+Joint 10 left_elbow num_misses: 1	num_switches: 10	num_false_positives: 0	num_objects: 251	num_detections: 250
+Joint 11 left_wrist num_misses: 2	num_switches: 6	num_false_positives: 0	num_objects: 246	num_detections: 244
+Joint 12 neck num_misses: 1	num_switches: 16	num_false_positives: 0	num_objects: 268	num_detections: 267
+Joint 13 nose num_misses: 1	num_switches: 17	num_false_positives: 0	num_objects: 271	num_detections: 270
+Joint 14 head_top num_misses: 2	num_switches: 16	num_false_positives: 0	num_objects: 268	num_detections: 266
+saving results to ./out/020910_mpii_relpath_5sec_testsub_MOT_metrics.json
+seqidx: 32/50
+008760_mpii_relpath_5sec_testsub
+Joint 0 right_ankle num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 16	num_detections: 16
+Joint 1 right_knee num_misses: 0	num_switches: 2	num_false_positives: 0	num_objects: 82	num_detections: 82
+Joint 2 right_hip num_misses: 0	num_switches: 2	num_false_positives: 0	num_objects: 99	num_detections: 99
+Joint 3 left_hip num_misses: 1	num_switches: 2	num_false_positives: 0	num_objects: 100	num_detections: 99
+Joint 4 left_knee num_misses: 0	num_switches: 2	num_false_positives: 0	num_objects: 93	num_detections: 93
+Joint 5 left_ankle num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 9	num_detections: 9
+Joint 6 right_wrist num_misses: 0	num_switches: 2	num_false_positives: 0	num_objects: 94	num_detections: 94
+Joint 7 right_elbow num_misses: 1	num_switches: 2	num_false_positives: 0	num_objects: 98	num_detections: 97
+Joint 8 right_shoulder num_misses: 0	num_switches: 2	num_false_positives: 0	num_objects: 99	num_detections: 99
+Joint 9 left_shoulder num_misses: 0	num_switches: 2	num_false_positives: 0	num_objects: 100	num_detections: 100
+Joint 10 left_elbow num_misses: 0	num_switches: 2	num_false_positives: 0	num_objects: 76	num_detections: 76
+Joint 11 left_wrist num_misses: 0	num_switches: 2	num_false_positives: 0	num_objects: 94	num_detections: 94
+Joint 12 neck num_misses: 0	num_switches: 2	num_false_positives: 0	num_objects: 98	num_detections: 98
+Joint 13 nose num_misses: 0	num_switches: 2	num_false_positives: 0	num_objects: 99	num_detections: 99
+Joint 14 head_top num_misses: 2	num_switches: 2	num_false_positives: 0	num_objects: 98	num_detections: 96
+saving results to ./out/008760_mpii_relpath_5sec_testsub_MOT_metrics.json
+seqidx: 33/50
+022688_mpii_relpath_5sec_testsub
+Joint 0 right_ankle num_misses: 1	num_switches: 3	num_false_positives: 0	num_objects: 65	num_detections: 64
+Joint 1 right_knee num_misses: 0	num_switches: 14	num_false_positives: 0	num_objects: 119	num_detections: 119
+Joint 2 right_hip num_misses: 2	num_switches: 19	num_false_positives: 0	num_objects: 159	num_detections: 157
+Joint 3 left_hip num_misses: 2	num_switches: 19	num_false_positives: 0	num_objects: 164	num_detections: 162
+Joint 4 left_knee num_misses: 0	num_switches: 12	num_false_positives: 0	num_objects: 118	num_detections: 118
+Joint 5 left_ankle num_misses: 0	num_switches: 7	num_false_positives: 0	num_objects: 68	num_detections: 68
+Joint 6 right_wrist num_misses: 0	num_switches: 9	num_false_positives: 0	num_objects: 99	num_detections: 99
+Joint 7 right_elbow num_misses: 1	num_switches: 8	num_false_positives: 0	num_objects: 115	num_detections: 114
+Joint 8 right_shoulder num_misses: 2	num_switches: 20	num_false_positives: 0	num_objects: 157	num_detections: 155
+Joint 9 left_shoulder num_misses: 2	num_switches: 19	num_false_positives: 0	num_objects: 159	num_detections: 157
+Joint 10 left_elbow num_misses: 2	num_switches: 19	num_false_positives: 0	num_objects: 152	num_detections: 150
+Joint 11 left_wrist num_misses: 2	num_switches: 18	num_false_positives: 0	num_objects: 131	num_detections: 129
+Joint 12 neck num_misses: 2	num_switches: 18	num_false_positives: 0	num_objects: 152	num_detections: 150
+Joint 13 nose num_misses: 3	num_switches: 19	num_false_positives: 0	num_objects: 158	num_detections: 155
+Joint 14 head_top num_misses: 2	num_switches: 18	num_false_positives: 0	num_objects: 152	num_detections: 150
+saving results to ./out/022688_mpii_relpath_5sec_testsub_MOT_metrics.json
+seqidx: 34/50
+01001_mpii_step2_relpath_5sec_testsub
+Joint 0 right_ankle num_misses: 2	num_switches: 1	num_false_positives: 0	num_objects: 221	num_detections: 219
+Joint 1 right_knee num_misses: 2	num_switches: 0	num_false_positives: 0	num_objects: 226	num_detections: 224
+Joint 2 right_hip num_misses: 2	num_switches: 0	num_false_positives: 0	num_objects: 218	num_detections: 216
+Joint 3 left_hip num_misses: 2	num_switches: 0	num_false_positives: 0	num_objects: 212	num_detections: 210
+Joint 4 left_knee num_misses: 2	num_switches: 0	num_false_positives: 0	num_objects: 217	num_detections: 215
+Joint 5 left_ankle num_misses: 2	num_switches: 0	num_false_positives: 0	num_objects: 214	num_detections: 212
+Joint 6 right_wrist num_misses: 3	num_switches: 0	num_false_positives: 0	num_objects: 221	num_detections: 218
+Joint 7 right_elbow num_misses: 3	num_switches: 0	num_false_positives: 0	num_objects: 216	num_detections: 213
+Joint 8 right_shoulder num_misses: 2	num_switches: 0	num_false_positives: 0	num_objects: 216	num_detections: 214
+Joint 9 left_shoulder num_misses: 2	num_switches: 0	num_false_positives: 0	num_objects: 215	num_detections: 213
+Joint 10 left_elbow num_misses: 2	num_switches: 0	num_false_positives: 0	num_objects: 204	num_detections: 202
+Joint 11 left_wrist num_misses: 2	num_switches: 0	num_false_positives: 0	num_objects: 215	num_detections: 213
+Joint 12 neck num_misses: 2	num_switches: 0	num_false_positives: 0	num_objects: 215	num_detections: 213
+Joint 13 nose num_misses: 2	num_switches: 0	num_false_positives: 0	num_objects: 218	num_detections: 216
+Joint 14 head_top num_misses: 2	num_switches: 0	num_false_positives: 0	num_objects: 215	num_detections: 213
+saving results to ./out/01001_mpii_step2_relpath_5sec_testsub_MOT_metrics.json
+seqidx: 35/50
+015302_mpii_relpath_5sec_testsub
+Joint 0 right_ankle num_misses: 10	num_switches: 42	num_false_positives: 0	num_objects: 452	num_detections: 442
+Joint 1 right_knee num_misses: 13	num_switches: 46	num_false_positives: 0	num_objects: 509	num_detections: 496
+Joint 2 right_hip num_misses: 8	num_switches: 46	num_false_positives: 0	num_objects: 511	num_detections: 503
+Joint 3 left_hip num_misses: 8	num_switches: 46	num_false_positives: 0	num_objects: 509	num_detections: 501
+Joint 4 left_knee num_misses: 10	num_switches: 44	num_false_positives: 0	num_objects: 491	num_detections: 481
+Joint 5 left_ankle num_misses: 12	num_switches: 42	num_false_positives: 0	num_objects: 456	num_detections: 444
+Joint 6 right_wrist num_misses: 4	num_switches: 41	num_false_positives: 0	num_objects: 419	num_detections: 415
+Joint 7 right_elbow num_misses: 0	num_switches: 40	num_false_positives: 0	num_objects: 417	num_detections: 417
+Joint 8 right_shoulder num_misses: 6	num_switches: 40	num_false_positives: 0	num_objects: 430	num_detections: 424
+Joint 9 left_shoulder num_misses: 11	num_switches: 40	num_false_positives: 0	num_objects: 433	num_detections: 422
+Joint 10 left_elbow num_misses: 2	num_switches: 43	num_false_positives: 0	num_objects: 373	num_detections: 371
+Joint 11 left_wrist num_misses: 2	num_switches: 40	num_false_positives: 0	num_objects: 364	num_detections: 362
+Joint 12 neck num_misses: 4	num_switches: 39	num_false_positives: 0	num_objects: 420	num_detections: 416
+Joint 13 nose num_misses: 0	num_switches: 34	num_false_positives: 0	num_objects: 367	num_detections: 367
+Joint 14 head_top num_misses: 48	num_switches: 33	num_false_positives: 0	num_objects: 420	num_detections: 372
+saving results to ./out/015302_mpii_relpath_5sec_testsub_MOT_metrics.json
+seqidx: 36/50
+24621_mpii_relpath_5sec_testsub
+Joint 0 right_ankle num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 0	num_detections: 0
+Joint 1 right_knee num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 246	num_detections: 246
+Joint 2 right_hip num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 224	num_detections: 224
+Joint 3 left_hip num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 248	num_detections: 248
+Joint 4 left_knee num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 249	num_detections: 249
+Joint 5 left_ankle num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 0	num_detections: 0
+Joint 6 right_wrist num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 78	num_detections: 78
+Joint 7 right_elbow num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 55	num_detections: 55
+Joint 8 right_shoulder num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 216	num_detections: 216
+Joint 9 left_shoulder num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 249	num_detections: 249
+Joint 10 left_elbow num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 250	num_detections: 250
+Joint 11 left_wrist num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 249	num_detections: 249
+Joint 12 neck num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 216	num_detections: 216
+Joint 13 nose num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 239	num_detections: 239
+Joint 14 head_top num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 216	num_detections: 216
+saving results to ./out/24621_mpii_relpath_5sec_testsub_MOT_metrics.json
+seqidx: 37/50
+001744_mpii_relpath_5sec_testsub
+Joint 0 right_ankle num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 58	num_detections: 58
+Joint 1 right_knee num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 58	num_detections: 58
+Joint 2 right_hip num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 116	num_detections: 116
+Joint 3 left_hip num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 116	num_detections: 116
+Joint 4 left_knee num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 58	num_detections: 58
+Joint 5 left_ankle num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 58	num_detections: 58
+Joint 6 right_wrist num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 116	num_detections: 116
+Joint 7 right_elbow num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 116	num_detections: 116
+Joint 8 right_shoulder num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 116	num_detections: 116
+Joint 9 left_shoulder num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 116	num_detections: 116
+Joint 10 left_elbow num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 114	num_detections: 114
+Joint 11 left_wrist num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 116	num_detections: 116
+Joint 12 neck num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 116	num_detections: 116
+Joint 13 nose num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 116	num_detections: 116
+Joint 14 head_top num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 116	num_detections: 116
+saving results to ./out/001744_mpii_relpath_5sec_testsub_MOT_metrics.json
+seqidx: 38/50
+007684_mpii_relpath_5sec_testsub
+Joint 0 right_ankle num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 274	num_detections: 274
+Joint 1 right_knee num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 311	num_detections: 311
+Joint 2 right_hip num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 675	num_detections: 675
+Joint 3 left_hip num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 702	num_detections: 702
+Joint 4 left_knee num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 649	num_detections: 649
+Joint 5 left_ankle num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 507	num_detections: 507
+Joint 6 right_wrist num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 429	num_detections: 429
+Joint 7 right_elbow num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 417	num_detections: 417
+Joint 8 right_shoulder num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 688	num_detections: 688
+Joint 9 left_shoulder num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 707	num_detections: 707
+Joint 10 left_elbow num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 675	num_detections: 675
+Joint 11 left_wrist num_misses: 5	num_switches: 0	num_false_positives: 0	num_objects: 635	num_detections: 630
+Joint 12 neck num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 688	num_detections: 688
+Joint 13 nose num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 702	num_detections: 702
+Joint 14 head_top num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 688	num_detections: 688
+saving results to ./out/007684_mpii_relpath_5sec_testsub_MOT_metrics.json
+seqidx: 39/50
+000342_mpii_relpath_5sec_testsub
+Joint 0 right_ankle num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 94	num_detections: 94
+Joint 1 right_knee num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 94	num_detections: 94
+Joint 2 right_hip num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 94	num_detections: 94
+Joint 3 left_hip num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 94	num_detections: 94
+Joint 4 left_knee num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 94	num_detections: 94
+Joint 5 left_ankle num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 94	num_detections: 94
+Joint 6 right_wrist num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 94	num_detections: 94
+Joint 7 right_elbow num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 94	num_detections: 94
+Joint 8 right_shoulder num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 94	num_detections: 94
+Joint 9 left_shoulder num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 94	num_detections: 94
+Joint 10 left_elbow num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 94	num_detections: 94
+Joint 11 left_wrist num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 94	num_detections: 94
+Joint 12 neck num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 94	num_detections: 94
+Joint 13 nose num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 94	num_detections: 94
+Joint 14 head_top num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 94	num_detections: 94
+saving results to ./out/000342_mpii_relpath_5sec_testsub_MOT_metrics.json
+seqidx: 40/50
+23754_mpii_step2_relpath_5sec_testsub
+Joint 0 right_ankle num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 266	num_detections: 266
+Joint 1 right_knee num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 349	num_detections: 349
+Joint 2 right_hip num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 353	num_detections: 353
+Joint 3 left_hip num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 351	num_detections: 351
+Joint 4 left_knee num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 350	num_detections: 350
+Joint 5 left_ankle num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 246	num_detections: 246
+Joint 6 right_wrist num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 293	num_detections: 293
+Joint 7 right_elbow num_misses: 3	num_switches: 0	num_false_positives: 0	num_objects: 273	num_detections: 270
+Joint 8 right_shoulder num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 380	num_detections: 380
+Joint 9 left_shoulder num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 358	num_detections: 358
+Joint 10 left_elbow num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 321	num_detections: 321
+Joint 11 left_wrist num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 313	num_detections: 313
+Joint 12 neck num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 357	num_detections: 357
+Joint 13 nose num_misses: 11	num_switches: 0	num_false_positives: 0	num_objects: 406	num_detections: 395
+Joint 14 head_top num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 357	num_detections: 357
+saving results to ./out/23754_mpii_step2_relpath_5sec_testsub_MOT_metrics.json
+seqidx: 41/50
+13293_mpii_step2_relpath_5sec_testsub
+Joint 0 right_ankle num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 357	num_detections: 357
+Joint 1 right_knee num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 357	num_detections: 357
+Joint 2 right_hip num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 306	num_detections: 306
+Joint 3 left_hip num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 357	num_detections: 357
+Joint 4 left_knee num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 357	num_detections: 357
+Joint 5 left_ankle num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 357	num_detections: 357
+Joint 6 right_wrist num_misses: 19	num_switches: 0	num_false_positives: 0	num_objects: 352	num_detections: 333
+Joint 7 right_elbow num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 306	num_detections: 306
+Joint 8 right_shoulder num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 306	num_detections: 306
+Joint 9 left_shoulder num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 305	num_detections: 305
+Joint 10 left_elbow num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 279	num_detections: 279
+Joint 11 left_wrist num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 356	num_detections: 356
+Joint 12 neck num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 255	num_detections: 255
+Joint 13 nose num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 357	num_detections: 357
+Joint 14 head_top num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 255	num_detections: 255
+saving results to ./out/13293_mpii_step2_relpath_5sec_testsub_MOT_metrics.json
+seqidx: 42/50
+14960_mpii_step2_relpath_5sec_testsub
+Joint 0 right_ankle num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 197	num_detections: 197
+Joint 1 right_knee num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 194	num_detections: 194
+Joint 2 right_hip num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 203	num_detections: 203
+Joint 3 left_hip num_misses: 1	num_switches: 0	num_false_positives: 0	num_objects: 209	num_detections: 208
+Joint 4 left_knee num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 201	num_detections: 201
+Joint 5 left_ankle num_misses: 4	num_switches: 0	num_false_positives: 0	num_objects: 218	num_detections: 214
+Joint 6 right_wrist num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 184	num_detections: 184
+Joint 7 right_elbow num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 192	num_detections: 192
+Joint 8 right_shoulder num_misses: 0	num_switches: 1	num_false_positives: 0	num_objects: 205	num_detections: 205
+Joint 9 left_shoulder num_misses: 0	num_switches: 1	num_false_positives: 0	num_objects: 220	num_detections: 220
+Joint 10 left_elbow num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 197	num_detections: 197
+Joint 11 left_wrist num_misses: 0	num_switches: 1	num_false_positives: 0	num_objects: 194	num_detections: 194
+Joint 12 neck num_misses: 0	num_switches: 1	num_false_positives: 0	num_objects: 204	num_detections: 204
+Joint 13 nose num_misses: 1	num_switches: 1	num_false_positives: 0	num_objects: 226	num_detections: 225
+Joint 14 head_top num_misses: 0	num_switches: 1	num_false_positives: 0	num_objects: 204	num_detections: 204
+saving results to ./out/14960_mpii_step2_relpath_5sec_testsub_MOT_metrics.json
+seqidx: 43/50
+14102_mpii_relpath_5sec_testsub
+Joint 0 right_ankle num_misses: 0	num_switches: 2	num_false_positives: 0	num_objects: 73	num_detections: 73
+Joint 1 right_knee num_misses: 0	num_switches: 2	num_false_positives: 0	num_objects: 67	num_detections: 67
+Joint 2 right_hip num_misses: 0	num_switches: 2	num_false_positives: 0	num_objects: 51	num_detections: 51
+Joint 3 left_hip num_misses: 2	num_switches: 1	num_false_positives: 0	num_objects: 53	num_detections: 51
+Joint 4 left_knee num_misses: 0	num_switches: 1	num_false_positives: 0	num_objects: 62	num_detections: 62
+Joint 5 left_ankle num_misses: 0	num_switches: 1	num_false_positives: 0	num_objects: 55	num_detections: 55
+Joint 6 right_wrist num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 91	num_detections: 91
+Joint 7 right_elbow num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 66	num_detections: 66
+Joint 8 right_shoulder num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 64	num_detections: 64
+Joint 9 left_shoulder num_misses: 0	num_switches: 1	num_false_positives: 0	num_objects: 37	num_detections: 37
+Joint 10 left_elbow num_misses: 0	num_switches: 1	num_false_positives: 0	num_objects: 58	num_detections: 58
+Joint 11 left_wrist num_misses: 0	num_switches: 1	num_false_positives: 0	num_objects: 69	num_detections: 69
+Joint 12 neck num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 31	num_detections: 31
+Joint 13 nose num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 70	num_detections: 70
+Joint 14 head_top num_misses: 0	num_switches: 0	num_false_positives: 0	num_objects: 31	num_detections: 31
+saving results to ./out/14102_mpii_relpath_5sec_testsub_MOT_metrics.json
+seqidx: 44/50
+13534_mpii_relpath_5sec_testsub
+Joint 0 right_ankle num_misses: 0	num_switches: 2	num_false_positives: 0	num_objects: 13	num_detections: 13
+Joint 1 right_knee num_misses: 0	num_switches: 2	num_false_positives: 0	num_objects: 42	num_detections: 42
+Joint 2 right_hip num_misses: 0	num_switches: 4	num_false_positives: 0	num_objects: 92	num_detections: 92
+Joint 3 left_hip num_misses: 1	num_switches: 4	num_false_positives: 0	num_objects: 93	num_detections: 92
+Joint 4 left_knee num_misses: 2	num_switches: 4	num_false_positives: 0	num_objects: 80	num_detections: 78
+Joint 5 left_ankle num_misses: 1	num_switches: 4	num_false_positives: 0	num_objects: 77	num_detections: 76
+Joint 6 right_wrist num_misses: 0	num_switches: 4	num_false_positives: 0	num_objects: 96	num_detections: 96
+Joint 7 right_elbow num_misses: 3	num_switches: 4	num_false_positives: 0	num_objects: 104	num_detections: 101
+Joint 8 right_shoulder num_misses: 1	num_switches: 4	num_false_positives: 0	num_objects: 116	num_detections: 115
+Joint 9 left_shoulder num_misses: 1	num_switches: 4	num_false_positives: 0	num_objects: 97	num_detections: 96
+Joint 10 left_elbow num_misses: 1	num_switches: 4	num_false_positives: 0	num_objects: 81	num_detections: 80
+Joint 11 left_wrist num_misses: 1	num_switches: 4	num_false_positives: 0	num_objects: 66	num_detections: 65
+Joint 12 neck num_misses: 1	num_switches: 4	num_false_positives: 0	num_objects: 94	num_detections: 93
+Joint 13 nose num_misses: 1	num_switches: 5	num_false_positives: 0	num_objects: 118	num_detections: 117
+Joint 14 head_top num_misses: 10	num_switches: 4	num_false_positives: 0	num_objects: 94	num_detections: 84
+saving results to ./out/13534_mpii_relpath_5sec_testsub_MOT_metrics.json
+seqidx: 45/50
+12834_mpii_relpath_5sec_testsub
+Joint 0 right_ankle num_misses: 0	num_switches: 2	num_false_positives: 0	num_objects: 486	num_detections: 486
+Joint 1 right_knee num_misses: 1	num_switches: 2	num_false_positives: 0	num_objects: 489	num_detections: 488
+Joint 2 right_hip num_misses: 0	num_switches: 2	num_false_positives: 1	num_objects: 625	num_detections: 625
+Joint 3 left_hip num_misses: 0	num_switches: 2	num_false_positives: 0	num_objects: 620	num_detections: 620
+Joint 4 left_knee num_misses: 0	num_switches: 2	num_false_positives: 1	num_objects: 509	num_detections: 509
+Joint 5 left_ankle num_misses: 1	num_switches: 2	num_false_positives: 0	num_objects: 479	num_detections: 478
+Joint 6 right_wrist num_misses: 0	num_switches: 1	num_false_positives: 2	num_objects: 474	num_detections: 474
+Joint 7 right_elbow num_misses: 0	num_switches: 2	num_false_positives: 1	num_objects: 571	num_detections: 571
+Joint 8 right_shoulder num_misses: 0	num_switches: 2	num_false_positives: 0	num_objects: 635	num_detections: 635
+Joint 9 left_shoulder num_misses: 0	num_switches: 2	num_false_positives: 0	num_objects: 625	num_detections: 625
+Joint 10 left_elbow num_misses: 1	num_switches: 1	num_false_positives: 0	num_objects: 575	num_detections: 574
+Joint 11 left_wrist num_misses: 4	num_switches: 1	num_false_positives: 2	num_objects: 558	num_detections: 554
+Joint 12 neck num_misses: 0	num_switches: 2	num_false_positives: 0	num_objects: 621	num_detections: 621
+Joint 13 nose num_misses: 10	num_switches: 2	num_false_positives: 0	num_objects: 593	num_detections: 583
+Joint 14 head_top num_misses: 34	num_switches: 2	num_false_positives: 0	num_objects: 621	num_detections: 587
+saving results to ./out/12834_mpii_relpath_5sec_testsub_MOT_metrics.json
+seqidx: 46/50
+08827_mpii_relpath_5sec_testsub
+Joint 0 right_ankle num_misses: 1	num_switches: 5	num_false_positives: 0	num_objects: 176	num_detections: 175
+Joint 1 right_knee num_misses: 2	num_switches: 64	num_false_positives: 0	num_objects: 344	num_detections: 342
+Joint 2 right_hip num_misses: 2	num_switches: 85	num_false_positives: 0	num_objects: 384	num_detections: 382
+Joint 3 left_hip num_misses: 3	num_switches: 81	num_false_positives: 0	num_objects: 379	num_detections: 376
+Joint 4 left_knee num_misses: 2	num_switches: 74	num_false_positives: 0	num_objects: 374	num_detections: 372
+Joint 5 left_ankle num_misses: 0	num_switches: 13	num_false_positives: 0	num_objects: 212	num_detections: 212
+Joint 6 right_wrist num_misses: 1	num_switches: 43	num_false_positives: 0	num_objects: 236	num_detections: 235
+Joint 7 right_elbow num_misses: 1	num_switches: 51	num_false_positives: 0	num_objects: 272	num_detections: 271
+Joint 8 right_shoulder num_misses: 1	num_switches: 78	num_false_positives: 0	num_objects: 363	num_detections: 362
+Joint 9 left_shoulder num_misses: 5	num_switches: 72	num_false_positives: 0	num_objects: 361	num_detections: 356
+Joint 10 left_elbow num_misses: 1	num_switches: 55	num_false_positives: 0	num_objects: 275	num_detections: 274
+Joint 11 left_wrist num_misses: 1	num_switches: 53	num_false_positives: 0	num_objects: 290	num_detections: 289
+Joint 12 neck num_misses: 2	num_switches: 66	num_false_positives: 0	num_objects: 319	num_detections: 317
+Joint 13 nose num_misses: 3	num_switches: 75	num_false_positives: 0	num_objects: 356	num_detections: 353
+Joint 14 head_top num_misses: 27	num_switches: 65	num_false_positives: 0	num_objects: 319	num_detections: 292
+saving results to ./out/08827_mpii_relpath_5sec_testsub_MOT_metrics.json
+seqidx: 47/50
+02276_mpii_relpath_5sec_testsub
+Joint 0 right_ankle num_misses: 8	num_switches: 68	num_false_positives: 0	num_objects: 623	num_detections: 615
+Joint 1 right_knee num_misses: 10	num_switches: 73	num_false_positives: 0	num_objects: 647	num_detections: 637
+Joint 2 right_hip num_misses: 12	num_switches: 78	num_false_positives: 0	num_objects: 650	num_detections: 638
+Joint 3 left_hip num_misses: 15	num_switches: 72	num_false_positives: 1	num_objects: 634	num_detections: 619
+Joint 4 left_knee num_misses: 12	num_switches: 72	num_false_positives: 0	num_objects: 648	num_detections: 636
+Joint 5 left_ankle num_misses: 16	num_switches: 75	num_false_positives: 0	num_objects: 647	num_detections: 631
+Joint 6 right_wrist num_misses: 7	num_switches: 61	num_false_positives: 0	num_objects: 545	num_detections: 538
+Joint 7 right_elbow num_misses: 8	num_switches: 60	num_false_positives: 0	num_objects: 541	num_detections: 533
+Joint 8 right_shoulder num_misses: 15	num_switches: 81	num_false_positives: 1	num_objects: 662	num_detections: 647
+Joint 9 left_shoulder num_misses: 20	num_switches: 76	num_false_positives: 0	num_objects: 640	num_detections: 620
+Joint 10 left_elbow num_misses: 6	num_switches: 47	num_false_positives: 0	num_objects: 432	num_detections: 426
+Joint 11 left_wrist num_misses: 6	num_switches: 49	num_false_positives: 0	num_objects: 441	num_detections: 435
+Joint 12 neck num_misses: 10	num_switches: 77	num_false_positives: 0	num_objects: 614	num_detections: 604
+Joint 13 nose num_misses: 25	num_switches: 87	num_false_positives: 0	num_objects: 693	num_detections: 668
+Joint 14 head_top num_misses: 11	num_switches: 76	num_false_positives: 1	num_objects: 614	num_detections: 603
+saving results to ./out/02276_mpii_relpath_5sec_testsub_MOT_metrics.json
+seqidx: 48/50
+23717_mpii_relpath_5sec_testsub
+Joint 0 right_ankle num_misses: 4	num_switches: 4	num_false_positives: 0	num_objects: 199	num_detections: 195
+Joint 1 right_knee num_misses: 5	num_switches: 5	num_false_positives: 0	num_objects: 197	num_detections: 192
+Joint 2 right_hip num_misses: 6	num_switches: 5	num_false_positives: 0	num_objects: 225	num_detections: 219
+Joint 3 left_hip num_misses: 4	num_switches: 5	num_false_positives: 0	num_objects: 241	num_detections: 237
+Joint 4 left_knee num_misses: 3	num_switches: 6	num_false_positives: 0	num_objects: 208	num_detections: 205
+Joint 5 left_ankle num_misses: 5	num_switches: 6	num_false_positives: 0	num_objects: 188	num_detections: 183
+Joint 6 right_wrist num_misses: 5	num_switches: 4	num_false_positives: 0	num_objects: 222	num_detections: 217
+Joint 7 right_elbow num_misses: 4	num_switches: 4	num_false_positives: 0	num_objects: 234	num_detections: 230
+Joint 8 right_shoulder num_misses: 6	num_switches: 12	num_false_positives: 0	num_objects: 309	num_detections: 303
+Joint 9 left_shoulder num_misses: 3	num_switches: 11	num_false_positives: 0	num_objects: 291	num_detections: 288
+Joint 10 left_elbow num_misses: 3	num_switches: 5	num_false_positives: 0	num_objects: 228	num_detections: 225
+Joint 11 left_wrist num_misses: 5	num_switches: 4	num_false_positives: 0	num_objects: 228	num_detections: 223
+Joint 12 neck num_misses: 4	num_switches: 10	num_false_positives: 1	num_objects: 274	num_detections: 270
+Joint 13 nose num_misses: 13	num_switches: 14	num_false_positives: 0	num_objects: 325	num_detections: 312
+Joint 14 head_top num_misses: 3	num_switches: 11	num_false_positives: 0	num_objects: 274	num_detections: 271
+saving results to ./out/23717_mpii_relpath_5sec_testsub_MOT_metrics.json
+seqidx: 49/50
+24158_mpii_step2_relpath_5sec_testsub
+Joint 0 right_ankle num_misses: 16	num_switches: 58	num_false_positives: 0	num_objects: 359	num_detections: 343
+Joint 1 right_knee num_misses: 18	num_switches: 56	num_false_positives: 0	num_objects: 370	num_detections: 352
+Joint 2 right_hip num_misses: 19	num_switches: 62	num_false_positives: 0	num_objects: 394	num_detections: 375
+Joint 3 left_hip num_misses: 18	num_switches: 67	num_false_positives: 0	num_objects: 442	num_detections: 424
+Joint 4 left_knee num_misses: 17	num_switches: 64	num_false_positives: 0	num_objects: 429	num_detections: 412
+Joint 5 left_ankle num_misses: 16	num_switches: 59	num_false_positives: 1	num_objects: 363	num_detections: 347
+Joint 6 right_wrist num_misses: 20	num_switches: 59	num_false_positives: 0	num_objects: 368	num_detections: 348
+Joint 7 right_elbow num_misses: 20	num_switches: 67	num_false_positives: 0	num_objects: 384	num_detections: 364
+Joint 8 right_shoulder num_misses: 30	num_switches: 76	num_false_positives: 0	num_objects: 548	num_detections: 518
+Joint 9 left_shoulder num_misses: 20	num_switches: 71	num_false_positives: 0	num_objects: 492	num_detections: 472
+Joint 10 left_elbow num_misses: 15	num_switches: 60	num_false_positives: 0	num_objects: 398	num_detections: 383
+Joint 11 left_wrist num_misses: 10	num_switches: 55	num_false_positives: 0	num_objects: 295	num_detections: 285
+Joint 12 neck num_misses: 20	num_switches: 68	num_false_positives: 0	num_objects: 480	num_detections: 460
+Joint 13 nose num_misses: 19	num_switches: 83	num_false_positives: 0	num_objects: 572	num_detections: 553
+Joint 14 head_top num_misses: 22	num_switches: 67	num_false_positives: 0	num_objects: 480	num_detections: 458
+saving results to ./out/24158_mpii_step2_relpath_5sec_testsub_MOT_metrics.json
+seqidx: 50/50
+07496_mpii_relpath_5sec_testsub
+Joint 0 right_ankle num_misses: 3	num_switches: 7	num_false_positives: 0	num_objects: 92	num_detections: 89
+Joint 1 right_knee num_misses: 3	num_switches: 5	num_false_positives: 0	num_objects: 98	num_detections: 95
+Joint 2 right_hip num_misses: 2	num_switches: 6	num_false_positives: 0	num_objects: 147	num_detections: 145
+Joint 3 left_hip num_misses: 3	num_switches: 8	num_false_positives: 0	num_objects: 149	num_detections: 146
+Joint 4 left_knee num_misses: 3	num_switches: 4	num_false_positives: 0	num_objects: 117	num_detections: 114
+Joint 5 left_ankle num_misses: 5	num_switches: 9	num_false_positives: 0	num_objects: 108	num_detections: 103
+Joint 6 right_wrist num_misses: 2	num_switches: 1	num_false_positives: 0	num_objects: 66	num_detections: 64
+Joint 7 right_elbow num_misses: 4	num_switches: 5	num_false_positives: 0	num_objects: 105	num_detections: 101
+Joint 8 right_shoulder num_misses: 5	num_switches: 3	num_false_positives: 0	num_objects: 142	num_detections: 137
+Joint 9 left_shoulder num_misses: 6	num_switches: 6	num_false_positives: 1	num_objects: 181	num_detections: 175
+Joint 10 left_elbow num_misses: 5	num_switches: 9	num_false_positives: 1	num_objects: 151	num_detections: 146
+Joint 11 left_wrist num_misses: 0	num_switches: 3	num_false_positives: 0	num_objects: 49	num_detections: 49
+Joint 12 neck num_misses: 11	num_switches: 0	num_false_positives: 0	num_objects: 134	num_detections: 123
+Joint 13 nose num_misses: 4	num_switches: 3	num_false_positives: 0	num_objects: 58	num_detections: 54
+Joint 14 head_top num_misses: 69	num_switches: 0	num_false_positives: 0	num_objects: 134	num_detections: 65
+saving results to ./out/07496_mpii_relpath_5sec_testsub_MOT_metrics.json
+saving results to ./out/total_MOT_metrics.json
+Multiple Object Tracking (MOT) metrics:
+& MOTA & MOTA & MOTA & MOTA & MOTA & MOTA & MOTA & MOTA & MOTP & Prec & Rec  \\
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total& Total& Total& Total\\
+& 91.0 & 91.9 & 92.5 & 92.6 & 92.3 & 92.2 & 92.1 & 92.0 & 96.8 & 99.9 & 98.3 \\
+
+Process finished with exit code 0

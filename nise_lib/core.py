@@ -234,19 +234,107 @@ def nise_flow_debug(gt_anno_dir, joint_estimator, flow_model):
     # https://stackoverflow.com/questions/24941359/ctx-parameter-in-multiprocessing-queue
     # If you were to import multiprocessing.queues.Queue directly and try to instantiate it, you'll get the error you're seeing. But it should work fine if you import it from multiprocessing directly.
     
+    if nise_cfg.TEST.TASK == -1 or nise_cfg.TEST.TASK == 1:
+        fun = run_one_video_flow_debug
+    elif nise_cfg.TEST.TASK == -2:
+        fun = run_one_video_tracking_debug
     num_process = len(os.environ.get('CUDA_VISIBLE_DEVICES', default = '').split(',')) * 3
-    if num_process == 0:
-        # use all devices
+    if num_process == 0:  # use all devices
         num_process = 12
     global locks
     locks = [Lock() for _ in range(gm.gpu_num)]
-    if nise_cfg.TEST.TASK == -1:
-        fun = run_one_video_flow_debug
-    elif nise_cfg.TEST.TASK == 1:
-        fun = run_one_video_flow_debug
-    with Pool(num_process - 1, initializer = init_gm, initargs = (locks, nise_cfg)) as po:
+    with Pool(1, initializer = init_gm, initargs = (locks, nise_cfg)) as po:
         debug_print('Pool created.')
         po.starmap(fun, all_video, chunksize = 4)
+
+
+def run_one_video_tracking_debug(_nise_cfg, _simple_cfg, i: int, file_name: str, joint_estimator, flow_model):
+    '''
+    Use precomputed unified boxes and joints to do matching.
+    Atom function. A video be run sequentially.
+    :param i:
+    :param file_name:
+    :param joint_estimator:
+    :param flow_model:
+    :return:
+    '''
+    torch.cuda.empty_cache()
+    if is_skip_video(_nise_cfg, i, file_name):
+        debug_print('Skip', i, file_name)
+        return
+    debug_print(i, file_name)
+    
+    p = PurePosixPath(file_name)
+    json_path = os.path.join(_nise_cfg.PATH.JSON_SAVE_DIR, p.parts[-1])
+    with open(file_name, 'r') as f:
+        gt = json.load(f)['annolist']
+    pred_frames = []
+    # load pre computed boxes
+    uni_path = os.path.join('unifed_boxes-commi-onlydet', 'valid_task_1_DETbox_allBox_tfIoU_nmsThres_0.25_0.50',
+                            p.stem + '.pkl')
+    uni_boxes = torch.load(uni_path)
+    # mAP 71.6
+    pre_com_json_path = os.path.join('pred_json-commi-onlydet', 'valid_task_1_DETbox_allBox_tfIoU_nmsThres_0.25_0.50',
+                                     p.stem + '.json')
+    with open(pre_com_json_path, 'r') as f:
+        pred = json.load(f)['annolist']
+    Q = deque(maxlen = _nise_cfg.ALG._DEQUE_CAPACITY)
+    vis_threads = []
+    for j, frame in enumerate(gt):
+        # frame dict_keys(['image', 'annorect', 'imgnum', 'is_labeled', 'ignore_regions'])
+        img_file_path = frame['image'][0]['name']
+        img_file_path = os.path.join(_nise_cfg.PATH.POSETRACK_ROOT, img_file_path)
+        debug_print(j, img_file_path, indent = 1)
+        gt_annorects = frame['annorect']
+        if gt_annorects is not None and len(gt_annorects) != 0:
+            # if only use gt bbox, then for those frames which dont have annotations, we dont estimate
+            gt_joints = get_joints_from_annorects(gt_annorects)
+        else:
+            gt_joints = torch.tensor([])
+        
+        if len(Q) == 0 or _nise_cfg.TEST.TASK == 1:  # first frame doesnt have flow, joint prop
+            fi = FrameItem(_nise_cfg, _simple_cfg, img_file_path, is_first = True, task = 3, gt_joints = gt_joints)
+        else:
+            fi = FrameItem(_nise_cfg, _simple_cfg, img_file_path, task = 3, gt_joints = gt_joints)
+        
+        if _nise_cfg.TEST.USE_GT_PEOPLE_BOX and gt_joints.numel() == 0:
+            # we want to use gt box to debug, so ignore those which dont have annotations
+            pass
+        else:
+            pred_annorects = pred[j]['annorect']
+            if pred_annorects is not None or len(pred_annorects) != 0:
+                # if only use gt bbox, then for those frames which dont have annotations, we dont estimate
+                pred_joints = get_joints_from_annorects(pred_annorects)
+                pred_joints_scores = get_joint_scores(pred_annorects)
+            else:
+                pred_joints = torch.tensor([])
+                pred_joints_scores = torch.tensor([])
+            
+            uni_box = uni_boxes[j][img_file_path]
+            
+            fi.detect_human(None, uni_box)
+            fi.joints_proped = True
+            fi.unify_bbox()
+            if _nise_cfg.TEST.USE_GT_PEOPLE_BOX:
+                fi.joints = gt_joints
+                fi.joints_score = gt_joints[:, :, 2]
+            else:
+                fi.joints = pred_joints
+                fi.joints_score = pred_joints_scores
+            fi.joints_detected = True
+            fi.assign_id(Q)
+            if nise_cfg.DEBUG.VISUALIZE:
+                t = threading.Thread(target = fi.visualize, args = ())
+                vis_threads.append(t)
+                t.start()
+            Q.append(fi)
+        pred_frames.append(fi.to_dict())
+    
+    with open(json_path, 'w') as f:
+        json.dump({'annolist': pred_frames}, f)
+        debug_print('json saved:', json_path)
+    for t in vis_threads:
+        t.join()
 
 
 @log_time('一个视频跑了')

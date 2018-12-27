@@ -98,17 +98,28 @@ def set_path_from_nise_cfg(nise_cfg):
     else:
         unify_part = ['noNMS']
     
+    track_part = []
+    if nise_cfg.ALG.MATCHING_METRIC == nise_cfg.ALG.MATCHING_BOX:
+        track_part.append('IoUMetric')
+    if nise_cfg.ALG.MATCHING_ALG == nise_cfg.ALG.MATCHING_MKRS:
+        track_part.append('mkrs')
+    elif nise_cfg.ALG.MATCHING_ALG == nise_cfg.ALG.MATCHING_GREEDY:
+        track_part.append('greedy')
+    
     detect_part = '_'.join(detect_part)
     prop_part = '_'.join(prop_part) if nise_cfg.TEST.TASK == 2 or nise_cfg.TEST.TASK == -1 else ''
     unify_part = '_'.join(unify_part)
-    
+    track_part = '_'.join(track_part)
     suffix_list = [
         nise_cfg.TEST.MODE,
         'task',
         str(nise_cfg.TEST.TASK), ]
+    # if nise_cfg.TEST.TASK != -2:
     if detect_part: suffix_list.append(detect_part)
     if prop_part: suffix_list.append(prop_part)
     if unify_part: suffix_list.append(unify_part)
+    if track_part: suffix_list.append(track_part)
+    
     suffix = '_'.join(suffix_list)
     suffix_range = '_'.join(['RANGE',
                              str(nise_cfg.TEST.FROM),
@@ -199,7 +210,7 @@ class NiseConfig:
             self.VIS_BOX = False
             self.VIS_EST_SINGLE = False
             self.VIS_PROPED_JOINTS = False
-            self.VIS_JOINTS_FULL = True
+            self.VIS_JOINTS_FULL = False
             
             self.SAVE_DETECTION_TENSOR = False
             self.USE_DETECTION_RESULT = True
@@ -227,6 +238,15 @@ class NiseConfig:
             self.ASSGIN_ID_TO_FILTERED_BOX = True  # self.JOINT_PROP_WITH_FILTERED_HUMAN
             self.ASSIGN_BOX_THRES = .5  # from simple baseline
             self.ASSGIN_JOINT_THRES = .4
+            
+            self.MATCHING_MKRS = 0
+            self.MATCHING_GREEDY = 1
+            self.MATCHING_BOX = 0
+            self.MATCHING_POSE = 1
+            self.MATCHING_FLOW = 2
+            
+            self.MATCHING_METRIC = 0
+            self.MATCHING_ALG = 1
             # padding image s.t. w/h to be multiple of 64
             self.FLOW_MULTIPLE = 2 ** 6
             self.FLOW_PADDING_END = 0
@@ -241,10 +261,10 @@ class NiseConfig:
             self.GT_TRAIN_ANNOTATION_DIR = os.path.join(self.POSETRACK_ROOT, 'train_anno_json/')
             self.GT_VAL_ANNOTATION_DIR = os.path.join(self.POSETRACK_ROOT, 'valid_anno_json/')
             
-            self._JOINTS_DIR = 'images_joint/'
-            self._IMAGES_OUT_DIR = 'images_out/'
-            self._JSON_SAVE_DIR = 'pred_json/'
-            self._UNIFIED_JSON_DIR = 'unifed_boxes/'
+            self._JOINTS_DIR = 'images_joint-track/'
+            self._IMAGES_OUT_DIR = 'images_out-track/'
+            self._JSON_SAVE_DIR = 'pred_json-track/'
+            self._UNIFIED_JSON_DIR = 'unifed_boxes-track/'
             
             self.JOINTS_DIR = ''
             self.IMAGES_OUT_DIR = ''

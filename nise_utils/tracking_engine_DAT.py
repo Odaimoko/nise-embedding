@@ -15,7 +15,7 @@ from __future__ import unicode_literals
 
 
 import sys
-import cPickle as pkl
+# import cPickle as pkl
 import json
 import os.path as osp
 import numpy as np
@@ -45,16 +45,16 @@ np.set_printoptions(suppress=True)
 # This is weird.. do something about this..
 MAX_TRACK_IDS = 999  # earlier code used to allow only 100
 FIRST_TRACK_ID = 0
-
-
-def _load_det_file(det_fpath):
-    with open(det_fpath, 'rb') as fin:
-        return pkl.load(fin)
-
-
-def _write_det_file(dets, det_fpath):
-    with open(det_fpath, 'wb') as fout:
-        pkl.dump(dets, fout, pkl.HIGHEST_PROTOCOL)
+#
+#
+# def _load_det_file(det_fpath):
+#     with open(det_fpath, 'rb') as fin:
+#         return pkl.load(fin)
+#
+#
+# def _write_det_file(dets, det_fpath):
+#     with open(det_fpath, 'wb') as fout:
+#         pkl.dump(dets, fout, pkl.HIGHEST_PROTOCOL)
 
 
 def _load_json_file(json_fpath):
@@ -755,41 +755,41 @@ def _center_detections(dets):
         _set_poses(_center_poses(_get_poses(dets, img_id)), dets, img_id)
 
 
-def run_posetrack_tracking(test_output_dir, json_data):
-    if len(cfg.TRACKING.DETECTIONS_FILE):
-        det_file = cfg.TRACKING.DETECTIONS_FILE
-    else:
-        det_file = osp.join(test_output_dir, 'detections.pkl')
-    out_det_file = osp.join(test_output_dir, 'detections_withTracks.pkl')
-    if not osp.exists(det_file):
-        raise ValueError('Output file not found {}'.format(det_file))
-    else:
-        logger.info('Tracking over {}'.format(det_file))
-
-    # Debug configurations
-    if cfg.TRACKING.DEBUG.UPPER_BOUND_2_GT_KPS:  # if this is true
-        cfg.TRACKING.DEBUG.UPPER_BOUND = True  # This must be set true
-
-    # Set include_gt True when using the roidb to evalute directly. Not doing
-    # that currently
-    dets = _load_det_file(det_file)
-    if cfg.TRACKING.KEEP_CENTER_DETS_ONLY:
-        _center_detections(dets)
-    assert(len(json_data) == len(dets['all_boxes'][1]))
-    assert(len(json_data) == len(dets['all_keyps'][1]))
-    conf = cfg.TRACKING.CONF_FILTER_INITIAL_DETS
-    logger.info('Pruning detections with less than {} confidence'.format(conf))
-    dets = _prune_bad_detections(dets, json_data, conf)
-    if cfg.TRACKING.LSTM_TEST.LSTM_TRACKING_ON:
-        # Needs torch, only importing if we need to run LSTM tracking
-        from lstm.lstm_track import lstm_track_utils
-        lstm_model = lstm_track_utils.init_lstm_model(
-            cfg.TRACKING.LSTM_TEST.LSTM_WEIGHTS)
-        lstm_model.cuda()
-    else:
-        lstm_model = None
-    dets_withTracks = compute_matches_tracks(json_data, dets, lstm_model)
-    _write_det_file(dets_withTracks, out_det_file)
-    dataset = JsonDataset(cfg.TEST.DATASET)
-    if dataset.name.startswith('posetrack'):
-        run_mpii_eval(test_output_dir, json_data, dataset)
+# def run_posetrack_tracking(test_output_dir, json_data):
+#     if len(cfg.TRACKING.DETECTIONS_FILE):
+#         det_file = cfg.TRACKING.DETECTIONS_FILE
+#     else:
+#         det_file = osp.join(test_output_dir, 'detections.pkl')
+#     out_det_file = osp.join(test_output_dir, 'detections_withTracks.pkl')
+#     if not osp.exists(det_file):
+#         raise ValueError('Output file not found {}'.format(det_file))
+#     else:
+#         logger.info('Tracking over {}'.format(det_file))
+#
+#     # Debug configurations
+#     if cfg.TRACKING.DEBUG.UPPER_BOUND_2_GT_KPS:  # if this is true
+#         cfg.TRACKING.DEBUG.UPPER_BOUND = True  # This must be set true
+#
+#     # Set include_gt True when using the roidb to evalute directly. Not doing
+#     # that currently
+#     dets = _load_det_file(det_file)
+#     if cfg.TRACKING.KEEP_CENTER_DETS_ONLY:
+#         _center_detections(dets)
+#     assert(len(json_data) == len(dets['all_boxes'][1]))
+#     assert(len(json_data) == len(dets['all_keyps'][1]))
+#     conf = cfg.TRACKING.CONF_FILTER_INITIAL_DETS
+#     logger.info('Pruning detections with less than {} confidence'.format(conf))
+#     dets = _prune_bad_detections(dets, json_data, conf)
+#     if cfg.TRACKING.LSTM_TEST.LSTM_TRACKING_ON:
+#         # Needs torch, only importing if we need to run LSTM tracking
+#         from lstm.lstm_track import lstm_track_utils
+#         lstm_model = lstm_track_utils.init_lstm_model(
+#             cfg.TRACKING.LSTM_TEST.LSTM_WEIGHTS)
+#         lstm_model.cuda()
+#     else:
+#         lstm_model = None
+#     dets_withTracks = compute_matches_tracks(json_data, dets, lstm_model)
+#     _write_det_file(dets_withTracks, out_det_file)
+#     dataset = JsonDataset(cfg.TEST.DATASET)
+#     if dataset.name.startswith('posetrack'):
+#         run_mpii_eval(test_output_dir, json_data, dataset)

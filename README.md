@@ -65,7 +65,26 @@ $ diff my_e2e_mask_rcnn_X-101-64x4d-FPN_1x.yaml ../Detectron.pytorch/tron_config
 
 
 
-## 2018-12-25
+## 2018-12-27
+
+
+
+### 实验
+
+使用gtbox来matching，以及使用gtbox对应gtjoint输出。当然是有filter box和joint的，但是gtbox的score都是1，而且gtjoint的score是可见度，所以不影响。这说明了matching的极限。没有满级的原因是毕竟人还是会有重叠，用box肯定会有错判。
+
+由于使用的是gt，那些没有标注的就跳过了。
+
+```
+2018-12-27-gtmatching.txt
+& MOTA & MOTA & MOTA & MOTA & MOTA & MOTA & MOTA & MOTA & MOTP & Prec & Rec  \\
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total& Total& Total& Total\\
+& 91.0 & 91.9 & 92.5 & 92.6 & 92.3 & 92.2 & 92.1 & 92.0 & 96.8 & 99.9 & 98.3 \\
+```
+
+
+
+## 2018-12-26
 
 进入tracking part。论文里有两个 filter， 首先 filter 人，还要把 filtered 人的 joint 滤一遍。
 
@@ -75,6 +94,83 @@ Also, since the tracking metric MOT penalizes false positives equally regardless
 We choose the boxes and joints drop threshold in a data-driven manner on validation set, 0.5 and 0.4 respectively.
 ```
 
+在 Detect-and-track 里
+
+```
+Before linking the detections in time, we drop the low-conﬁdence and potentially incorrect detections.
+```
+
+### 目标
+
+- [x] 跑出一个总体的mota 结果，因为我现在做的肯定有问题，所以需要一步一个脚印修正。
+  - [ ] 搞清楚mota在joint里怎么算
+    - [x] 和mAP不同的是，tracking需要correspondence。detection里，如果两个proposal和gt重合度都>0.3，那么这两个都是tp；其他任何<=0.3的都是fp。这里就允许两个proposal和gt都有correspondence，但是tracking只有一个。
+    - [x] [verified] 那我觉得tracking里有两个步骤，一个是correspondence的判定，一个是用threshold判断这个correspondence是不是valid. 
+    - [x] evaluateTracking里的`computeMetrics`接受的参数是已经计算好的correspondence，直接计算mota等东西的。
+  - [x] 可能是estimation的问题
+      - [ ] 总体的 mAP 差不多，一般不可能是 est 的问题。
+  - [x] 可能是matching问题。
+      - [x] 使用 gtbox 作为 matching 的来源，如果正确的话应该能够百分百追踪？
+      - [x] 从1744等没有人消失并且人比较容易分辨的来看， matching 没有问题。有的人的标注只有一个关节，那这个就构不成一个 gtbox我会删除，也就没法利用 box 的 iou 进行匹配，所以可能出现 miss；因此在 estimation 的部分也会丢失这几个点。但这不是 matching，而是获取 gt 数据的问题。
+  - [x] 可能是输出问题。由于如果输出的格式有问题，那么前面怎么找都不可能正确，所以先看这个。
+    - [x] 确定了不是这个问题。
+    - [x] 输出人物的顺序不同并不会导致mota的变化。
+  - [ ] 可能是 filter 的问题。
+- [x] 到底需不需要对那些不连续的帧来 tracking 。中间的部分才有 gt，才能够 matching。应该是要的，因为虽然在 gt 里隔开了，但是 id 还在。
+    - [ ] 这个时候就应该出现四帧跳跃估计了？
+- [x] 整理 Assign ID 的算法流程。
+- [ ] 纠正 greedy matching 的错误。
+
+### 实验
+
+采用nmsthreshold-0.35-0.5，在assignID的时候会以0.5 filter掉人box，并没有filter掉joint。
+
+```
+
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 82.7 & 80.8 & 72.8 & 61.1 & 71.4 & 66.8 & 59.2 & 71.5 \\
+
+& MOTA & MOTA & MOTA & MOTA & MOTA & MOTA & MOTA & MOTA & MOTP & Prec & Rec  \\
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total& Total& Total& Total\\
+& 37.5 & 36.6 &  1.2 &-22.1 & 16.3 & -2.7 &-34.4 &  6.8 & 82.7 & 54.4 & 79.6 \\
+```
+
+filter掉了joint
+
+```
+2018-12-26-filter box and joint
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 78.9 & 76.6 & 67.8 & 54.4 & 65.6 & 60.9 & 53.6 & 66.3 \\
+
+& MOTA & MOTA & MOTA & MOTA & MOTA & MOTA & MOTA & MOTA & MOTP & Prec & Rec  \\
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total& Total& Total& Total\\
+& 63.6 & 62.0 & 48.6 & 38.0 & 53.3 & 48.8 & 38.0 & 51.2 & 83.6 & 80.3 & 71.1 \\
+```
+
+
+
+只有01001的话
+
+```
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 99.9 & 98.0 & 94.8 & 89.8 & 98.7 & 95.6 & 96.2 & 96.4 \\
+
+& MOTA & MOTA & MOTA & MOTA & MOTA & MOTA & MOTA & MOTA & MOTP & Prec & Rec  \\
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total& Total& Total& Total\\
+& 81.0 & 77.5 & 67.7 & 62.8 & 73.9 & 76.3 & 73.8 & 73.8 & 87.0 & 81.0 & 96.9 \\
+```
+
+filter掉了joint
+
+```
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 99.9 & 98.0 & 93.2 & 87.4 & 97.9 & 93.1 & 95.0 & 95.2 \\
+
+& MOTA & MOTA & MOTA & MOTA & MOTA & MOTA & MOTA & MOTA & MOTP & Prec & Rec  \\
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total& Total& Total& Total\\
+& 96.9 & 93.7 & 84.9 & 79.1 & 94.7 & 88.3 & 90.1 & 90.2 & 87.2 & 94.7 & 95.6 \\
+```
+
 
 
 ## 2018-12-22
@@ -82,6 +178,8 @@ We choose the boxes and joints drop threshold in a data-driven manner on validat
 ### 目标
 
 弄清楚是哪个的作用：nms 还是 flow。需要控制变量，应该先跑一次仅仅使用 detbox 并改变nms 的 thres 的实验。
+
+看起来只是 nms 的作用
 
 ### 实验
 

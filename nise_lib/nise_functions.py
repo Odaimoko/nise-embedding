@@ -580,7 +580,7 @@ def intersection(boxes1, boxes2):
     return intersect_heights * intersect_widths
 
 
-def tf_iou(boxes1, boxes2):
+def tf_iou(boxes1: np.ndarray, boxes2: np.ndarray):
     """Computes pairwise intersection-over-union between box collections.
     Args:
       boxes1: a numpy array with shape [N, 4] holding N boxes.
@@ -657,7 +657,32 @@ def get_joints_oks_mtx(j1, j2):
     return to_torch(e)
 
 
-def get_matching_indices(dist_mat):
+def bipartite_matching_greedy(C: np.ndarray):
+    """
+    Computes the bipartite matching between the rows and columns, given the
+    cost matrix, C.
+    """
+    C = C.copy()  # to avoid affecting the original matrix
+    prev_ids = []
+    cur_ids = []
+    row_ids = np.arange(C.shape[0])
+    col_ids = np.arange(C.shape[1])
+    while C.size > 0:
+        # Find the lowest cost element
+        i, j = np.unravel_index(C.argmin(), C.shape)
+        # Add to results and remove from the cost matrix
+        row_id = row_ids[i]
+        col_id = col_ids[j]
+        prev_ids.append(row_id)
+        cur_ids.append(col_id)
+        C = np.delete(C, i, 0)
+        C = np.delete(C, j, 1)
+        row_ids = np.delete(row_ids, i, 0)
+        col_ids = np.delete(col_ids, j, 0)
+    return prev_ids, cur_ids
+
+
+def get_matching_indices(dist_mat: np.ndarray):
     '''
     
     :param dist_mat: n1 x n2
@@ -666,7 +691,7 @@ def get_matching_indices(dist_mat):
     # to use munkres package, we need int. munkres minimize cost, so use negative version
     # but if converted to numpy, will have precision problem
     scaled_distance_matrix = -nise_cfg.ALG._OKS_MULTIPLIER * dist_mat
-    scaled_distance_matrix = scaled_distance_matrix.numpy()
+    # scaled_distance_matrix = scaled_distance_matrix.numpy()
     mask = (scaled_distance_matrix <= -1e-9).astype(np.float32)
     scaled_distance_matrix *= mask
     indices = mkrs.compute(scaled_distance_matrix.tolist())
@@ -721,10 +746,15 @@ def get_joints_from_annorects(annorects):
         for pt_info in points:
             # analogous to coco.py  # matlab based on 1.
             i_pt = pt_info['id'][0]
-            joints_3d[i_pt, 0] = pt_info['x'][0] - 1 if pt_info['x'][0] >= 0 else 0
-            joints_3d[i_pt, 1] = pt_info['y'][0] - 1 if pt_info['y'][0] >= 0 else 0
+            if 'is_visible' in pt_info.keys():  # from gt
+                t_vis = pt_info['is_visible'][0]
+                joints_3d[i_pt, 0] = pt_info['x'][0] - 1 if pt_info['x'][0] > 0 else 0
+                joints_3d[i_pt, 1] = pt_info['y'][0] - 1 if pt_info['y'][0] > 0 else 0
+            else:  # from pred
+                t_vis = 1
+                joints_3d[i_pt, 0] = pt_info['x'][0] if pt_info['x'][0] >= 0 else 0
+                joints_3d[i_pt, 1] = pt_info['y'][0] if pt_info['y'][0] >= 0 else 0
             
-            t_vis = pt_info['is_visible'][0]
             if t_vis > 1: t_vis = 1
             joints_3d[i_pt, 2] = t_vis and pt_info['x'][0] >= 0 and pt_info['y'][0] >= 0
         # head_bbox = [rect['x1'][0], rect['y1'][0], rect['x2'][0], rect['y2'][0]]
@@ -732,8 +762,29 @@ def get_joints_from_annorects(annorects):
         all_joints.append(joints_3d)
     
     joints = torch.tensor(all_joints).float()
-    
+    joints = expand_vector_to_tensor(joints)
     return joints
+
+
+def get_joint_scores(annorects):
+    all_scores = []
+    for i in range(len(annorects)):
+        rect = annorects[i]
+        single_score = np.zeros((nise_cfg.DATA.num_joints), dtype = np.float)
+        points = rect['annopoints']
+        if points is None or len(points) <= 0:  # 因为有些图并没有annotation
+            continue
+        else:
+            points = points[0]['point']
+        for pt_info in points:
+            i_pt = pt_info['id'][0]
+            t_vis = pt_info['score'][0]
+            single_score[i_pt] = t_vis
+        all_scores.append(single_score)
+    
+    scores = torch.tensor(all_scores).float()
+    
+    return scores
 
 
 def create_yaml(series, thres, original_yaml = 'exp_config/t-flow-debug.yaml'):
@@ -782,7 +833,7 @@ def voc_eval_single_img(gt_boxes, pred_boxes, iou_thres = nise_cfg.TEST.MAP_TP_I
     pred_box_np = pred_boxes.numpy()[:, :4]
     gt_box_np = gt_boxes.numpy()[:, :4]
     pred_to_gt_iou = tf_iou(pred_box_np, gt_box_np, )
-    inds = get_matching_indices(to_torch(pred_to_gt_iou))
+    inds = get_matching_indices((pred_to_gt_iou))
     for prev, gt in inds:
         overlap = pred_to_gt_iou[prev, gt]
         if overlap >= iou_thres:

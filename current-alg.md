@@ -150,29 +150,38 @@ else
 
 people_ids = vector of zeros, size is id_boxes' length
 
-if this is the first frame
-	people_ids = range 1 to id_boxes' length	(inclusion)
-	set static variable max_id = id_boxes' length.   max_id serves to assign a new instance id
-elif there are boxes
-	proped_joints = this frame's new_joints
-	proped_ids = previous frame's people id
+if id_boxes is not empty
+
+    if this is the first frame
+        people_ids = range 1 to id_boxes' length	(inclusion)
+        set static variable max_id = id_boxes' length.   max_id serves to assign to a new instance id
+    else
+        if prev frame has id
+            proped_joints = this frame's new_joints
+            proped_ids = previous frame's people id
 	
 ```
 
 From here we can see a problem: what if the number of proped joints is not the same with previous frame's id?
 
+For now we use box iou, so no need to concern about joint prop.
+
 ```
-	if proped_ids is empty (i.e. previous frame doesn't have id)
-		people_id = range(max_id + 1, max_id + id_bboxes.shape[0] + 1)
-    else
-    	take filtered (or not filtered) boxes' joints to be id_joints
-    	dist_mat = compute distances between prop_joints and id_joints
-    	indices = use munkres algorithm to match
-    	for i_in_current, i_in_new_joints:
-    		people_ids[i_in_current] = proped_ids[i_in_new_joints]
-		for the rest in people_ids (there are unassigned instances)
-			each is assigned a new id (max_id + 1)
-			max_id+=1
+            if matching metric is box iou
+            dist_mat = tf_iou(self.id_boxes, prev_frame.idboxes)
+            else:
+            ...
+
+            if matching alg is Munkres:
+            use mkrs to match
+            elif matching alg is greedy
+            use bipartite_matching_greedy (from Detect-and-Track)
+
+            for i_in_current, i_in_new_joints:
+            people_ids[i_in_current] = prev_frame.people_ids[i_in_prev]
+            for the rest in people_ids (there are unassigned instances)
+            each is assigned a new id (max_id + 1) 
+
 ```
 
 

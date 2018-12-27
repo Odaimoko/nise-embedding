@@ -104,7 +104,7 @@ class FrameItem:
         self.joints_detected = False
         self.id_assigned = False
         
-        self.NO_BBOXES = False
+        self.NO_BOXES = False
     
     # def get_box_from_joints
     
@@ -310,7 +310,7 @@ class FrameItem:
         def set_empty_unified_box():
             # kakunin! No box at all in this image
             self.unified_boxes = torch.tensor([])
-            self.NO_BBOXES = True
+            self.NO_BOXES = True
         
         if self.cfg.DEBUG.NO_NMS:
             self.unified_boxes = self.detected_boxes
@@ -325,10 +325,7 @@ class FrameItem:
             if not self.joints_proped or not self.human_detected:
                 raise ValueError(
                     'Should run people detection and joints propagation first')
-            num_classes = 2  # bg and people
             all_bboxes = torch.cat([self.detected_boxes, self.prop_boxes])  # x 5
-        
-        num_people = all_bboxes.shape[0]
         
         if all_bboxes.numel() == 0:
             # no box, set to 0 otherwise error will occur in the next line,
@@ -345,7 +342,6 @@ class FrameItem:
             # 土法nms
             nms_thres_1 = self.cfg.ALG.UNIFY_NMS_THRES_1
             nms_thres_2 = self.cfg.ALG.UNIFY_NMS_THRES_2
-            # debug_print('IN FI', nms_thres_1, nms_thres_2)
             k_1 = np.where(scores >= nms_thres_1)[0]
             filtered_scores = scores[k_1]
             if filtered_scores.numel() != 0:
@@ -375,7 +371,7 @@ class FrameItem:
     def get_filtered_bboxes(self, thres = nise_cfg.ALG._HUMAN_THRES):
         if not self.boxes_unified:
             raise ValueError("Should unify bboxes first")
-        if self.NO_BBOXES:
+        if self.NO_BOXES:
             # if no bboxes at all
             return torch.tensor(self.unified_boxes), None
         filtered, valid_score_idx = filter_bbox_with_scores(self.unified_boxes, thres)
@@ -446,7 +442,7 @@ class FrameItem:
         self.joints_detected = True
     
     # @log_time('\tID分配……')
-    def assign_id(self, Q, get_dist_mat = None):
+    def assign_id(self, Q, get_dist_mat = None) -> None:
         """ input: distance matrix; output: correspondence   """
         """ - Associate ids. question: how to associate using more than two frames?between each 2?- """
         if not self.joints_detected:
@@ -456,60 +452,63 @@ class FrameItem:
         else:
             
             self.id_boxes = self.unified_boxes
-            self.id_boxes = expand_vector_to_tensor(self.id_boxes)
             self.id_idx_in_unified = torch.tensor(range(self.unified_boxes.shape[0])).long()
         
         self.people_ids = torch.zeros(self.id_boxes.shape[0]).long()
         
-        if self.is_first:
-            # if it's the first frame, just assign every, starting from 1
-            # no problem when no people detected
-            self.people_ids = torch.tensor(range(1, self.id_boxes.shape[0] + 1)).long()
-            FrameItem.max_id = self.id_boxes.shape[0]  # not +1
-        elif not self.NO_BBOXES:
-            # if no boxes no need for matching, and none for the next frame
+        if not self.id_boxes.numel() == 0:
             
-            if get_dist_mat is None:
-                raise NotImplementedError('Should pass a matrix function function in')
-            prev_frame = Q[-1]
-            # proped from prev frame. since we want prev ids, we should get filter ones.
-            # if self.cfg.ALG.JOINT_PROP_WITH_FILTERED_HUMAN:
-            #     proped_joints = self.new_joints.squeeze()  # squeeze is not for the first dim
-            #     # TODO:如果 propthres 和 human_thres 不一样，那么这里 id 的数量就是 humanthres 的，new_joints 就是 propthres 的。
-            #     prev_filtered_id_box, filtered_idx = filter_bbox_with_scores(prev_frame.id_bboxes,
-            #                                                                  thres = self.cfg.ALG.PROP_HUMAN_THRES)
-            #     proped_ids = prev_frame.human_ids[filtered_idx]
-            # else:
-            #     prev_boxes_filtered, prev_boxes_idx = prev_frame.get_filtered_bboxes()
-            #     proped_joints = self.new_joints[prev_boxes_idx].squeeze()  # squeeze is not for the first dim
-            #     proped_ids = prev_frame.human_ids
-            
-            prev_boxes_filtered, prev_boxes_idx = prev_frame.get_filtered_bboxes(thres = self.cfg.ALG.PROP_HUMAN_THRES)
-            proped_joints = self.new_joints.squeeze()  # squeeze is not for the first dim
-            proped_ids = prev_frame.human_ids
-            
-            # ─── MATCHING ──────────────────────────────
-            proped_joints = expand_vector_to_tensor(proped_joints, 3)  # unsqueeze if accidental injury happens
-            assert (proped_joints.shape[0] == len(proped_ids))
-            
-            if len(proped_ids) == 0:
-                # if no people in the previous frame, consecutively
-                self.people_ids = torch.tensor(
-                    range(FrameItem.max_id + 1, FrameItem.max_id + self.id_boxes.shape[0] + 1)).long()
-                FrameItem.max_id = FrameItem.max_id + self.id_boxes.shape[0]  # not +1
+            if self.is_first:
+                # if it's the first frame, just assign every, starting from 1
+                # no problem when no people detected
+                self.people_ids = torch.tensor(range(1, self.id_boxes.shape[0] + 1)).long()
+                FrameItem.max_id = self.id_boxes.shape[0]  # not +1
             else:
-                id_joints = self.joints[self.id_idx_in_unified, :, :]
-                id_joints = expand_vector_to_tensor(id_joints, 3)  # in case only one people is in this image
-                dist_mat = get_dist_mat(id_joints, proped_joints)
-                indices = get_matching_indices(dist_mat)
-                for cur, prev in indices:
-                    # value = dist_mat[cur][prev]
-                    # debug_print('(%d, %d) -> %f' % (cur, prev, value))
-                    self.people_ids[cur] = proped_ids[prev]
+                # if no boxes no need for matching, and none for the next frame
+                prev_frame = Q[-1]
+                if not prev_frame.people_ids.numel() == 0:
+                    # if there are id in the previous frame
+                    if self.cfg.ALG.MATCHING_METRIC == self.cfg.ALG.MATCHING_BOX:
+                        # 2TODO: 如果current 没有box，就不会进入这个分支；但是进入这个分支之后，如果current有了，prev没有怎么办？
+                        cur_boxes = self.id_boxes.numpy()[:, :4]
+                        pre_boxes = prev_frame.id_boxes.numpy()[:, :4]
+                        # wat if empty
+                        dist_mat = tf_iou(cur_boxes, pre_boxes)
+                    else:
+                        proped_joints = self.new_joints.squeeze()  # squeeze is not for the first dim
+                        proped_ids = prev_frame.human_ids
+                        
+                        # ─── MATCHING ──────────────────────────────
+                        proped_joints = expand_vector_to_tensor(proped_joints,
+                                                                3)  # unsqueeze if accidental injury happens
+                        assert (proped_joints.shape[0] == len(proped_ids))
+                        
+                        if len(proped_ids) == 0:
+                            # if no people in the previous frame, consecutively
+                            self.people_ids = torch.tensor(
+                                range(FrameItem.max_id + 1, FrameItem.max_id + self.id_boxes.shape[0] + 1)).long()
+                            FrameItem.max_id = FrameItem.max_id + self.id_boxes.shape[0]  # not +1
+                        else:
+                            id_joints = self.joints[self.id_idx_in_unified, :, :]
+                            id_joints = expand_vector_to_tensor(id_joints,
+                                                                3)  # in case only one people is in this image
+                            dist_mat = get_dist_mat(id_joints, proped_joints)
+                    
+                    # dist_mat should be np.ndarray
+                    if self.cfg.ALG.MATCHING_ALG == self.cfg.ALG.MATCHING_MKRS:
+                        indices = get_matching_indices(dist_mat)
+                    elif self.cfg.ALG.MATCHING_ALG == self.cfg.ALG.MATCHING_GREEDY:
+                        indices = list(zip(*bipartite_matching_greedy(dist_mat)))
+                    debug_print('\t'.join(['(%d, %d) -> %.2f; ID %d' % (
+                        prev,cur,  dist_mat[cur][prev],  prev_frame.people_ids[prev])
+                                           for cur, prev in indices]), indent = 1)
+                    for cur, prev in indices:
+                        # value = dist_mat[cur][prev]
+                        # debug_print('(%d, %d) -> %f' % (cur, prev, value))
+                        self.people_ids[cur] = prev_frame.people_ids[prev]
                 for i in range(self.people_ids.shape[0]):
                     if self.people_ids[i] == 0:  # unassigned
-                        self.people_ids[i] = FrameItem.max_id + 1
-                        FrameItem.max_id += 1
+                        self.people_ids[i] = FrameItem.max_id = FrameItem.max_id + 1
         # debug_print('ID Assigned')
         self.id_assigned = True
     
@@ -549,8 +548,8 @@ class FrameItem:
         resized_joints[:, :, 1] = self._resize_y(joints[:, :, 1])
         return resized_joints
     
-    # @log_time('\t画图……')
-    def visualize(self, dataset):
+    @log_time('\t画图……')
+    def visualize(self):
         if self.id_assigned is False and self.task != 1:
             raise ValueError('Should assign id first.')
         if self.cfg.DEBUG.VIS_BOX:
@@ -569,9 +568,7 @@ class FrameItem:
                 class_boxes,
                 None,
                 None,
-                dataset = dataset,
                 box_alpha = 0.3,  # opacity
-                show_class = True,
                 thresh = self.cfg.DEBUG.VIS_HUMAN_THRES,
                 human_ids = self.people_ids,
                 kp_thresh = 2,
@@ -631,7 +628,7 @@ class FrameItem:
             d = {
                 'image': [
                     {
-                        'name': self.img_path,
+                        'name': self.img_path.replace(self.cfg.PATH.POSETRACK_ROOT, ''),
                     }
                 ],
                 'annorect': [  # i for people
@@ -661,10 +658,11 @@ class FrameItem:
             }
         
         else:
+            num_person = self.people_ids.shape[0]
             d = {
                 'image': [
                     {
-                        'name': self.img_path,
+                        'name': self.img_path.replace(self.cfg.PATH.POSETRACK_ROOT, ''),
                     }
                 ],
                 'annorect': [  # i for people
@@ -683,11 +681,13 @@ class FrameItem:
                                         'x': [self.joints[i, j, 0].item() * self.ori_img_w / self.img_w],
                                         'y': [self.joints[i, j, 1].item() * self.ori_img_h / self.img_h],
                                         'score': [self.joints_score[i, j].item()]
-                                    } for j in range(self.cfg.DATA.num_joints)
+                                    } for j in range(self.cfg.DATA.num_joints) if
+                                    self.joints_score[i, j] >= self.cfg.ALG.ASSGIN_JOINT_THRES
+                                    # don t report those small with small scores
                                 ]
                             }
                         ]
-                    } for i in range(self.people_ids.shape[0])
+                    } for i in range(num_person)
                 
                 ]
                 # 'imgnum'

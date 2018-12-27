@@ -68,6 +68,6 @@ if __name__ == '__main__':
                                human_det_dataset,
                                maskRCNN,
                                simple_joint_est_model, flow_model)
-    elif nise_cfg.TEST.TASK == -1:
+    elif nise_cfg.TEST.TASK == -1 or nise_cfg.TEST.TASK ==  -2:
         
         nise_flow_debug(dataset_path, simple_joint_est_model, flow_model)
