@@ -131,7 +131,7 @@ class FrameItem:
             # 2TODO 比如 bonn_mpii_train_5sec\00098_mpii 最前面几个是全黑所以检测不到……emmmm怎么办呢
             self.detected_boxes = expand_vector_to_tensor(self.detected_boxes)
         
-        debug_print('Detected', self.detected_boxes.shape[0], 'boxes', indent = 1)
+        # debug_print('Detected', self.detected_boxes.shape[0], 'boxes', indent = 1)
         self.human_detected = True
     
     # @log_time('\t生成flow……')
@@ -333,7 +333,7 @@ class FrameItem:
             set_empty_unified_box()
         else:
             scores = all_bboxes[:, 4]  # vector
-            debug_print('Before NMS:', scores.shape[0], 'people. ', indent = 1)
+            # debug_print('Before NMS:', scores.shape[0], 'people. ', indent = 1)
             # scores = torch.stack([torch.zeros(num_people), scores], 1)  # num_people x 2
             # cls_all_bboxes = torch.cat([torch.zeros(num_people, 4), all_bboxes[:, :4]], 1)  # num people x 8
             # scores, boxes, cls_boxes = box_results_with_nms_and_limit(scores, cls_all_bboxes, 2)
@@ -365,10 +365,10 @@ class FrameItem:
             self.unified_boxes = expand_vector_to_tensor(self.unified_boxes)
             if self.unified_boxes.numel() == 0:
                 set_empty_unified_box()
-            debug_print('After NMS:', self.unified_boxes.shape[0], 'people', indent = 1)
+            # debug_print('After NMS:', self.unified_boxes.shape[0], 'people', indent = 1)
         self.boxes_unified = True
     
-    def get_filtered_bboxes(self, thres = nise_cfg.ALG._HUMAN_THRES):
+    def get_filtered_bboxes(self, thres):
         if not self.boxes_unified:
             raise ValueError("Should unify bboxes first")
         if self.NO_BOXES:
@@ -447,13 +447,8 @@ class FrameItem:
         """ - Associate ids. question: how to associate using more than two frames?between each 2?- """
         if not self.joints_detected:
             raise ValueError('Should detect joints first')
-        if self.cfg.ALG.ASSGIN_ID_TO_FILTERED_BOX:
-            self.id_boxes, self.id_idx_in_unified = self.get_filtered_bboxes(self.cfg.ALG.ASSIGN_BOX_THRES)
-        else:
-            
-            self.id_boxes = self.unified_boxes
-            self.id_idx_in_unified = torch.tensor(range(self.unified_boxes.shape[0])).long()
-        
+        self.id_boxes, self.id_idx_in_unified = self.get_filtered_bboxes(self.cfg.ALG.ASSIGN_BOX_THRES)
+
         self.people_ids = torch.zeros(self.id_boxes.shape[0]).long()
         
         if not self.id_boxes.numel() == 0:
@@ -499,9 +494,9 @@ class FrameItem:
                         indices = get_matching_indices(dist_mat)
                     elif self.cfg.ALG.MATCHING_ALG == self.cfg.ALG.MATCHING_GREEDY:
                         indices = list(zip(*bipartite_matching_greedy(dist_mat)))
-                    debug_print('\t'.join(['(%d, %d) -> %.2f; ID %d' % (
-                        prev,cur,  dist_mat[cur][prev],  prev_frame.people_ids[prev])
-                                           for cur, prev in indices]), indent = 1)
+                    # debug_print('\t'.join(['(%d, %d) -> %.2f; ID %d' % (
+                    #     prev, cur, dist_mat[cur][prev], prev_frame.people_ids[prev])
+                    #                        for cur, prev in indices]), indent = 1)
                     for cur, prev in indices:
                         # value = dist_mat[cur][prev]
                         # debug_print('(%d, %d) -> %f' % (cur, prev, value))
@@ -518,12 +513,7 @@ class FrameItem:
         """ - Associate ids. question: how to associate using more than two frames?between each 2?- """
         if not self.joints_detected:
             raise ValueError('Should detect joints first')
-        if self.cfg.ALG.ASSGIN_ID_TO_FILTERED_BOX:
-            self.id_boxes, self.id_idx_in_unified = self.get_filtered_bboxes()
-        else:
-            self.id_boxes = self.unified_boxes
-            self.id_boxes = expand_vector_to_tensor(self.id_boxes)
-            self.id_idx_in_unified = torch.tensor(range(self.unified_boxes.shape[0])).long()
+        self.id_boxes, self.id_idx_in_unified = self.get_filtered_bboxes(self.cfg.ALG.ASSIGN_BOX_THRES)
         
         self.people_ids = torch.zeros(self.id_boxes.shape[0]).long()
         
@@ -682,7 +672,7 @@ class FrameItem:
                                         'y': [self.joints[i, j, 1].item() * self.ori_img_h / self.img_h],
                                         'score': [self.joints_score[i, j].item()]
                                     } for j in range(self.cfg.DATA.num_joints) if
-                                    self.joints_score[i, j] >= self.cfg.ALG.ASSGIN_JOINT_THRES
+                                    self.joints_score[i, j] >= self.cfg.ALG.OUTPUT_JOINT_THRES
                                     # don t report those small with small scores
                                 ]
                             }

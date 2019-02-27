@@ -1,9 +1,3 @@
-#
-# ──────────────────────────────────────────────────────────────────────────────────── I ──────────
-#   :::::: U S E   P R E T R A I N E D   M O D E L S   T O   T E S T
-#       R E - I M P L E M E N T E D  S I M P L E   B A S E L I N E :
-# ────────────────────────────────────────────────────────────────────────────
-
 import visdom
 from pathlib import PurePosixPath
 import torch.multiprocessing as mp
@@ -52,7 +46,7 @@ if __name__ == '__main__':
             t1 = float(t1)
             t2 = float(t2)
             
-            y = create_yaml([0, 50], (t1, t2),original_yaml = nise_args.nise_config)
+            y = create_yaml_nms([0, 50], (t1, t2), original_yaml = nise_args.nise_config)
             # debug_print('New Yaml:', y)
             update_nise_config(nise_cfg, y)
             suffix, suffix_with_range = set_path_from_nise_cfg(nise_cfg)

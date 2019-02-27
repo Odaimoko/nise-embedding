@@ -787,7 +787,7 @@ def get_joint_scores(annorects):
     return scores
 
 
-def create_yaml(series, thres, original_yaml = 'exp_config/t-flow-debug.yaml'):
+def create_yaml_nms(series, thres, original_yaml = 'exp_config/t-flow-debug.yaml'):
     with open(original_yaml, 'r')as f:
         c = yaml.load(f)
     training_start_time = time.strftime("%m_%d-%H_%M", time.localtime())
@@ -799,6 +799,23 @@ def create_yaml(series, thres, original_yaml = 'exp_config/t-flow-debug.yaml'):
     nc['ALG']['UNIFY_NMS_THRES_1'] = thres[0]
     nc['ALG']['UNIFY_NMS_THRES_2'] = thres[1]
     long_file_name = 'exp_config/%s-batch-%02d_%02d-nmsthres-%.2f,%.2f.yaml' % (
+        training_start_time, series[0], series[-1], thres[0], thres[1])
+    with open(long_file_name, 'w')as f:
+        yaml.dump(nc, f)
+    return long_file_name
+
+def create_yaml_track_filter(series, thres, original_yaml = 'exp_config/t-flow-debug.yaml'):
+    with open(original_yaml, 'r')as f:
+        c = yaml.load(f)
+    training_start_time = time.strftime("%m_%d-%H_%M", time.localtime())
+    
+    nc = copy.deepcopy(c)
+    nc['TEST']['FROM'] = series[0]
+    nc['TEST']['TO'] = series[1]
+    nc['TEST']['ONLY_TEST'] = []
+    nc['ALG']['ASSIGN_BOX_THRES'] = thres[0]
+    nc['ALG']['ASSGIN_JOINT_THRES'] = thres[1]
+    long_file_name = 'exp_config/%s-batch-%02d_%02d-box_joint_thres-%.2f,%.2f.yaml' % (
         training_start_time, series[0], series[-1], thres[0], thres[1])
     with open(long_file_name, 'w')as f:
         yaml.dump(nc, f)

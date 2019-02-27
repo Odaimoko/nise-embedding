@@ -1,15 +1,21 @@
+
+
 # nise-embedding
 
 My baseline
 
 Task 1. `valid_task_1_DETbox_propfiltered_propthres_0.5_propGT`. This is obtained by not nms the detected box (i.e. use all detected box to estimate joints).
 
+虽然样子上写着 propGT 啥的但是由于是 task1，并没有 prop 这一步，我把它取出来吧，名字改成了
+
+​	`baseline/69.6-noProp-valid_task_1_onlyDETbox_noNMS`
+
 ```
 & Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
 & 79.8 & 78.5 & 70.7 & 59.2 & 70.1 & 65.5 & 58.3 & 69.6 \\
 ```
 
-Use GT box to estimate。
+Use GT box to estimate。(meaningless)
 
 ```
 & Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
@@ -65,6 +71,26 @@ $ diff my_e2e_mask_rcnn_X-101-64x4d-FPN_1x.yaml ../Detectron.pytorch/tron_config
 
 
 
+### 2019-02-27
+
+时隔两个月再次开工……
+
+### Something I want to check
+
+- [x] The correctness of matching algorithm。I think this can be check by gt box matching. If gt box is used, the score of each gt box is 1 and of each gt joint is 1. So all gt joints and boxes will all be kept during filtering. As shown in the experiment in 2018-12-27, and the json directory is `pred_json-track-developing/valid_task_-2_GTbox_allBox_tfIoU_nmsThres_0.35_0.70_IoUMetric_mkrs`.
+
+Following experiments aim to keep mAP the same and see what will MOTA be. Since they are only run for task one, no id is assigned. Experiments must be run again with task 3.
+
+- [ ] without joint filtering: Task 3 performance of my baseline for task 1
+- [ ] without joint filtering: Task 3 performance of NMSed baseline (thres are 0.35_0.50 respectively)
+- [ ] with joint filtering:  T3 of the two mentioned above
+
+Those three to-checks are actually unnecessary. I have conducted experiments about box and joint thres during the process of assigning ID. Only boxes with scores over `box_thres` have ID, and only joint with scores over `joint_thres` are output. This experiment is just a verification of what Detect-and-Track has said, that there is a tradeoff between MOTA and mAP. Filtering boxes results in lower mAP and higher MOTA.
+
+### What  is the problem
+
+
+
 ## 2018-12-27
 
 
@@ -82,7 +108,7 @@ $ diff my_e2e_mask_rcnn_X-101-64x4d-FPN_1x.yaml ../Detectron.pytorch/tron_config
 & 91.0 & 91.9 & 92.5 & 92.6 & 92.3 & 92.2 & 92.1 & 92.0 & 96.8 & 99.9 & 98.3 \\
 ```
 
-
+进行了调参，结果与2018-12-26实验里2018-12-26-filter box and joint差不了太多。
 
 ## 2018-12-26
 
@@ -108,10 +134,10 @@ Before linking the detections in time, we drop the low-conﬁdence and potential
     - [x] [verified] 那我觉得tracking里有两个步骤，一个是correspondence的判定，一个是用threshold判断这个correspondence是不是valid. 
     - [x] evaluateTracking里的`computeMetrics`接受的参数是已经计算好的correspondence，直接计算mota等东西的。
   - [x] 可能是estimation的问题
-      - [ ] 总体的 mAP 差不多，一般不可能是 est 的问题。
+      - [x] 总体的 mAP 差不多，一般不可能是 est 的问题。
   - [x] 可能是matching问题。
-      - [x] 使用 gtbox 作为 matching 的来源，如果正确的话应该能够百分百追踪？
-      - [x] 从1744等没有人消失并且人比较容易分辨的来看， matching 没有问题。有的人的标注只有一个关节，那这个就构不成一个 gtbox我会删除，也就没法利用 box 的 iou 进行匹配，所以可能出现 miss；因此在 estimation 的部分也会丢失这几个点。但这不是 matching，而是获取 gt 数据的问题。
+  - [x] 使用 gtbox 作为 matching 的来源，如果正确的话应该能够百分百追踪？
+  - [x] 从1744等没有人消失并且人比较容易分辨的来看， matching 没有问题。有的人的标注只有一个关节，那这个就构不成一个 gtbox我会删除，也就没法利用 box 的 iou 进行匹配，所以可能出现 miss；因此在 estimation 的部分也会丢失这几个点。但这不是 matching，而是获取 gt 数据的问题。
   - [x] 可能是输出问题。由于如果输出的格式有问题，那么前面怎么找都不可能正确，所以先看这个。
     - [x] 确定了不是这个问题。
     - [x] 输出人物的顺序不同并不会导致mota的变化。
@@ -307,7 +333,7 @@ filter掉了joint
     valid_task_-1_DETbox_allBox_propAll_propGT_tfIoU_nmsThres_0.05_0.5
     [INFO] - In total 58440 predictions, 18536 gts.
     [INFO] - AP: tensor(0.7841)
-    Imoko:py oda$  /usr/local/bin/python2.7 /Users/oda/posetrack/poseval/py/evaluate.py --groundTruth=../../nise_embedding/pred_json/val_gt_task1/ --predictions=../../nise_embedding/pred_json/valid_task_-1_DETbox_allBox_propAll_propGT_tfIoU_nmsThres_0.05_0.5/ --evalPoseEstimation
+    Imoko:py oda$  /usr/local/bin/python2.7 /Users/oda/posetrack/poseval/py/evaluate.py --groundTruth=val_gt_task1/ --predictions=valid_task_-1_DETbox_allBox_propAll_propGT_tfIoU_nmsThres_0.05_0.5/ --evalPoseEstimation
     ('# gt frames  :', 2607, '# pred frames:', 2607)
     & Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
     & 80.7 & 79.4 & 71.6 & 59.9 & 71.1 & 66.6 & 59.5 & 70.6 \\

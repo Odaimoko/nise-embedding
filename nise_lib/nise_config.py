@@ -105,6 +105,13 @@ def set_path_from_nise_cfg(nise_cfg):
         track_part.append('mkrs')
     elif nise_cfg.ALG.MATCHING_ALG == nise_cfg.ALG.MATCHING_GREEDY:
         track_part.append('greedy')
+    track_part.extend([
+        'box',
+        '%.2f' % (nise_cfg.ALG.ASSIGN_BOX_THRES),
+        'joint',
+        '%.2f' % (nise_cfg.ALG.OUTPUT_JOINT_THRES),
+
+    ])
     
     detect_part = '_'.join(detect_part)
     prop_part = '_'.join(prop_part) if nise_cfg.TEST.TASK == 2 or nise_cfg.TEST.TASK == -1 else ''
@@ -228,16 +235,15 @@ class NiseConfig:
             # only bbox ratio not over this are recognized as human
             self._ASPECT_RATIO_THRES = 0.75
             # if want more joint prop boxes, set this to false
-            self.FILTER_HUMAN_WHEN_DETECT = True
+            self.FILTER_HUMAN_WHEN_DETECT = False
             # if not filtered when detected, filter when prop??
             self.JOINT_PROP_WITH_FILTERED_HUMAN = True
             self.FILTER_BBOX_WITH_SMALL_AREA = False
             self.UNIFY_NMS_THRES_1 = .3
             self.UNIFY_NMS_THRES_2 = .5
             
-            self.ASSGIN_ID_TO_FILTERED_BOX = True  # self.JOINT_PROP_WITH_FILTERED_HUMAN
-            self.ASSIGN_BOX_THRES = .5  # from simple baseline
-            self.ASSGIN_JOINT_THRES = .4
+            self.ASSIGN_BOX_THRES = .5  # only assign id for boxes over this thres; if set to 0, use all unified box to assign id
+            self.OUTPUT_JOINT_THRES = .4 # only output joint over this thres for tracking; if set to 0, use all
             
             self.MATCHING_MKRS = 0
             self.MATCHING_GREEDY = 1

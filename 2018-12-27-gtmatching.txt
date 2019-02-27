@@ -1,5 +1,3 @@
-ssh://zhangxt@10.19.124.24:22/home/zhangxt/anaconda3/bin/python -u /home/zhangxt/disk/posetrack/poseval/py/evaluate.py --groundTruth=pred_json-pre-commissioning/val_gt_task3/ --predictions=pred_json-track/valid_task_-2_GTbox_allBox_tfIoU_nmsThres_0.35_0.70_IoUMetric_mkrs/ --evalPoseEstimation --evalPoseTracking --saveEvalPerSequence
-# gt frames  : 2607 # pred frames: 2607
 seqidx: 1/50
 seqidx: 2/50
 seqidx: 3/50
