@@ -37,8 +37,8 @@ DEBUG:
   SAVE_DETECTION_S_EST: False
   SAVE_NMS_TENSOR: false
   NO_NMS: False
-  USE_DETECTION_RESULT: false
-  USE_FLOW_RESULT: false
+  USE_DETECTION_RESULT: False
+  USE_FLOW_RESULT: False
   USE_DET_EST_RESULT: False
-  load_joint_est_model: false
+  load_joint_est_model: False
   load_human_det_model: False

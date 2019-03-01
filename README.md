@@ -71,6 +71,80 @@ $ diff my_e2e_mask_rcnn_X-101-64x4d-FPN_1x.yaml ../Detectron.pytorch/tron_config
 
 
 
+
+
+## 2019-03-01
+
+oracle的 matching
+
+## 2019-2-28
+
+### [solved]Problem
+
+The problem that the numbers don't match still exists.
+
+- [ ] After summarizing all the miss/fp/mismatches for `nmsThres_0.35_0.70_box_0.5_joint_0.4`, I found that the numbers don't match.
+
+For example in sequence `020910`, joint 0 has the following data:
+
+| num_misses: | num_switches: | num_false_positives: | num_objects: | num_detections: |
+| ----------- | ------------- | -------------------- | ------------ | --------------- |
+| 86          | 11            | 18                   | 259          | 173             |
+
+![墨迹绘图 墨迹绘图 墨迹绘图 墨迹绘图 墨迹绘图 墨迹绘图 墨迹绘图 墨迹绘图 墨迹绘图 墨迹绘图 墨迹绘图 墨迹绘图 墨迹绘图 墨迹绘图 墨迹绘图 墨迹绘图 墨迹绘图 墨迹绘图 墨迹绘图 墨迹绘图 墨迹绘图 墨迹绘图 墨迹绘图 墨迹绘图 墨迹绘图 墨迹绘图 墨迹绘图 墨迹绘图 墨迹绘图 墨迹绘图 墨迹绘图 墨迹绘图 ](assets/clip_image001.png)
+
+The relationship between parts are sketeched above. `h` is hypothesis/proposal/prediction, `o` is object/ground truth. But the data $173-18+86=241\ne 259​$. The only possible reason is that I didn't draw the Venn diagram correctly.
+
+Anyway, let's look at the code of find correspondence of joints in one frame.      
+
+In code, the relationship is:
+
+1. `match+switch=detection`, this is writen in code
+
+   ```python
+   def num_detections(df, num_matches, num_switches):
+       """Total number of detected objects including matches and switches."""
+       return num_matches + num_switches
+   ```
+
+2. `detection+miss=object`
+
+3. `object`: annotated gt
+
+4. `switch`: matched and switched
+
+5. `match`: matched but not switched
+
+6. `fp`:  remaining pred
+
+7. `miss`: remaining gt    
+
+So, my Venn diagram is correct, but my understanding of the output of the evaluation program is wrong. The correct meaning is shown above.
+
+### [solved]How to find correspondence
+
+Will be summarized later. This is in function `assignGTmulti` of `eval_helpers.py`. Remember that we focus on different types of joints. The procedure is 
+
+1. For each frame, for each joint type, compute the distance between gts and predictions. Distance is `np.linalg.norm(np.subtract(pointGT, pointPr)) / headSize`. There are `num_pred` and `num_gt` preds and gts respectively.
+2. `match = dist <= distThresh`.
+3. For each frame and person, accumulate how many joints of this person are annotated. For each predicted person, let the score of a (person, gt ) pair be `the number of joints of this person with gt / the number of joints annotated with gt`, i.e. the matching rate.
+4. Let the pair (person, gt) with greatest matching rate be matched. But this is just an intermediate result. This  match is only used to filter out gt joints without annotations. Call this `prematch`.
+5. The final output of `assignGTmulti` is `motAll`, which is a `dict` containing MOT info for each joint type.
+6. Each joint info is a `dict`, with keys
+   1. `trackidxGT`/`trackidxPr`: gt/pred joints with anno
+   2. `ridxsGT`/`ridxsPr`: actually no use in `computeMetrics`
+   3. `dist`: distance between each gt/pred joint pair, corresponding to `trackidxGT` and `Pr`, but not all gt/pred.
+
+This `motAll` is the input of method `computeMetrics`. It utilises `MOTAccumulator` to summarize all events (events = match/miss/fp/switch ...). So take a look at `MOTAccumulator.update`. The input of this method is `oids, hids, dists`, corresponding to `trackidxGT`/`trackidxPr/dist`. Because in `assignGTmulti`, those entries of `dist` not  in `prematch` is set to `nan`, it is quite easy for Munkres algorithm to match the result. So this `prematch` is in fact the final `match`.
+
+
+
+### misc
+
+the most time-consuming part of evaluating posetrack is the one using `MOTAccumulator` to accumulate all information.
+
+`metricsMid = mh.compute(accAll[i], metrics = metricsMidNames, return_dataframe = False, name = 'acc')`, will get misses/fp/mm/obj/det data, `len(metricsMid)=5`.
+
 ### 2019-02-27
 
 时隔两个月再次开工……
@@ -85,9 +159,20 @@ Following experiments aim to keep mAP the same and see what will MOTA be. Since 
 - [ ] without joint filtering: Task 3 performance of NMSed baseline (thres are 0.35_0.50 respectively)
 - [ ] with joint filtering:  T3 of the two mentioned above
 
-Those three to-checks are actually unnecessary. I have conducted experiments about box and joint thres during the process of assigning ID. Only boxes with scores over `box_thres` have ID, and only joint with scores over `joint_thres` are output. This experiment is just a verification of what Detect-and-Track has said, that there is a tradeoff between MOTA and mAP. Filtering boxes results in lower mAP and higher MOTA.
+Those three to-checks are actually unnecessary. I have conducted experiments about box and joint thres during the process of assigning ID. Only boxes with scores over `box_thres` have ID, and only joint with scores over `joint_thres` are output. This experiment is just a verification of what Detect-and-Track has said, that there is a tradeoff between MOTA and mAP. Filtering boxes and joints results in lower mAP and higher MOTA. We have four associations, box/joint filtering with mAP and MOTA. But as can be seen, filtering boxes doesn't affect mAP too much. The order should be the effect of joint/MOTA(very big) > joint/mAP > box/MOTA > box/mAP(very small).
 
-### What  is the problem
+### What is the problem
+
+
+
+**[SOLVED]** The calculation of MOTA in posetracking focuses on each joint type.
+
+1. For one video sequence, for each joint type, accumulate all misses/fp/mm/gt. So there are 15joints*4 sets of data for one seq.
+2. For the validation dataset, for each joint type, add up misses/fp/mm/gt in all sequences. In the end we have 15joints*4 sets of data for the whole dataset.
+3. For each joint type, calculate MOTA=1-(miss+fp+mm)/gt.
+4. MOTA total=average of all joints' MOTA.
+
+The problem of MOTA calculation is solved. Previously I thought total is calculated by combining all joints' misses. But actually MOTA for each joint is calculated seperately and total is the mean.
 
 
 
