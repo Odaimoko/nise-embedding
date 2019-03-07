@@ -23,7 +23,7 @@ class FrameItem:
     '''
     
     # @log_time('\tInit FI……')
-    def __init__(self, nise_cfg, simple_cfg, img_path, task = 2, is_first = False, gt_joints = None):
+    def __init__(self, nise_cfg, simple_cfg, img_path, task = 2, is_first = False, gt_joints = None, gt_id = None):
         '''
 
         :param is_first: is this frame the first of the sequence
@@ -77,6 +77,10 @@ class FrameItem:
         else:
             self.gt_boxes = torch.tensor([])
             self.gt_joints = torch.tensor([])
+        if gt_id is not None:  # only used in assign_id_using_gt_id
+            self.gt_id = gt_id
+        else:
+            self.gt_id = torch.tensor([])
         
         # tensor num_person x num_joints x 2
         # should be LongTensor since we are going to use them as index. same length with unified_bbox
@@ -195,7 +199,7 @@ class FrameItem:
         elif prev_frame_joints.numel() != 0:
             # if there are joints to propagate, use filtered ones
             if self.cfg.ALG.JOINT_PROP_WITH_FILTERED_HUMAN:
-                prev_filtered_box, filtered_idx = prev_frame.get_filtered_bboxes(thres = self.cfg.ALG.PROP_HUMAN_THRES)
+                prev_filtered_box, filtered_idx = prev_frame.get_filtered_bboxes_with_thres(thres = self.cfg.ALG.PROP_HUMAN_THRES)
                 if prev_filtered_box.numel() == 0:
                     set_empty_joint()
                     debug_print('Proped', 0, 'boxes', indent = 1)
@@ -213,8 +217,6 @@ class FrameItem:
             prev_frame_joints_vis = torch.ones(prev_frame_joints.shape)[:, :, 0]  # numpeople x numjoints,
             prev_frame_joints_scores = expand_vector_to_tensor(prev_frame_joints_scores)
             
-            # if prev_box_scores.numel() == 1:  # 从这里下来的 score，如果只有一个的话，是一个scalar，而不是一个size为1 的向量
-            #     prev_box_scores.unsqueeze_(0)
             if self.cfg.TEST.USE_GT_JOINTS_TO_PROP and prev_frame.gt_boxes.numel() != 0:
                 # match一下，只用检测到的gt的joint
                 prev_box_np = prev_filtered_box.numpy()[:, :4]
@@ -222,7 +224,7 @@ class FrameItem:
                 prev_to_gt_iou = tf_iou(prev_box_np, gt_box_np, )
                 
                 # prev_box_scores = gt_scores[matched_gt_ind.astype(np.uint8)]  # 从这里下来的score如果是一个，会是向量而不是scalar
-                inds = get_matching_indices(to_torch(prev_to_gt_iou))
+                inds = get_matching_indices((prev_to_gt_iou))
                 num_matched_people = len(inds)
                 # Overwrite
                 prev_frame_joints = torch.zeros([num_matched_people, self.cfg.DATA.num_joints, 2])
@@ -368,7 +370,7 @@ class FrameItem:
             # debug_print('After NMS:', self.unified_boxes.shape[0], 'people', indent = 1)
         self.boxes_unified = True
     
-    def get_filtered_bboxes(self, thres):
+    def get_filtered_bboxes_with_thres(self, thres):
         if not self.boxes_unified:
             raise ValueError("Should unify bboxes first")
         if self.NO_BOXES:
@@ -381,15 +383,15 @@ class FrameItem:
     # @log_time('\t关节预测……')
     def est_joints(self, joint_detector):
         """detect current image's bboxes' joints pos using people-pose-estimation - """
-        
+
+        if not self.boxes_unified and not self.is_first:
+            # if first, no unified box because no flow to prop, so dont raise
+            raise ValueError('Should unify bboxes first')
         p = PurePosixPath(self.img_path)
         
         out_dir = os.path.join(self.cfg.PATH.JOINTS_DIR + "_single", p.parts[-2])
         mkdir(out_dir)
         torch_img = im_to_torch(self.img_outside_flow).unsqueeze(0)
-        if not self.boxes_unified and not self.is_first:
-            # if first, no unified box because no flow to prop, so dont raise
-            raise ValueError('Should unify bboxes first')
         self.joints = torch.zeros(self.unified_boxes.shape[0], self.cfg.DATA.num_joints, 2)  # FloatTensor
         self.joints_score = torch.zeros(self.unified_boxes.shape[0], self.cfg.DATA.num_joints)  # FloatTensor
         # if no people boxes, self.joints is tensor([])
@@ -447,8 +449,8 @@ class FrameItem:
         """ - Associate ids. question: how to associate using more than two frames?between each 2?- """
         if not self.joints_detected:
             raise ValueError('Should detect joints first')
-        self.id_boxes, self.id_idx_in_unified = self.get_filtered_bboxes(self.cfg.ALG.ASSIGN_BOX_THRES)
-
+        self.id_boxes, self.id_idx_in_unified = self.get_filtered_bboxes_with_thres(self.cfg.ALG.ASSIGN_BOX_THRES)
+        
         self.people_ids = torch.zeros(self.id_boxes.shape[0]).long()
         
         if not self.id_boxes.numel() == 0:
@@ -508,12 +510,37 @@ class FrameItem:
         self.id_assigned = True
     
     # @log_time('\tID分配……')
+    def assign_id_using_gt_id(self, get_dist_mat = None) -> None:
+        """ input: distance matrix; output: correspondence   """
+        if not self.joints_detected:
+            raise ValueError('Should detect joints first')
+        self.id_boxes, self.id_idx_in_unified = self.get_filtered_bboxes_with_thres(self.cfg.ALG.ASSIGN_BOX_THRES)
+        
+        self.people_ids = torch.zeros(self.id_boxes.shape[0]).long() - 1  # 剩下的都是-1，就是乱搞了
+        inds = []  # init
+        if self.gt_id.numel() != 0 and self.id_boxes.numel() != 0:
+            # match一下，只用检测到的gt的joint
+            id_box_np = self.id_boxes.numpy()[:, :4]
+            gt_box_np = self.gt_boxes.numpy()[:, :4]
+            prev_to_gt_iou = tf_iou(id_box_np, gt_box_np, )
+            inds = get_matching_indices((prev_to_gt_iou))
+            # Overwrite
+            for i, ind in enumerate(inds):
+                prev, gt = ind
+                self.people_ids[prev] = self.gt_id[gt]
+        else:
+            self.people_ids = torch.tensor(range(1, self.id_boxes.shape[0] + 1)).long()
+        
+        # debug_print('ID Assigned')
+        self.id_assigned = True
+    
+    # @log_time('\tID分配……')
     def assign_id_task_1_2(self, Q, get_dist_mat = None):
         """ input: distance matrix; output: correspondence   """
         """ - Associate ids. question: how to associate using more than two frames?between each 2?- """
         if not self.joints_detected:
             raise ValueError('Should detect joints first')
-        self.id_boxes, self.id_idx_in_unified = self.get_filtered_bboxes(self.cfg.ALG.ASSIGN_BOX_THRES)
+        self.id_boxes, self.id_idx_in_unified = self.get_filtered_bboxes_with_thres(self.cfg.ALG.ASSIGN_BOX_THRES)
         
         self.people_ids = torch.zeros(self.id_boxes.shape[0]).long()
         

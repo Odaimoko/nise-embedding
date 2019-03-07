@@ -37,10 +37,6 @@ def update_nise_config(_config, config_file):
         exp_config = edict(yaml.load(f))
         for k, v in exp_config.items():
             update_dict(_config, k, v)
-            # if k in _config:
-            #     else:
-            # else:
-            #     raise ValueError("{} not exist in _config.py".format(k))
 
 
 def get_edcfg_from_nisecfg(nise_cfg):
@@ -105,13 +101,17 @@ def set_path_from_nise_cfg(nise_cfg):
         track_part.append('mkrs')
     elif nise_cfg.ALG.MATCHING_ALG == nise_cfg.ALG.MATCHING_GREEDY:
         track_part.append('greedy')
+        
     track_part.extend([
         'box',
         '%.2f' % (nise_cfg.ALG.ASSIGN_BOX_THRES),
         'joint',
         '%.2f' % (nise_cfg.ALG.OUTPUT_JOINT_THRES),
-
     ])
+    if nise_cfg.TEST.ASSIGN_GT_ID:
+        track_part.append('gtID')
+    else:
+        track_part.append('matchID')
     
     detect_part = '_'.join(detect_part)
     prop_part = '_'.join(prop_part) if nise_cfg.TEST.TASK == 2 or nise_cfg.TEST.TASK == -1 else ''
@@ -121,11 +121,11 @@ def set_path_from_nise_cfg(nise_cfg):
         nise_cfg.TEST.MODE,
         'task',
         str(nise_cfg.TEST.TASK), ]
-    # if nise_cfg.TEST.TASK != -2:
     if detect_part: suffix_list.append(detect_part)
     if prop_part: suffix_list.append(prop_part)
     if unify_part: suffix_list.append(unify_part)
-    if track_part: suffix_list.append(track_part)
+    if nise_cfg.TEST.TASK == -2:
+        if track_part: suffix_list.append(track_part)
     
     suffix = '_'.join(suffix_list)
     suffix_range = '_'.join(['RANGE',
@@ -243,7 +243,8 @@ class NiseConfig:
             self.UNIFY_NMS_THRES_2 = .5
             
             self.ASSIGN_BOX_THRES = .5  # only assign id for boxes over this thres; if set to 0, use all unified box to assign id
-            self.OUTPUT_JOINT_THRES = .4 # only output joint over this thres for tracking; if set to 0, use all
+            self.OUTPUT_JOINT_THRES = .4  # only output joint over this thres for tracking; if set to 0, use all
+            
             
             self.MATCHING_MKRS = 0
             self.MATCHING_GREEDY = 1
@@ -267,10 +268,10 @@ class NiseConfig:
             self.GT_TRAIN_ANNOTATION_DIR = os.path.join(self.POSETRACK_ROOT, 'train_anno_json/')
             self.GT_VAL_ANNOTATION_DIR = os.path.join(self.POSETRACK_ROOT, 'valid_anno_json/')
             
-            self._JOINTS_DIR = 'images_joint-track/'
-            self._IMAGES_OUT_DIR = 'images_out-track/'
-            self._JSON_SAVE_DIR = 'pred_json-track/'
-            self._UNIFIED_JSON_DIR = 'unifed_boxes-track/'
+            self._JOINTS_DIR = 'images_joint-single-est/'
+            self._IMAGES_OUT_DIR = 'images_out-single-est/'
+            self._JSON_SAVE_DIR = 'pred_json-single-est/'
+            self._UNIFIED_JSON_DIR = 'unifed_boxes-single-est/'
             
             self.JOINTS_DIR = ''
             self.IMAGES_OUT_DIR = ''
@@ -290,6 +291,9 @@ class NiseConfig:
             self.GT_BOX_SCORE = 1
             
             self.GT_JOINTS_PROP_IOU_THRES = .5
+            
+            # those detected boxes which have corresponding gt boxes will have gt id, but others will have -1
+            self.ASSIGN_GT_ID = True
             
             self.ONLY_TEST = []
             

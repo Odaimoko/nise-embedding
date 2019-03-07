@@ -158,7 +158,7 @@ class FrameItem:
         if not prev_frame.joints.numel() == 0:
             # if there  are joints to propagate
             if nise_cfg.ALG.JOINT_PROP_WITH_FILTERED_HUMAN:
-                prev_filtered_box, filtered_idx = prev_frame.get_filtered_bboxes()
+                prev_filtered_box, filtered_idx = prev_frame.get_filtered_bboxes_with_thres()
                 if prev_filtered_box.numel() == 0:
                     set_empty_joint()
                     return
@@ -366,7 +366,7 @@ class FrameItem:
             if nise_cfg.ALG.JOINT_PROP_WITH_FILTERED_HUMAN:  # if filtered when proped, no need to do it here
                 prev_joints = self.new_joints.squeeze()  # squeeze is not for the first dim
             else:
-                prev_boxes_filtered, prev_boxes_idx = Q[-1].get_filtered_bboxes()
+                prev_boxes_filtered, prev_boxes_idx = Q[-1].get_filtered_bboxes_with_thres()
                 prev_joints = self.new_joints[prev_boxes_idx].squeeze()  # squeeze is not for the first dim
             # ─── MATCHING ──────────────────────────────
             prev_joints = expand_vector_to_tensor(prev_joints, 3)  # unsqueeze if accidental injury happens

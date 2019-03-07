@@ -18,7 +18,7 @@ def nise_pred_task_1_debug(gt_anno_dir, vis_dataset, hunam_detector, joint_estim
     anno_file_names = sorted(anno_file_names)
     mkdir(nise_cfg.PATH.JSON_SAVE_DIR)
     mkdir(nise_cfg.PATH.DETECT_JSON_DIR)
-    for i, file_name in enumerate(anno_file_names[:1]):
+    for i, file_name in enumerate(anno_file_names):
         debug_print(i, file_name)
         if is_skip_video(nise_cfg, i, file_name):
             continue
@@ -45,8 +45,8 @@ def nise_pred_task_1_debug(gt_anno_dir, vis_dataset, hunam_detector, joint_estim
             detection_result_from_json = {}
         
         Q = deque(maxlen = nise_cfg.ALG._DEQUE_CAPACITY)
-        uni_box = torch.load(
-            'unifed_boxes-pre-commissioning/valid_task_-1_DETbox_allBox_propAll_propGT_tfIoU_nmsThres_0.05_0.5/' + p.stem + '.pkl')
+        # uni_box = torch.load(
+        #     'unifed_boxes-pre-commissioning/valid_task_-1_DETbox_allBox_propAll_propGT_tfIoU_nmsThres_0.05_0.5/' + p.stem + '.pkl')
         # uni_box = torch.load(
         #     'unifed_boxes-debug/valid_task_-1_DETbox_allBox_propAll_propGT_tfIoU_nmsThres_0.05_0.50/' + p.stem + '.pkl')
         for j, frame in enumerate(gt):
@@ -67,9 +67,6 @@ def nise_pred_task_1_debug(gt_anno_dir, vis_dataset, hunam_detector, joint_estim
                 detect_box = torch.tensor(detect_box)
             else:
                 detect_box = torch.tensor([])
-            
-            # debugging..., will delete
-            # detect_box = uni_box[j][img_file_path]
             
             fi = FrameItem(nise_cfg, simple_cfg, img_file_path, 1, True, gt_joints)
             fi.detect_human(hunam_detector, detect_box)
@@ -243,7 +240,8 @@ def nise_flow_debug(gt_anno_dir, joint_estimator, flow_model):
         num_process = 12
     global locks
     locks = [Lock() for _ in range(gm.gpu_num)]
-    with Pool(initializer = init_gm, initargs = (locks, nise_cfg)) as po:
+    with Pool(  initializer = init_gm, initargs = (locks, nise_cfg)) as po:
+    # with Pool(processes = 1, initializer = init_gm, initargs = (locks, nise_cfg)) as po:
         debug_print('Pool created.')
         po.starmap(fun, all_video, chunksize = 4)
 
@@ -271,11 +269,11 @@ def run_one_video_tracking_debug(_nise_cfg, _simple_cfg, i: int, file_name: str,
     pred_frames = []
     # load pre computed boxes
     uni_path = os.path.join('unifed_boxes-commi-onlydet', 'valid_task_1_DETbox_allBox_tfIoU_nmsThres_0.35_0.50',
-                            p.stem + '.pkl') # unified boxes result of 71.6
+                            p.stem + '.pkl')  # unified boxes result of 71.6
     uni_boxes = torch.load(uni_path)
     
     pre_com_json_path = os.path.join('pred_json-commi-onlydet', 'valid_task_1_DETbox_allBox_tfIoU_nmsThres_0.35_0.50',
-                                     p.stem + '.json') # joints predictions of 71.6
+                                     p.stem + '.json')  # joints predictions of 71.6
     with open(pre_com_json_path, 'r') as f:
         pred = json.load(f)['annolist']
     Q = deque(maxlen = _nise_cfg.ALG._DEQUE_CAPACITY)
@@ -287,13 +285,16 @@ def run_one_video_tracking_debug(_nise_cfg, _simple_cfg, i: int, file_name: str,
         if gt_annorects is not None and len(gt_annorects) != 0:
             # if only use gt bbox, then for those frames which dont have annotations, we dont estimate
             gt_joints = get_joints_from_annorects(gt_annorects)
+            gt_id = torch.tensor([t['track_id'][0] for t in gt_annorects])
         else:
             gt_joints = torch.tensor([])
+            gt_id = torch.tensor([])
         
-        if len(Q) == 0 :  # first frame doesnt have flow, joint prop
-            fi = FrameItem(_nise_cfg, _simple_cfg, img_file_path, is_first = True, task = 3, gt_joints = gt_joints)
+        if len(Q) == 0:  # first frame doesnt have flow, joint prop
+            fi = FrameItem(_nise_cfg, _simple_cfg, img_file_path, is_first = True, task = 3, gt_joints = gt_joints,
+                           gt_id = gt_id)
         else:
-            fi = FrameItem(_nise_cfg, _simple_cfg, img_file_path, task = 3, gt_joints = gt_joints)
+            fi = FrameItem(_nise_cfg, _simple_cfg, img_file_path, task = 3, gt_joints = gt_joints, gt_id = gt_id)
         
         if _nise_cfg.TEST.USE_GT_PEOPLE_BOX and gt_joints.numel() == 0:
             # we want to use gt box to debug, so ignore those which dont have annotations
@@ -323,7 +324,11 @@ def run_one_video_tracking_debug(_nise_cfg, _simple_cfg, i: int, file_name: str,
                 fi.joints = pred_joints
                 fi.joints_score = pred_joints_scores
             fi.joints_detected = True
-            fi.assign_id(Q)
+            
+            if nise_cfg.TEST.ASSIGN_GT_ID:
+                fi.assign_id_using_gt_id()
+            else:
+                fi.assign_id(Q)
             if nise_cfg.DEBUG.VISUALIZE:
                 t = threading.Thread(target = fi.visualize, args = ())
                 vis_threads.append(t)

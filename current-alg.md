@@ -125,8 +125,8 @@ else
 ## est_joints
 
 ```python
-if not (box is nmsed) or (this is the first frame) 
-	return
+if (box is not nmsed) and (this is not the first frame) 
+	ERROR
 for each box in unified box
 	box score is obtained
     compute box center and scale using `box2cs`, set rotation=0
@@ -135,7 +135,6 @@ for each box in unified box
     detect joints, get the prediction's position and the corresponding heatmap value
 	set new joints to the prediction position
     set new joints' score to be the heatmap values * box score
-    
 ```
 
 ## assign_id

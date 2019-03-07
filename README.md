@@ -69,13 +69,37 @@ $ diff my_e2e_mask_rcnn_X-101-64x4d-FPN_1x.yaml ../Detectron.pytorch/tron_config
 >   MASK_ON: True
 ```
 
+## 2019-3-7
 
+I read the PoseFlow paper, which is the second best now, it has much lower MOTP(67.8 VS simple baseline's 84.5), and MOTA is 58.3 VS 62.9. In my own result, MOTP is always around 82. Maybe this is the break point. MOTP is the average distance between the prediction and gt, so the lower the better.
 
+Nope, I don't think this is important? This is mainly about the precision of estimation.
 
+### New finding
 
-## 2019-03-01
+In Paper simple baseline, I find a sentence I didn't notice before
 
-oracle的 matching
+> The ground truth human box is made to a fixed aspect ratio, e.g., height : width = 4 : 3 by extending the box in height or width
+
+i.e. they extend the human bbox. Does this mean after getting the bbox from human joints in PT (by extending the joints), they also rectify the aspect ratio?
+
+> the joint location is predicted on the averaged heatmpaps of the original and flipped image. A quarter offset in the direction from highest response to the second highest response is used to obtain the ﬁnal location.
+
+They did not use the highest response, but with a little offset, in the COCO estimation.
+
+## 2019-03-05
+
+Previously, when training the network on Posetrack, I didn't filtered out those people who only have 1 joint annotated. If a person is annotated with one joint, the training sample has nothing but a meaning less point, resulting in lower accuracy.
+
+I changed the dataset by filtering out those whose area is less than 1000.
+
+87.92->87.97999...., emmm...
+
+After freezing the layers except for the last one and the training for the rest 19 epochs, the mAP is 88. No big improvement.
+
+Then I freeze the previous layers and training this all the time, val mAP = 82.07.
+
+If I want to test the mAP, I can use only the detection result and filter out boxes and joints with lower scores, but don't do the tracking part.
 
 ## 2019-2-28
 
