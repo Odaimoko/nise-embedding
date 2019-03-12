@@ -11,7 +11,8 @@ import tron_lib.utils.vis as vis_utils
 from tron_lib.core.test_for_pt import im_detect_all
 from simple_lib.core.inference import get_final_preds
 from simple_lib.core.config import config as simple_cfg
-from nise_utils.transforms import get_affine_transform
+# from nise_utils.cpn_transforms import get_affine_transform
+from nise_utils.simple_transforms import flip_back, get_affine_transform
 
 
 class FrameItem:
@@ -35,13 +36,14 @@ class FrameItem:
         self.img_name = PurePosixPath(img_path).stem
         # tensor with size C x H x W,  detector needs BGR so here use bgr.
         
-        self.original_img = cv2.imread(self.img_path)  # with original size? YES
+        self.original_img = cv2.imread(self.img_path)  # with original size
         self.ori_img_h, self.ori_img_w, _ = self.original_img.shape
         # 依然是W/H， 回忆model第一个192是宽。
         self.joint_est_mode_size = simple_cfg.MODEL.IMAGE_SIZE
         self.img_ratio = self.joint_est_mode_size[0] / self.joint_est_mode_size[1]
         
         if self.cfg.TEST.USE_GT_PEOPLE_BOX and self.task == 1:
+            # no use, just rectify
             self.flow_img = self.original_img
         else:
             if self.cfg.ALG.FLOW_MODE == self.cfg.ALG.FLOW_PADDING_END:
@@ -72,7 +74,7 @@ class FrameItem:
             gt_box = expand_vector_to_tensor(gt_box)
             gt_scores = torch.ones([gt_box.shape[0]])
             gt_scores.unsqueeze_(1)
-            self.gt_boxes, idx = filter_bbox_with_area(torch.cat([gt_box, gt_scores], 1))
+            self.gt_boxes, idx = filter_bbox_with_area(torch.cat([gt_box, gt_scores], -1))
             self.gt_joints = expand_vector_to_tensor(gt_joints[idx, :], 3)
         else:
             self.gt_boxes = torch.tensor([])
@@ -121,7 +123,7 @@ class FrameItem:
         
         if self.cfg.TEST.USE_GT_PEOPLE_BOX:
             self.detected_boxes = self.gt_boxes
-        elif prepared_detection is not None and prepared_detection.numel() >= 5:
+        elif prepared_detection is not None:  # 0 is 0 and prepared_detection.numel() >= 5:
             self.detected_boxes = prepared_detection
         else:
             cls_boxes = im_detect_all(detector, self.original_img)  # the example from detectron use this in this way
@@ -199,7 +201,8 @@ class FrameItem:
         elif prev_frame_joints.numel() != 0:
             # if there are joints to propagate, use filtered ones
             if self.cfg.ALG.JOINT_PROP_WITH_FILTERED_HUMAN:
-                prev_filtered_box, filtered_idx = prev_frame.get_filtered_bboxes_with_thres(thres = self.cfg.ALG.PROP_HUMAN_THRES)
+                prev_filtered_box, filtered_idx = prev_frame.get_filtered_bboxes_with_thres(
+                    thres = self.cfg.ALG.PROP_HUMAN_THRES)
                 if prev_filtered_box.numel() == 0:
                     set_empty_joint()
                     debug_print('Proped', 0, 'boxes', indent = 1)
@@ -380,10 +383,10 @@ class FrameItem:
         final_valid_idx = valid_score_idx
         return filtered, final_valid_idx
     
-    # @log_time('\t关节预测……')
+    @log_time('\t关节预测……')
     def est_joints(self, joint_detector):
         """detect current image's bboxes' joints pos using people-pose-estimation - """
-
+        
         if not self.boxes_unified and not self.is_first:
             # if first, no unified box because no flow to prop, so dont raise
             raise ValueError('Should unify bboxes first')
@@ -399,9 +402,8 @@ class FrameItem:
         for i in range(self.unified_boxes.shape[0]):
             bb = self.unified_boxes[i, :4]  # no score
             human_score = self.unified_boxes[i, 4]
-            # debug_print(i, bb)
             
-            center, scale = box2cs(bb, self.img_ratio)  # 2TODO: is this right?
+            center, scale = box2cs(bb, self.img_ratio)
             rotation = 0
             # from simple/JointDataset.py
             trans = get_affine_transform(center, scale, rotation, self.joint_est_mode_size)
@@ -419,6 +421,24 @@ class FrameItem:
             resized_human = im_to_torch(resized_human_np)
             resized_human.unsqueeze_(0)  # make it batch so we can use detector
             joint_hmap = joint_detector(resized_human)
+            
+            # FLIP 
+            if True:  # from function.py/validate
+                # this part is ugly, because pytorch has not supported negative index
+                flip_pairs = [[0, 5], [1, 4], [2, 3], [6, 11], [7, 10], [8, 9]]
+                joint_hmap_flipped = np.flip(joint_hmap.cpu().numpy(), 3).copy()
+                joint_hmap_flipped = torch.from_numpy(joint_hmap_flipped).cuda()
+                output_flipped = joint_detector(joint_hmap_flipped)
+                output_flipped = flip_back(output_flipped.cpu().numpy(), flip_pairs)
+                output_flipped = torch.from_numpy(output_flipped.copy()).cuda()
+                
+                # feature is not aligned, shift flipped heatmap for higher accuracy
+                if config.TEST.SHIFT_HEATMAP:
+                    output_flipped[:, :, :, 1:] = \
+                        output_flipped.clone()[:, :, :, 0:-1]
+                    # output_flipped[:, :, :, 0] = 0
+                
+                output = (output + output_flipped) * 0.5
             
             # make it batch so we can get right preds
             c_unsqueezed, s_unsqueezed = np.expand_dims(center, 0), np.expand_dims(scale, 0)
@@ -641,7 +661,7 @@ class FrameItem:
         :return:
         '''
         if self.task == 1 or self.task == 2:
-            
+            # output all joints
             d = {
                 'image': [
                     {

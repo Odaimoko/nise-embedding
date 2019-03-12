@@ -1,4 +1,4 @@
-# nise-embedding
+nise-embedding
 
 Milestones
 
@@ -13,37 +13,21 @@ Milestones
 + [x] 2018-12-06：joint 最终分数=human detection*joint
 + [ ] 训练之前 freeze 一下
 + [x] flow 用 pad 达到 32的倍数
-
-  + [ ] （其他的方式）
+    + [ ] （其他的方式）
 + [ ] joint prop 的 score 怎么确？
     + [ ] 单纯使用上一帧过来的 score
-    + [ ] 上一帧的 score*joint 的 score
+    + [x] 上一帧的 score*joint 的 score
 + [ ] 达到pt17 task 3 的state-of-the-art
 + [x] 使用data parallel 加速，现在太慢了。
-
-  + [ ] 2018-12-11：看了时间之后，发现并没有什么可以减少时间的？可能在 jointprop 和 est的时候整个batch 一起走。
-
-  + [ ] Detected 8 boxes.发现主要是存储图像花时间了。
-    人检测…… 1.136 s.
-  	 	生成flow…… 0.121 s.
-  	 	Proped 5 boxes
-  	 	Joint prop…… 0.512 s.
-  	 	Before NMS: 13 people. 	After NMS: 8 people
-  	 	NMS…… 0.000 s.
-  	 	关节预测…… 0.483 s.
-  	 	ID分配…… 0.001 s
-
-  + [ ] detect可以parallel？好像不行。
-
-  + [ ] flow可以？flow 的 model 可以接受 batch 的输入，大小为 $bs\times channels\times 2\times h\times w$。但如果要这一步并行化，就要加载进所有的图片？或者也可以设置一个生成 flow 的 batchsize， 毕竟这个是 root。$2$指的是 flow 需要两张图片，如果要并行就需要$[[1,2],[2,3],[3,4]]$。
+    + [ ] detect可以parallel？好像不行。
+    + [ ] flow可以？flow 的 model 可以接受 batch 的输入，大小为 $bs\times channels\times 2\times h\times w$。但如果要这一步并行化，就要加载进所有的图片？或者也可以设置一个生成 flow 的 batchsize， 毕竟这个是 root。$2$指的是 flow 需要两张图片，如果要并行就需要$[[1,2],[2,3],[3,4]]$。
 + [x] 宁可花多一点时间去做正确，也不要回头来 debug。
 + [x] 为什么高那么多？66.7->69.6。[2018-12-12](2018-12-12)。
 + [ ] flow 的正确性怎么看？小数据集的正确性先确保了。
 + [x] 多线程。bash 多个 GPU 利用。
 + [x] 参数与设定分开。[2018-12-12](2018-12-12)。
 + [x] 存储 detection 结果
-+ [ ] 存储 flow 结果
-+ [ ] 只用有标注的进行 prop（四个连续的 flow 加起来作为整体 flow，比较smooth）。
++ [x] 存储 flow 结果
 
 # experiment
 

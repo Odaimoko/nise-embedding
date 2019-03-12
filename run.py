@@ -54,13 +54,14 @@ if __name__ == '__main__':
         dataset_path = nise_cfg.PATH.GT_VAL_ANNOTATION_DIR
     elif nise_cfg.TEST.MODE == 'train':
         dataset_path = nise_cfg.PATH.GT_TRAIN_ANNOTATION_DIR
-    
+     
     if nise_cfg.TEST.TASK == 1:
-        
-        nise_pred_task_1_debug(dataset_path,
-                               human_det_dataset,
-                               maskRCNN,
-                               simple_joint_est_model, flow_model)
+        nise_flow_debug(dataset_path,maskRCNN, simple_joint_est_model, flow_model)
+
+        # nise_pred_task_1_debug(dataset_path,
+        #                        human_det_dataset,
+        #                        maskRCNN,
+        #                        simple_joint_est_model, flow_model)
     elif nise_cfg.TEST.TASK == 2:
         
         nise_pred_task_2_debug(dataset_path,
@@ -70,4 +71,4 @@ if __name__ == '__main__':
                                simple_joint_est_model, flow_model)
     elif nise_cfg.TEST.TASK == -1 or nise_cfg.TEST.TASK ==  -2:
         
-        nise_flow_debug(dataset_path, simple_joint_est_model, flow_model)
+        nise_flow_debug(dataset_path,maskRCNN, simple_joint_est_model, flow_model)

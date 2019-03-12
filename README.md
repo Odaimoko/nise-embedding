@@ -26,32 +26,13 @@ Use GT box to estimate。(meaningless)
 
 # TODOLIST
 
-+ [x] 接口问题
-+ [x] 固定 gt 的 bbox，est joints（2018-12-03）
-+ [ ] ~~找到 single frame 的问题，查看输出的图像。~~
-+ [x] 2018-12-06：joint 最终分数=human detection*joint
-+ [ ] 训练之前 freeze 一下
-+ [x] flow 用 pad 达到 32的倍数
-
-  + [ ] （其他的方式）
-+ [ ] joint prop 的 score 怎么确？
-    + [ ] 单纯使用上一帧过来的 score
-    + [x] 上一帧的 score*joint 的 score
-+ [ ] 达到pt17 task 3 的state-of-the-art
-+ [x] 使用data parallel 加速，现在太慢了。
-
-  + [ ] detect可以parallel？好像不行。
-
-  + [ ] flow可以？flow 的 model 可以接受 batch 的输入，大小为 $bs\times channels\times 2\times h\times w$。但如果要这一步并行化，就要加载进所有的图片？或者也可以设置一个生成 flow 的 batchsize， 毕竟这个是 root。$2$指的是 flow 需要两张图片，如果要并行就需要$[[1,2],[2,3],[3,4]]$。
-+ [x] 宁可花多一点时间去做正确，也不要回头来 debug。
-+ [x] 为什么高那么多？66.7->69.6。[2018-12-12](2018-12-12)。
-+ [ ] flow 的正确性怎么看？小数据集的正确性先确保了。
-+ [x] 多线程。bash 多个 GPU 利用。
-+ [x] 参数与设定分开。[2018-12-12](2018-12-12)。
-+ [x] 存储 detection 结果
-+ [x] 存储 flow 结果
 + [ ] 只用有标注的进行 prop（四个连续的 flow 加起来作为整体 flow，比较smooth）。
     + [ ] 因为并不是所有都有标注。如果前一帧没有gt 那就用的是 det 的 box，降低精确度。
++ [x] 确认 det ==模型的准确性==
++ [ ] 确认 esti 的准确性
+    + [x] 确定使用ptval 上88的那个模型跑出的结果。
++ [ ] 确认 flow 的有效性
++ [x] 确认 matching 的正确性
 
 # experiment
 
@@ -69,11 +50,78 @@ $ diff my_e2e_mask_rcnn_X-101-64x4d-FPN_1x.yaml ../Detectron.pytorch/tron_config
 >   MASK_ON: True
 ```
 
+## 2019-3-12
+
+原本的joint score=joint x box，现在试试只有joint score的。使用nms后的detection结果做实验，从71.5下降到了69.4。
+
+```
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 79.7 & 78.7 & 70.7 & 59.1 & 69.7 & 65.3 & 57.6 & 69.4 \\
+```
+
+### fliptest相关
+
+在single person est里，我关掉了pt17的fliptest，结果是
+
+| Arch | Head   | Shoulder | Elbow  | Wrist  | Hip    | Knee   | Ankle  | Mean   | Mean@0.1 |
+| ---- | ------ | -------- | ------ | ------ | ------ | ------ | ------ | ------ | -------- |
+|      | 93.151 | 92.323 | 87.225 | 80.956 | 87.258 | 83.405 | 79.046 | 87.289 | 30.362 |
+
+88.013-87.289=0.724，区别也不是很大。
+
+## 2019-03-10
+
+突然想到 baseline 也在 posetrack 的 leaderboard 上有 task1 的结果
+
+| No.  | Entry                                                        | Additional Training Data | wrists AP | ankles AP | total AP |
+| ---- | ------------------------------------------------------------ | ------------------------ | --------- | --------- | -------- |
+| 1    | [FlowTrackS](https://posetrack.net/users/view_entry_details.php?entry=FlowTrackS_chl2) | + COCO                   | 74.16     | 66.36     | 77.15    |
+
+不过这个是 test 上的结果，那 val 上应该更高——我现在只有69.6，用 gtbox 也是74，说明 estimation 确实是有问题的。
+
+无论怎么样都要 load human det?因为我代码里写的是只要没有 detection 结果就去重新 detect 一次。现在改了逻辑， detect 没有结果那就是没有，不需要再重复 det，于是也就不需要 load 了。
+
+### 使用88的结果
+
+使用0.35（一开始筛掉的）和0.5（判定两个box是同一个）的nms threshold
+
+```
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 83.1 & 80.9 & 72.7 & 61.0 & 71.3 & 66.6 & 58.9 & 71.5 \\
+```
+
+没有nms的结果，比之前的全面低下。
+
+```
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 79.9 & 78.4 & 70.4 & 59.0 & 69.7 & 65.1 & 57.7 & 69.3 \\
+```
+
+比87.92的下降了几个点。
+
+使用gtbox的结果差不多，提高了0.1
+
+```
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 85.7 & 82.7 & 74.3 & 62.5 & 73.8 & 69.4 & 64.6 & 74.1 \\
+```
+
+### mAP calculation of poseval
+
+1. Use the procedure in [how to find correspondence](#2019-2-28) to match gt people and pred people. Whether joints are matched is calculated here. For each joint type, for each frame, record all existing predicted joints' score and whether they are matched to a gt (i.e. TP or FP). In code they are called `scoreAll` and `labelAll` respectively.
+2. For each joint type, 
+   1. collect all scores and labels across all frames. Now we have 2 vectors, whose length is the number of all predictions. Also the total number of GT is accumulated across frames.
+   2. Calculate pre and rec.
+   3. Calculate AP
+3. mAP, mPrec, mRec is the mean over all joint types.
+
+Not surprising.
+
 ## 2019-3-7
 
 I read the PoseFlow paper, which is the second best now, it has much lower MOTP(67.8 VS simple baseline's 84.5), and MOTA is 58.3 VS 62.9. In my own result, MOTP is always around 82. Maybe this is the break point. MOTP is the average distance between the prediction and gt, so the lower the better.
 
-Nope, I don't think this is important? This is mainly about the precision of estimation.
+Nope, I don't think this is important? This is mainly about the precision (by pixel) of estimation, the distance between GT and pred.
 
 ### New finding
 
@@ -83,9 +131,13 @@ In Paper simple baseline, I find a sentence I didn't notice before
 
 i.e. they extend the human bbox. Does this mean after getting the bbox from human joints in PT (by extending the joints), they also rectify the aspect ratio?
 
+
+
 > the joint location is predicted on the averaged heatmpaps of the original and flipped image. A quarter offset in the direction from highest response to the second highest response is used to obtain the ﬁnal location.
 
 They did not use the highest response, but with a little offset, in the COCO estimation.
+
+【Well, these 2 is implemented by the author so this is not the point】
 
 ## 2019-03-05
 
@@ -183,7 +235,7 @@ Following experiments aim to keep mAP the same and see what will MOTA be. Since 
 - [ ] without joint filtering: Task 3 performance of NMSed baseline (thres are 0.35_0.50 respectively)
 - [ ] with joint filtering:  T3 of the two mentioned above
 
-Those three to-checks are actually unnecessary. I have conducted experiments about box and joint thres during the process of assigning ID. Only boxes with scores over `box_thres` have ID, and only joint with scores over `joint_thres` are output. This experiment is just a verification of what Detect-and-Track has said, that there is a tradeoff between MOTA and mAP. Filtering boxes and joints results in lower mAP and higher MOTA. We have four associations, box/joint filtering with mAP and MOTA. But as can be seen, filtering boxes doesn't affect mAP too much. The order should be the effect of joint/MOTA(very big) > joint/mAP > box/MOTA > box/mAP(very small).
+Those three to-checks are actually unnecessary. I have conducted experiments about box and joint thres during the process of assigning ID. Only boxes with scores over `box_thres` have ID, and only joint with scores over `joint_thres` are output. This experiment is just a verification of what Detect-and-Track has said, that there is a tradeoff between MOTA and mAP. Filtering boxes and joints results in lower mAP and higher MOTA. We have four associations, box/joint filtering with mAP and MOTA. But as can be seen, filtering boxes doesn't affect mAP too much. The order should be the effect of **<u>joint/MOTA(very big) > joint/mAP > box/MOTA > box/mAP(very small)</u>**.
 
 ### What is the problem
 

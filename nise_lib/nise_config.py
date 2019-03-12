@@ -101,7 +101,7 @@ def set_path_from_nise_cfg(nise_cfg):
         track_part.append('mkrs')
     elif nise_cfg.ALG.MATCHING_ALG == nise_cfg.ALG.MATCHING_GREEDY:
         track_part.append('greedy')
-        
+    
     track_part.extend([
         'box',
         '%.2f' % (nise_cfg.ALG.ASSIGN_BOX_THRES),
@@ -114,7 +114,7 @@ def set_path_from_nise_cfg(nise_cfg):
         track_part.append('matchID')
     
     detect_part = '_'.join(detect_part)
-    prop_part = '_'.join(prop_part) if nise_cfg.TEST.TASK == 2 or nise_cfg.TEST.TASK == -1 else ''
+    prop_part = '_'.join(prop_part)
     unify_part = '_'.join(unify_part)
     track_part = '_'.join(track_part)
     suffix_list = [
@@ -122,7 +122,8 @@ def set_path_from_nise_cfg(nise_cfg):
         'task',
         str(nise_cfg.TEST.TASK), ]
     if detect_part: suffix_list.append(detect_part)
-    if prop_part: suffix_list.append(prop_part)
+    if nise_cfg.TEST.TASK == 2 or nise_cfg.TEST.TASK == -1:
+        if prop_part: suffix_list.append(prop_part)
     if unify_part: suffix_list.append(unify_part)
     if nise_cfg.TEST.TASK == -2:
         if track_part: suffix_list.append(track_part)
@@ -210,6 +211,8 @@ class NiseConfig:
             self.load_joint_est_model = True
             self.SIMPLE = False
             
+            self.NO_NMS = False
+            
             self.FRAME = True
             self.VISUALIZE = True
             self.VIS_HUMAN_THRES = .5
@@ -244,7 +247,6 @@ class NiseConfig:
             
             self.ASSIGN_BOX_THRES = .5  # only assign id for boxes over this thres; if set to 0, use all unified box to assign id
             self.OUTPUT_JOINT_THRES = .4  # only output joint over this thres for tracking; if set to 0, use all
-            
             
             self.MATCHING_MKRS = 0
             self.MATCHING_GREEDY = 1
