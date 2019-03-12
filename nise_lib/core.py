@@ -215,7 +215,7 @@ def init_gm(_gm, n_cfg, ):
 
 
 @log_time('validation 跑了')
-def nise_flow_debug(gt_anno_dir, joint_estimator, flow_model):
+def nise_flow_debug(gt_anno_dir, human_detector, joint_estimator, flow_model):
     # PREDICT ON POSETRACK 2017
     pp = pprint.PrettyPrinter(indent = 2)
     debug_print(pp.pformat(nise_cfg))
@@ -224,14 +224,17 @@ def nise_flow_debug(gt_anno_dir, joint_estimator, flow_model):
     anno_file_names = sorted(anno_file_names)
     mkdir(nise_cfg.PATH.JSON_SAVE_DIR)
     # if don't pass in nise_cfg, in run_video function, nise_will be the original one
-    all_video = [(nise_cfg, simple_cfg, i, file_name, joint_estimator, flow_model) for i, file_name in
+    all_video = [(nise_cfg, simple_cfg, i, file_name, human_detector, joint_estimator, flow_model) for i, file_name in
                  enumerate(anno_file_names)]
     debug_print('MultiProcessing start method:', mp.get_start_method(), lvl = Levels.STATUS)
     
     # https://stackoverflow.com/questions/24941359/ctx-parameter-in-multiprocessing-queue
     # If you were to import multiprocessing.queues.Queue directly and try to instantiate it, you'll get the error you're seeing. But it should work fine if you import it from multiprocessing directly.
-    
-    if nise_cfg.TEST.TASK == -1 or nise_cfg.TEST.TASK == 1:
+
+    if nise_cfg.TEST.TASK == 1:
+        fun = run_one_video_task_1
+
+    elif nise_cfg.TEST.TASK == -1:
         fun = run_one_video_flow_debug
     elif nise_cfg.TEST.TASK == -2:
         fun = run_one_video_tracking_debug
@@ -240,14 +243,117 @@ def nise_flow_debug(gt_anno_dir, joint_estimator, flow_model):
         num_process = 12
     global locks
     locks = [Lock() for _ in range(gm.gpu_num)]
-    with Pool(  initializer = init_gm, initargs = (locks, nise_cfg)) as po:
-    # with Pool(processes = 1, initializer = init_gm, initargs = (locks, nise_cfg)) as po:
+    # with Pool(initializer = init_gm, initargs = (locks, nise_cfg)) as po:
+    with Pool(processes = 5, initializer = init_gm, initargs = (locks, nise_cfg)) as po:
         debug_print('Pool created.')
         po.starmap(fun, all_video, chunksize = 4)
 
 
 @log_time('一个视频跑了')
-def run_one_video_tracking_debug(_nise_cfg, _simple_cfg, i: int, file_name: str, joint_estimator, flow_model):
+def run_one_video_task_1(_nise_cfg, _simple_cfg, i: int, file_name: str, human_detector, joint_estimator, flow_model):
+    '''
+    Use precomputed unified boxes and joints to do matching.
+    :param i:
+    :param file_name:
+    :param joint_estimator:
+    :param flow_model:
+    :return:
+    '''
+    torch.cuda.empty_cache()
+    if is_skip_video(_nise_cfg, i, file_name):
+        debug_print('Skip', i, file_name)
+        return
+    debug_print(i, file_name)
+    
+    p = PurePosixPath(file_name)
+    
+    det_path = os.path.join(_nise_cfg.PATH.DETECT_JSON_DIR, p.parts[-1])
+    flow_path = os.path.join(_nise_cfg.PATH.FLOW_JSON_DIR, p.stem + '.pkl')
+    est_path = os.path.join(_nise_cfg.PATH.DET_EST_JSON_DIR, p.stem + '.pkl')
+    json_path = os.path.join(_nise_cfg.PATH.JSON_SAVE_DIR, p.parts[-1])
+    uni_path = os.path.join(_nise_cfg.PATH.UNIFIED_JSON_DIR, p.stem + '.pkl')
+    
+    with open(file_name, 'r') as f:
+        gt = json.load(f)['annolist']
+    
+    pred_frames = []
+    detect_result_to_record = []
+    flow_result_to_record = []
+    est_result_to_record = []
+    uni_result_to_record = []
+    
+    # load pre computed boxes
+    
+    if _nise_cfg.DEBUG.USE_DETECTION_RESULT:
+        with open(det_path, 'r')as f:
+            detection_result_from_json = json.load(f)
+        assert len(detection_result_from_json) == len(gt)
+    else:
+        detection_result_from_json = {}
+    
+    Q = deque(maxlen = _nise_cfg.ALG._DEQUE_CAPACITY)
+    vis_threads = []
+    for j, frame in enumerate(gt):
+        img_file_path = os.path.join(_nise_cfg.PATH.POSETRACK_ROOT, frame['image'][0]['name'])
+        # debug_print(j, img_file_path, indent = 1)
+        gt_annorects = frame['annorect']
+        if nise_cfg.TEST.USE_GT_PEOPLE_BOX and \
+                (gt_annorects is not None or len(gt_annorects) != 0):
+            gt_joints = get_joints_from_annorects(gt_annorects)
+        else:
+            gt_joints = torch.tensor([])
+        
+        if _nise_cfg.DEBUG.USE_DETECTION_RESULT:
+            detect_box = detection_result_from_json[j][img_file_path]
+            detect_box = torch.tensor(detect_box)
+        else:
+            detect_box = torch.tensor([])
+        
+        fi = FrameItem(_nise_cfg, _simple_cfg, img_file_path, is_first = True, task = 1, gt_joints = gt_joints)
+        fi.detect_human(human_detector, detect_box)
+        if _nise_cfg.DEBUG.SAVE_FLOW_TENSOR:
+            fi.gen_flow(flow_model, None if j == 0 else Q[-1].flow_img)
+        fi.unify_bbox()
+        fi.est_joints(joint_estimator)
+        
+        if nise_cfg.DEBUG.VISUALIZE:
+            fi.assign_id_task_1_2(Q)
+            threading.Thread(target = fi.visualize, args = ()).start()
+        
+        detect_result_to_record.append({img_file_path: fi.detect_results()})
+        flow_result_to_record.append({img_file_path: fi.flow_result()})
+        est_result_to_record.append({img_file_path: fi.det_est_result()})
+        uni_result_to_record.append({img_file_path: fi.unfied_result()})
+        
+        pred_frames.append(fi.to_dict())
+    
+    with open(json_path, 'w') as f:
+        json.dump({'annolist': pred_frames}, f)
+        debug_print('pt eval json saved:', json_path)
+    
+    if nise_cfg.DEBUG.SAVE_DETECTION_TENSOR:
+        with open(det_path, 'w') as f:
+            json.dump(detect_result_to_record, f)
+            debug_print('det results json saved:', det_path)
+    if nise_cfg.DEBUG.SAVE_FLOW_TENSOR:
+        torch.save(flow_result_to_record, flow_path)
+        debug_print('Flow saved', flow_path)
+    if nise_cfg.DEBUG.SAVE_DETECTION_S_EST:
+        torch.save(est_result_to_record, est_path)
+        debug_print(
+            'Detection\'s estimation saved', est_path
+        )
+    if nise_cfg.DEBUG.SAVE_NMS_TENSOR:
+        torch.save(uni_result_to_record, uni_path)
+        debug_print('NMSed boxes saved: ', uni_path)
+    
+    for t in vis_threads:
+        t.join()
+
+
+@log_time('一个视频跑了')
+def run_one_video_tracking_debug(_nise_cfg, _simple_cfg, i: int, file_name: str, human_detector, joint_estimator,
+                                 flow_model):
     '''
     Use precomputed unified boxes and joints to do matching.
     :param i:
@@ -344,7 +450,7 @@ def run_one_video_tracking_debug(_nise_cfg, _simple_cfg, i: int, file_name: str,
 
 
 @log_time('一个视频跑了')
-def run_one_video_flow_debug(_nise_cfg, _simple_cfg, i, file_name, joint_estimator, flow_model):
+def run_one_video_flow_debug(_nise_cfg, _simple_cfg, i, file_name, human_detector, joint_estimator, flow_model):
     '''
     Atom function. A video be run sequentially.
     :param i:
@@ -449,44 +555,3 @@ def run_one_video_flow_debug(_nise_cfg, _simple_cfg, i, file_name, joint_estimat
     if _nise_cfg.DEBUG.SAVE_NMS_TENSOR:
         torch.save(uni_result_to_record, uni_path)
         debug_print('NMSed boxes saved: ', uni_path)
-
-
-def nise_pred_task_3(gt_anno_dir, vis_dataset, hunam_detector, joint_estimator, flow_model):
-    # PREDICT ON TRAINING SET OF 2017
-    anno_file_names = get_type_from_dir(
-        gt_anno_dir, ['.json'])
-    anno_file_names = sorted(anno_file_names)
-    mkdir(nise_cfg.PATH.JSON_SAVE_DIR)
-    for file_name in anno_file_names:
-        p = PurePosixPath(file_name)
-        json_path = os.path.join(nise_cfg.PATH.JSON_SAVE_DIR, p.parts[-1])
-        with open(file_name, 'r') as f:
-            gt = json.load(f)['annolist']
-        pred_frames = []
-        Q = deque(maxlen = nise_cfg.ALG._DEQUE_CAPACITY)
-        for i, frame in enumerate(gt):
-            # frame dict_keys(['image', 'annorect', 'imgnum', 'is_labeled', 'ignore_regions'])
-            img_file_path = frame['image'][0]['name']
-            img_file_path = os.path.join(nise_cfg.PATH.POSETRACK_ROOT, img_file_path)
-            debug_print(img_file_path)
-            if i == 0:  # first frame doesnt have flow, joint prop
-                fi = FrameItem(nise_cfg, simple_cfg, img_file_path, True)
-                fi.detect_human(hunam_detector)
-                fi.unify_bbox()
-                fi.est_joints(joint_estimator)
-                fi.assign_id_task_1_2(Q)
-                fi.visualize(dataset = vis_dataset)
-            else:
-                fi = FrameItem(nise_cfg, simple_cfg, img_file_path)
-                fi.detect_human(hunam_detector)
-                fi.gen_flow(flow_model, Q[-1].bgr_img)
-                fi.joint_prop(Q)
-                fi.unify_bbox()
-                fi.est_joints(joint_estimator)
-                fi.assign_id_task_1_2(Q, get_joints_oks_mtx)
-                fi.visualize(vis_dataset)
-            pred_frames.append(fi.to_dict())
-            Q.append(fi)
-        
-        with open(json_path, 'w') as f:
-            json.dump({'annolist': pred_frames}, f)
