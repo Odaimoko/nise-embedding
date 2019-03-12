@@ -1,2 +1,6 @@
-opencv
+opencv-python
 Munkres
+visdom
+easydict
+pycocotools
+torchvision

@@ -14,7 +14,7 @@ import tron_lib.utils.vis as vis_utils
 from tron_lib.core.test_for_pt import im_detect_all, box_results_with_nms_and_limit
 from simple_lib.core.inference import get_final_preds
 from simple_lib.core.config import config as simple_cfg
-from nise_utils.transforms import get_affine_transform
+from nise_utils.cpn_transforms import get_affine_transform
 
 
 class FrameItem:

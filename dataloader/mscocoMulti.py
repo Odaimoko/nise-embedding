@@ -12,7 +12,7 @@ import torch.utils.data as data
 
 from nise_utils.osutils import *
 from nise_utils.imutils import *
-from nise_utils.transforms import *
+from nise_utils.cpn_transforms import *
 
 class MscocoMulti(data.Dataset):
     def __init__(self, cfg, train=True):
