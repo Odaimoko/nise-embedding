@@ -50,7 +50,130 @@ $ diff my_e2e_mask_rcnn_X-101-64x4d-FPN_1x.yaml ../Detectron.pytorch/tron_config
 >   MASK_ON: True
 ```
 
+## 2019-03-13
+
+训练了res152在 pt17，最终PCKh为 ，但是 MOTA 还是很低。
+
+single-frame+detbox的结果
+
+```
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 85.5 & 83.9 & 78.1 & 69.2 & 73.7 & 71.8 & 65.6 & 76.1 \\
+```
+
+gt的结果
+
+```
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 88.2 & 85.9 & 80.0 & 71.2 & 77.1 & 75.8 & 72.6 & 79.3 \\
+```
+
+### res152 on tracking
+
+下面是MOTA最高的结果。
+
+**MOTA**
+
+```
+& MOTA & MOTA & MOTA & MOTA & MOTA & MOTA & MOTA & MOTA & MOTP & Prec & Rec  \\
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total& Total& Total& Total\\
+& 68.6 & 67.5 & 57.6 & 49.6 & 56.3 & 55.0 & 45.1 & 57.9 & 85.2 & 86.1 & 71.7 \\
+```
+
+**mAP**
+
+```
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 78.8 & 76.7 & 70.6 & 60.0 & 66.0 & 63.9 & 57.4 & 68.4 \\
+```
+
+### 和之前的结果对比
+
+下面表格的数据都是调参（box-joint threshold）结束后效果最好的，都是`box_0.80_joint_0.50`。
+
+|               | 88.01 | 90.04 | R-FCN | FPN-DCN |
+| ------------- | ----- | ----- | ----- | ------- |
+| single mAP    | 72.9  | 76.2  |       |         |
+| tracking mAP  | 62.0  | 68.4  | 66.0  | 69.3    |
+| tracking MOTA | 53.8  | 57.9  | 57.6  | 59.8    |
+|               |       |       |       |         |
+|               |       |       |       |         |
+
+说明est的提升对最后mAP、MOTA的提升巨大（+1.4/4.1）。
+
+和作者的结果对比的话，基本符合est的mAP越高、mota越高的规律。但是从涨幅来看，从R-FCN到90.04，mAP+2.4，但是MOTA+0.3；从90.04到FPN-DCN，mAP+0.9，MOTA+1.9；从R-FCN到FPN-DCN，mAP+3.3，MOTA+2.2。没有那么线性，是不是说明我的tracking还有不足。但est也只有一个mAP进行比较，细节不足。
+
+### 使用gtbox,90//88的est模型跑task3的结果
+
+88
+
+```
+& MOTA & MOTA & MOTA & MOTA & MOTA & MOTA & MOTA & MOTA & MOTP & Prec & Rec  \\
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total& Total& Total& Total\\
+& 87.8 & 88.5 & 89.4 & 89.5 & 89.0 & 88.8 & 88.7 & 88.8 & 96.8 & 99.9 & 96.7 \\
+
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 95.5 & 96.7 & 97.1 & 97.0 & 96.9 & 97.0 & 96.8 & 96.6 \\
+```
+
+90
+
+```
+& MOTA & MOTA & MOTA & MOTA & MOTA & MOTA & MOTA & MOTA & MOTP & Prec & Rec  \\
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total& Total& Total& Total\\
+& 87.8 & 88.5 & 89.4 & 89.5 & 89.0 & 88.8 & 88.7 & 88.8 & 96.8 & 99.9 & 96.7 \\
+ 
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 95.5 & 96.7 & 97.1 & 97.0 & 96.9 & 97.0 & 96.8 & 96.6 \\
+```
+
+### ablation study on using gt boxes
+
+| GT/DET | EST  | MISS  | FP    | SW    | TOTAL | MOTA |
+| ------ | ---- | ----- | ----- | ----- | ----- | ---- |
+| GT     | 88   | 65869 | 19057 | 9468  | 94394 | 54.4 |
+| GT     | 90   | 50897 | 23910 | 10198 | 85005 | 58.9 |
+| DET    | 88   | 72368 | 18894 | 4452  | 95714 | 53.8 |
+| DET    | 90   | 58578 | 23733 | 5076  | 87387 | 57.9 |
+
+#### DET-GT
+
+|      |       | 88    | 90    |
+| ---- | ----- | ----- | ----- |
+| -    | FP    | -163  | -177  |
+| -    | SW    | -5016 | -5122 |
+| +    | miss  | 6499  | 7681  |
+| -    | TOTAL | 1320  | 2382  |
+
+DET和GT相比
+
+- FP少了
+- switch少了
+- 多了很多miss
+
+miss多得很多，导致总体结果不如GT。
+
+est模型越好，反而会有更多的miss？为什么会多出那么多switch？因为减少了miss，然后这些“**新检测出来的**”都**经常交换ID**？
+
+#### 用更好的est
+
+|      |       | GT     | DET    |
+| ---- | ----- | ------ | ------ |
+| -    | miss  | -14972 | -13790 |
+| +    | FP    | 4853   | 4839   |
+| +    | SW    | 730    | 624    |
+| -    | TOTAL | -9389  | -8327  |
+
+更好的est有
+
+- 更少的miss
+- 更多的FP和switch
+
+由于miss少得更多，整体结果更好。
+
 ## 2019-3-12
+
+### joint score相关
 
 原本的joint score=joint x box，现在试试只有joint score的。使用nms后的detection结果做实验，从71.5下降到了69.4。
 
@@ -58,6 +181,8 @@ $ diff my_e2e_mask_rcnn_X-101-64x4d-FPN_1x.yaml ../Detectron.pytorch/tron_config
 & Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
 & 79.7 & 78.7 & 70.7 & 59.1 & 69.7 & 65.3 & 57.6 & 69.4 \\
 ```
+
+
 
 ### fliptest相关
 
@@ -68,6 +193,22 @@ $ diff my_e2e_mask_rcnn_X-101-64x4d-FPN_1x.yaml ../Detectron.pytorch/tron_config
 |      | 93.151 | 92.323 | 87.225 | 80.956 | 87.258 | 83.405 | 79.046 | 87.289 | 30.362 |
 
 88.013-87.289=0.724，区别也不是很大。
+
+总之在pt上试试，首先是gtbox+88的estimator，有了1.4的提高
+
+```
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 86.5 & 83.9 & 75.7 & 64.7 & 75.1 & 71.3 & 65.8 & 75.5 \\
+```
+
+然后是nms之后的detection，有了1.4的提高，但还是差很多。。。
+
+```
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 84.2 & 82.4 & 74.3 & 62.9 & 72.8 & 68.2 & 60.0 & 72.9 \\
+```
+
+**WAIT**。突然意识到下面的77.15应是使用 Resnet152的结果，而我用的是 res50。从论文的 table5来看，50和152的差别确实就是3.6-4.5，所以……？然而他的 mAP 和 MOTA 组合还是比我高不少。
 
 ## 2019-03-10
 
@@ -235,7 +376,9 @@ Following experiments aim to keep mAP the same and see what will MOTA be. Since 
 - [ ] without joint filtering: Task 3 performance of NMSed baseline (thres are 0.35_0.50 respectively)
 - [ ] with joint filtering:  T3 of the two mentioned above
 
-Those three to-checks are actually unnecessary. I have conducted experiments about box and joint thres during the process of assigning ID. Only boxes with scores over `box_thres` have ID, and only joint with scores over `joint_thres` are output. This experiment is just a verification of what Detect-and-Track has said, that there is a tradeoff between MOTA and mAP. Filtering boxes and joints results in lower mAP and higher MOTA. We have four associations, box/joint filtering with mAP and MOTA. But as can be seen, filtering boxes doesn't affect mAP too much. The order should be the effect of **<u>joint/MOTA(very big) > joint/mAP > box/MOTA > box/mAP(very small)</u>**.
+Those three to-checks are actually unnecessary. I have conducted experiments about box and joint thres during the process of assigning ID. Only boxes with scores over `box_thres` have ID, and only joint with scores over `joint_thres` are output. This experiment is just a verification of what Detect-and-Track has said, that there is a tradeoff between MOTA and mAP. Filtering boxes and joints results in lower mAP and higher MOTA. We have four associations, box/joint filtering with mAP and MOTA. But as can be seen, filtering boxes doesn't affect mAP too much. 
+
+**CONCLUSION**: The order should be the effect of **<u>joint/MOTA(very big) > joint/mAP > box/MOTA > box/mAP(very small)</u>**.
 
 ### What is the problem
 

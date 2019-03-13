@@ -399,66 +399,67 @@ class FrameItem:
         self.joints_score = torch.zeros(self.unified_boxes.shape[0], self.cfg.DATA.num_joints)  # FloatTensor
         # if no people boxes, self.joints is tensor([])
         joint_detector.eval()
-        for i in range(self.unified_boxes.shape[0]):
-            bb = self.unified_boxes[i, :4]  # no score
-            human_score = self.unified_boxes[i, 4]
-            
-            center, scale = box2cs(bb, self.img_ratio)
-            rotation = 0
-            # from simple/JointDataset.py
-            trans = get_affine_transform(center, scale, rotation, self.joint_est_mode_size)
-            # In simple_cfg, 0 is h/1 for w. in warpAffine should be (w,h)
-            # 哦是因为192是宽256是高
-            resized_human_np = cv2.warpAffine(
-                self.img_outside_flow,  # hw3
-                trans,
-                (int(self.joint_est_mode_size[0]), int(self.joint_est_mode_size[1])),
-                flags = cv2.INTER_LINEAR)
-            if self.cfg.DEBUG.VIS_SINGLE_NO_JOINTS == True:
-                cv2.imwrite(os.path.join(out_dir, p.stem + "_nojoints_" + str(i) + '.jpg'), resized_human_np)
-            
-            # 'images_joint/valid/015860_mpii_single_person/00000001_0.jpg'
-            resized_human = im_to_torch(resized_human_np)
-            resized_human.unsqueeze_(0)  # make it batch so we can use detector
-            joint_hmap = joint_detector(resized_human)
-            
-            # FLIP 
-            if True:  # from function.py/validate
-                # this part is ugly, because pytorch has not supported negative index
-                flip_pairs = [[0, 5], [1, 4], [2, 3], [6, 11], [7, 10], [8, 9]]
-                joint_hmap_flipped = np.flip(joint_hmap.cpu().numpy(), 3).copy()
-                joint_hmap_flipped = torch.from_numpy(joint_hmap_flipped).cuda()
-                output_flipped = joint_detector(joint_hmap_flipped)
-                output_flipped = flip_back(output_flipped.cpu().numpy(), flip_pairs)
-                output_flipped = torch.from_numpy(output_flipped.copy()).cuda()
+        with torch.no_grad():
+            for i in range(self.unified_boxes.shape[0]):
+                bb = self.unified_boxes[i, :4]  # no score
+                human_score = self.unified_boxes[i, 4]
                 
-                # feature is not aligned, shift flipped heatmap for higher accuracy
-                if config.TEST.SHIFT_HEATMAP:
-                    output_flipped[:, :, :, 1:] = \
-                        output_flipped.clone()[:, :, :, 0:-1]
-                    # output_flipped[:, :, :, 0] = 0
-                
-                output = (output + output_flipped) * 0.5
-            
-            # make it batch so we can get right preds
-            c_unsqueezed, s_unsqueezed = np.expand_dims(center, 0), np.expand_dims(scale, 0)
-            preds, max_val = get_final_preds(
-                simple_cfg, joint_hmap.detach().cpu().numpy(),
-                c_unsqueezed, s_unsqueezed)  # bs x 16 x 2,  bs x 16 x 1
-            
-            self.joints[i, :, :] = to_torch(preds).squeeze()
-            self.joints_score[i, :] = to_torch(max_val).squeeze() * human_score
-            
-            if self.cfg.DEBUG.VIS_EST_SINGLE:
-                # debug_print(i, indent = 1)
-                img_with_joints = get_batch_image_with_joints(torch_img, to_torch(preds), torch.ones(1, 15, 1))
-                resized_human_np_with_joints = cv2.warpAffine(
-                    img_with_joints,  # hw3
+                center, scale = box2cs(bb, self.img_ratio)
+                rotation = 0
+                # from simple/JointDataset.py
+                trans = get_affine_transform(center, scale, rotation, self.joint_est_mode_size)
+                # In simple_cfg, 0 is h/1 for w. in warpAffine should be (w,h)
+                # 哦是因为192是宽256是高
+                resized_human_np = cv2.warpAffine(
+                    self.img_outside_flow,  # hw3
                     trans,
                     (int(self.joint_est_mode_size[0]), int(self.joint_est_mode_size[1])),
                     flags = cv2.INTER_LINEAR)
-                cv2.imwrite(os.path.join(out_dir, p.stem + "_" + "{:02d}".format(i) + '.jpg'),
-                            resized_human_np_with_joints)
+                if self.cfg.DEBUG.VIS_SINGLE_NO_JOINTS == True:
+                    cv2.imwrite(os.path.join(out_dir, p.stem + "_nojoints_" + str(i) + '.jpg'), resized_human_np)
+                
+                # 'images_joint/valid/015860_mpii_single_person/00000001_0.jpg'
+                resized_human = im_to_torch(resized_human_np)
+                resized_human.unsqueeze_(0)  # make it batch so we can use detector
+                joint_hmap = joint_detector(resized_human)
+                
+                # FLIP
+                if nise_cfg.TEST.FLIP_TEST:  # from function.py/validate
+                    # this part is ugly, because pytorch has not supported negative index
+                    flip_pairs = [[0, 5], [1, 4], [2, 3], [6, 11], [7, 10], [8, 9]]
+                    resized_human_flipped = np.flip(resized_human.cpu().numpy(), 3).copy()
+                    resized_human_flipped = torch.from_numpy(resized_human_flipped).cuda()
+                    output_flipped = joint_detector(resized_human_flipped)
+                    output_flipped = flip_back(output_flipped.cpu().numpy(), flip_pairs)
+                    output_flipped = torch.from_numpy(output_flipped.copy()).cuda()
+                    
+                    # feature is not aligned, shift flipped heatmap for higher accuracy
+                    if simple_cfg.TEST.SHIFT_HEATMAP:
+                        output_flipped[:, :, :, 1:] = \
+                            output_flipped.clone()[:, :, :, 0:-1]
+                        # output_flipped[:, :, :, 0] = 0
+                    
+                    joint_hmap = (joint_hmap + output_flipped) * 0.5
+                
+                # make it batch so we can get right preds
+                c_unsqueezed, s_unsqueezed = np.expand_dims(center, 0), np.expand_dims(scale, 0)
+                preds, max_val = get_final_preds(
+                    simple_cfg, joint_hmap.cpu().numpy(),
+                    c_unsqueezed, s_unsqueezed)  # bs x 16 x 2,  bs x 16 x 1
+                
+                self.joints[i, :, :] = to_torch(preds).squeeze()
+                self.joints_score[i, :] = to_torch(max_val).squeeze() * human_score
+                
+                if self.cfg.DEBUG.VIS_EST_SINGLE:
+                    # debug_print(i, indent = 1)
+                    img_with_joints = get_batch_image_with_joints(torch_img, to_torch(preds), torch.ones(1, 15, 1))
+                    resized_human_np_with_joints = cv2.warpAffine(
+                        img_with_joints,  # hw3
+                        trans,
+                        (int(self.joint_est_mode_size[0]), int(self.joint_est_mode_size[1])),
+                        flags = cv2.INTER_LINEAR)
+                    cv2.imwrite(os.path.join(out_dir, p.stem + "_" + "{:02d}".format(i) + '.jpg'),
+                                resized_human_np_with_joints)
         self.joints = expand_vector_to_tensor(self.joints, 3)
         
         self.joints_detected = True

@@ -4,8 +4,8 @@ import threading
 def run(cmd):
     os.system(cmd)
 # export PYTHONPATH=~/disk/posetrack/poseval/py-motmetrics:$PYTHONPATH
-root_dir = 'pred_json-track'
-log_dir = 'bj_thres_out'
+root_dir = 'pred_json-track-bjparam-90-withflip'
+log_dir = 'bj_thres_out-90'
 files = os.listdir(root_dir)
 files = sorted(files)
 ts = []
@@ -14,7 +14,7 @@ for f in files:
     cmd = ' '.join([
         '~/anaconda3/bin/python ',
         '~/disk/posetrack/poseval/py/evaluate.py ',
-        '--groundTruth=pred_json-pre-commissioning/val_gt_task2/ ',
+        '--groundTruth=pred_json-pre-commissioning/val_gt_task1/ ',
         '--predictions=' + root_dir + '/' + f+'/',
         ' --evalPoseEstimation  --evalPoseTracking ',
         ">",

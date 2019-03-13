@@ -230,10 +230,10 @@ def nise_flow_debug(gt_anno_dir, human_detector, joint_estimator, flow_model):
     
     # https://stackoverflow.com/questions/24941359/ctx-parameter-in-multiprocessing-queue
     # If you were to import multiprocessing.queues.Queue directly and try to instantiate it, you'll get the error you're seeing. But it should work fine if you import it from multiprocessing directly.
-
+    
     if nise_cfg.TEST.TASK == 1:
         fun = run_one_video_task_1
-
+    
     elif nise_cfg.TEST.TASK == -1:
         fun = run_one_video_flow_debug
     elif nise_cfg.TEST.TASK == -2:
@@ -244,7 +244,7 @@ def nise_flow_debug(gt_anno_dir, human_detector, joint_estimator, flow_model):
     global locks
     locks = [Lock() for _ in range(gm.gpu_num)]
     # with Pool(initializer = init_gm, initargs = (locks, nise_cfg)) as po:
-    with Pool(processes = 5, initializer = init_gm, initargs = (locks, nise_cfg)) as po:
+    with Pool(processes = num_process, initializer = init_gm, initargs = (locks, nise_cfg)) as po:
         debug_print('Pool created.')
         po.starmap(fun, all_video, chunksize = 4)
 
@@ -374,13 +374,11 @@ def run_one_video_tracking_debug(_nise_cfg, _simple_cfg, i: int, file_name: str,
         gt = json.load(f)['annolist']
     pred_frames = []
     # load pre computed boxes
-    uni_path = os.path.join('unifed_boxes-commi-onlydet', 'valid_task_1_DETbox_allBox_tfIoU_nmsThres_0.35_0.50',
-                            p.stem + '.pkl')  # unified boxes result of 71.6
+    uni_path = os.path.join(_nise_cfg.PATH.UNI_BOX_FOR_TASK_3, p.stem + '.pkl')
     uni_boxes = torch.load(uni_path)
     
-    pre_com_json_path = os.path.join('pred_json-commi-onlydet', 'valid_task_1_DETbox_allBox_tfIoU_nmsThres_0.35_0.50',
-                                     p.stem + '.json')  # joints predictions of 71.6
-    with open(pre_com_json_path, 'r') as f:
+    pred_json_path = os.path.join(_nise_cfg.PATH.PRED_JSON_FOR_TASK_3, p.stem + '.json')
+    with open(pred_json_path, 'r') as f:
         pred = json.load(f)['annolist']
     Q = deque(maxlen = _nise_cfg.ALG._DEQUE_CAPACITY)
     vis_threads = []
@@ -423,12 +421,12 @@ def run_one_video_tracking_debug(_nise_cfg, _simple_cfg, i: int, file_name: str,
                 fi.human_detected = True
             fi.joints_proped = True  # no prop here is used
             fi.unify_bbox()
-            if _nise_cfg.TEST.USE_GT_PEOPLE_BOX:
-                fi.joints = gt_joints
-                fi.joints_score = gt_joints[:, :, 2]
-            else:
-                fi.joints = pred_joints
-                fi.joints_score = pred_joints_scores
+            # if _nise_cfg.TEST.USE_GT_PEOPLE_BOX:
+            #     fi.joints = gt_joints
+            #     fi.joints_score = gt_joints[:, :, 2]
+            # else:
+            fi.joints = pred_joints
+            fi.joints_score = pred_joints_scores
             fi.joints_detected = True
             
             if nise_cfg.TEST.ASSIGN_GT_ID:

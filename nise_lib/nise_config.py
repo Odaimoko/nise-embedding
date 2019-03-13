@@ -37,7 +37,7 @@ def update_nise_config(_config, config_file):
         exp_config = edict(yaml.load(f))
         for k, v in exp_config.items():
             update_dict(_config, k, v)
-
+    return _config
 
 def get_edcfg_from_nisecfg(nise_cfg):
     '''
@@ -54,6 +54,12 @@ def get_edcfg_from_nisecfg(nise_cfg):
 
 
 def set_path_from_nise_cfg(nise_cfg):
+    model_part=[]
+    for layer in ['50','101','152']:
+        net_name = 'res'+layer
+        if net_name in nise_cfg.MODEL.simple_cfg:
+            model_part.append(net_name)
+    
     detect_part = [
         'GTbox' if nise_cfg.TEST.USE_GT_PEOPLE_BOX else 'DETbox',
         'filterBox' if nise_cfg.ALG.FILTER_HUMAN_WHEN_DETECT else 'allBox'
@@ -61,6 +67,12 @@ def set_path_from_nise_cfg(nise_cfg):
     if nise_cfg.ALG.FILTER_HUMAN_WHEN_DETECT:
         detect_part.append('boxThres')
         detect_part.append(str(nise_cfg.ALG._HUMAN_THRES))
+        
+    est_part = []
+    if nise_cfg.TEST.FLIP_TEST:
+        est_part.append('Flip')
+    else:
+        est_part.append('noFlip')
     
     prop_part = []
     
@@ -113,7 +125,9 @@ def set_path_from_nise_cfg(nise_cfg):
     else:
         track_part.append('matchID')
     
+    model_part = '_'.join(model_part)
     detect_part = '_'.join(detect_part)
+    est_part = '_'.join(est_part)
     prop_part = '_'.join(prop_part)
     unify_part = '_'.join(unify_part)
     track_part = '_'.join(track_part)
@@ -121,7 +135,9 @@ def set_path_from_nise_cfg(nise_cfg):
         nise_cfg.TEST.MODE,
         'task',
         str(nise_cfg.TEST.TASK), ]
+    if model_part: suffix_list.append(model_part)
     if detect_part: suffix_list.append(detect_part)
+    if est_part: suffix_list.append(est_part)
     if nise_cfg.TEST.TASK == 2 or nise_cfg.TEST.TASK == -1:
         if prop_part: suffix_list.append(prop_part)
     if unify_part: suffix_list.append(unify_part)
@@ -199,6 +215,13 @@ class NiseConfig:
             #  should ask author
             self.flow_input_size = (1024, 576)
             # should initialize from simple_cfg
+    
+    class _MODEL:
+        def __init__(self):
+            # no use
+            # not even only for naming the config file
+            self.simple_cfg = '../simple-baseline-pytorch/experiments/pt17/res152-coco-384x288.yaml'
+            self.simple_model = '/home/zhangxt/disk/posetrack/simple-baseline-pytorch/output-pt17-fromfreeze/pt17/pose_resnet_152/res152-coco-384x288/pt17-epoch-20-90.04363546829477'
     
     class _DEBUG:
         def __init__(self):
@@ -283,10 +306,17 @@ class NiseConfig:
             self.DETECT_JSON_DIR = 'pre_com/det_json/'
             self.FLOW_JSON_DIR = 'pre_com/flow/'
             self.DET_EST_JSON_DIR = 'pre_com/det_est/'
+            
+            
+            #  if USE_GT_PEOPLE_BOX, this will be shadowed
+            self.UNI_BOX_FOR_TASK_3 = 'unifed_boxes-commi-onlydet/valid_task_1_DETbox_allBox_tfIoU_nmsThres_0.35_0.50'
+            self.PRED_JSON_FOR_TASK_3 = 'pred_json-commi-onlydet/valid_task_1_DETbox_allBox_tfIoU_nmsThres_0.35_0.50'
     
     class _TEST:
         def __init__(self):
             self.USE_GT_PEOPLE_BOX = False
+            
+            self.FLIP_TEST = False
             
             self.USE_GT_JOINTS_TO_PROP = True
             self.USE_ALL_GT_JOINTS_TO_PROP = True
@@ -295,7 +325,7 @@ class NiseConfig:
             self.GT_JOINTS_PROP_IOU_THRES = .5
             
             # those detected boxes which have corresponding gt boxes will have gt id, but others will have -1
-            self.ASSIGN_GT_ID = True
+            self.ASSIGN_GT_ID = False
             
             self.ONLY_TEST = []
             
@@ -322,6 +352,8 @@ class NiseConfig:
         self.PATH = NiseConfig._PATH()
         
         self.TEST = NiseConfig._TEST()
+        
+        self.MODEL=NiseConfig._MODEL()
 
 
 cfg = NiseConfig()

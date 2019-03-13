@@ -37,7 +37,7 @@ if __name__ == '__main__':
             update_nise_logger(nise_logger, nise_cfg, suffix)
             debug_print('Running posetrack 17: NMS thresholds are %.2f, %.2f.' % (box_thres, joint_thres))
             # t=threading.Thread(target = nise_flow_debug, args = (dataset_path,None,None))
-            nise_flow_debug(dataset_path, None, None)
+            nise_flow_debug(dataset_path, None, None,None)
             # threads.append(t)
             # t.start()
     for t in threads:
