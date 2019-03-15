@@ -421,12 +421,12 @@ def run_one_video_tracking_debug(_nise_cfg, _simple_cfg, i: int, file_name: str,
                 fi.human_detected = True
             fi.joints_proped = True  # no prop here is used
             fi.unify_bbox()
-            # if _nise_cfg.TEST.USE_GT_PEOPLE_BOX:
-            #     fi.joints = gt_joints
-            #     fi.joints_score = gt_joints[:, :, 2]
-            # else:
-            fi.joints = pred_joints
-            fi.joints_score = pred_joints_scores
+            if _nise_cfg.TEST.USE_GT_PEOPLE_BOX:
+                fi.joints = gt_joints
+                fi.joints_score = gt_joints[:, :, 2]
+            else:
+                fi.joints = pred_joints
+                fi.joints_score = pred_joints_scores
             fi.joints_detected = True
             
             if nise_cfg.TEST.ASSIGN_GT_ID:
