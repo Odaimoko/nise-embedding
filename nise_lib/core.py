@@ -295,7 +295,7 @@ def run_one_video_task_1(_nise_cfg, _simple_cfg, i: int, file_name: str, human_d
     vis_threads = []
     for j, frame in enumerate(gt):
         img_file_path = os.path.join(_nise_cfg.PATH.POSETRACK_ROOT, frame['image'][0]['name'])
-        # debug_print(j, img_file_path, indent = 1)
+        debug_print(j, img_file_path, indent = 1)
         gt_annorects = frame['annorect']
         if nise_cfg.TEST.USE_GT_PEOPLE_BOX and \
                 (gt_annorects is not None or len(gt_annorects) != 0):
