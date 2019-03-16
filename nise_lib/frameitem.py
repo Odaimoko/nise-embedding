@@ -401,6 +401,7 @@ class FrameItem:
         joint_detector.eval()
         with torch.no_grad():
             for i in range(self.unified_boxes.shape[0]):
+                # For each people
                 bb = self.unified_boxes[i, :4]  # no score
                 human_score = self.unified_boxes[i, 4]
                 

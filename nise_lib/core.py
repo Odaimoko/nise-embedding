@@ -244,7 +244,7 @@ def nise_flow_debug(gt_anno_dir, human_detector, joint_estimator, flow_model):
     global locks
     locks = [Lock() for _ in range(gm.gpu_num)]
     # with Pool(initializer = init_gm, initargs = (locks, nise_cfg)) as po:
-    with Pool(processes = num_process, initializer = init_gm, initargs = (locks, nise_cfg)) as po:
+    with Pool(processes = 1, initializer = init_gm, initargs = (locks, nise_cfg)) as po:
         debug_print('Pool created.')
         po.starmap(fun, all_video, chunksize = 4)
 
@@ -421,12 +421,12 @@ def run_one_video_tracking_debug(_nise_cfg, _simple_cfg, i: int, file_name: str,
                 fi.human_detected = True
             fi.joints_proped = True  # no prop here is used
             fi.unify_bbox()
-            if _nise_cfg.TEST.USE_GT_PEOPLE_BOX:
-                fi.joints = gt_joints
-                fi.joints_score = gt_joints[:, :, 2]
-            else:
-                fi.joints = pred_joints
-                fi.joints_score = pred_joints_scores
+            # if _nise_cfg.TEST.USE_GT_PEOPLE_BOX:
+            #     fi.joints = gt_joints
+            #     fi.joints_score = gt_joints[:, :, 2]
+            # else:
+            fi.joints = pred_joints
+            fi.joints_score = pred_joints_scores
             fi.joints_detected = True
             
             if nise_cfg.TEST.ASSIGN_GT_ID:

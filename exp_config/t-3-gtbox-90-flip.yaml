@@ -21,8 +21,8 @@ TEST:
   GT_BOX_SCORE: .7
   FROM: 0
   TO: 50
-#  ONLY_TEST:
-#    - '03742'
+  # ONLY_TEST:
+  #   - '24621'
 #    - 14102_mpii
 #    -  20880_mpii_relpath_5sec_testsub
 
