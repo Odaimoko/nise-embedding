@@ -729,9 +729,9 @@ def get_type_from_dir(dirpath, type_list):
             files.append(os.path.join(dirpath, f))
     return files
 
-
 def get_joints_from_annorects(annorects):
     all_joints = []
+    is_from_gt = False
     for i in range(len(annorects)):
         rect = annorects[i]
         
@@ -747,26 +747,28 @@ def get_joints_from_annorects(annorects):
             # analogous to coco.py  # matlab based on 1.
             i_pt = pt_info['id'][0]
             if 'is_visible' in pt_info.keys():  # from gt
-                t_vis = pt_info['is_visible'][0]
+                is_from_gt = True
                 joints_3d[i_pt, 0] = pt_info['x'][0] - 1 if pt_info['x'][0] > 0 else 0
                 joints_3d[i_pt, 1] = pt_info['y'][0] - 1 if pt_info['y'][0] > 0 else 0
             else:  # from pred
-                t_vis = 1
                 joints_3d[i_pt, 0] = pt_info['x'][0] if pt_info['x'][0] >= 0 else 0
                 joints_3d[i_pt, 1] = pt_info['y'][0] if pt_info['y'][0] >= 0 else 0
             
-            if t_vis > 1: t_vis = 1
-            joints_3d[i_pt, 2] = t_vis and pt_info['x'][0] >= 0 and pt_info['y'][0] >= 0
+            joints_3d[i_pt, 2] = 1  # t_vis and pt_info['x'][0] >= 0 and pt_info['y'][0] >= 0
         # head_bbox = [rect['x1'][0], rect['y1'][0], rect['x2'][0], rect['y2'][0]]
         # head_bbox = np.array(head_bbox)
         all_joints.append(joints_3d)
     
     joints = torch.tensor(all_joints).float()
     joints = expand_vector_to_tensor(joints)
-    return joints
+    if is_from_gt: # ones for those labeled
+        scores = joints[:, :, 2]
+    else:
+        scores = get_pred_joint_scores(annorects)
+    return joints, scores
 
 
-def get_joint_scores(annorects):
+def get_pred_joint_scores(annorects):
     all_scores = []
     for i in range(len(annorects)):
         rect = annorects[i]
@@ -803,6 +805,7 @@ def create_yaml_nms(series, thres, original_yaml = 'exp_config/t-flow-debug.yaml
     with open(long_file_name, 'w')as f:
         yaml.dump(nc, f)
     return long_file_name
+
 
 def create_yaml_track_filter(series, thres, original_yaml = 'exp_config/t-flow-debug.yaml'):
     with open(original_yaml, 'r')as f:
@@ -884,7 +887,7 @@ def eval_load_gt_and_pred_boxes(anno_file_names, pred_anno_dir = None):
             # debug_print(j, img_file_path, indent = 1)
             annorects = frame['annorect']
             if (annorects is not None and len(annorects) != 0):
-                gt_joints = get_joints_from_annorects(annorects)
+                gt_joints,gt_scores = get_joints_from_annorects(annorects)
             else:
                 # dont eval
                 continue

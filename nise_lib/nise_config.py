@@ -18,11 +18,16 @@ def get_nise_arg_parser():
     parser.add_argument('--nise_config', type = str, metavar = 'nise config file',
                         help = 'path to yaml format config file', default = 'exp_config/t.yaml')
     parser.add_argument('--simple-model-file', type = str, )
+    parser.add_argument('--task1pred', type = str, metavar = 'nise task 1 pred json',
+                        help = 'path to prediction json directory', default = '')
     args, rest = parser.parse_known_args()
+    
     return args
 
 
-def update_nise_config(_config, config_file):
+def update_nise_config(_config, args):
+    config_file = args.nise_config
+    
     if config_file is None: return
     
     def update_dict(_config, k, v):
@@ -37,7 +42,10 @@ def update_nise_config(_config, config_file):
         exp_config = edict(yaml.load(f))
         for k, v in exp_config.items():
             update_dict(_config, k, v)
+    if args.task1pred :
+        _config.PATH.PRED_JSON_FOR_TASK_3 = args.task1pred
     return _config
+
 
 def get_edcfg_from_nisecfg(nise_cfg):
     '''
@@ -54,11 +62,16 @@ def get_edcfg_from_nisecfg(nise_cfg):
 
 
 def set_path_from_nise_cfg(nise_cfg):
-    model_part=[]
-    for layer in ['50','101','152']:
-        net_name = 'res'+layer
-        if net_name in nise_cfg.MODEL.simple_cfg:
-            model_part.append(net_name)
+    model_part = []
+    for layer in ['50', '101', '152']:
+        net_name = 'res' + layer
+        if nise_cfg.TEST.TASK == 1:
+            if net_name in nise_cfg.PATH.PRED_JSON_FOR_TASK_3:
+                model_part.append(net_name)
+        elif nise_cfg.TEST.TASK == -2:
+            if net_name in nise_cfg.PATH.PRED_JSON_FOR_TASK_3:
+                model_part.append(net_name)
+            
     
     detect_part = [
         'GTbox' if nise_cfg.TEST.USE_GT_PEOPLE_BOX else 'DETbox',
@@ -67,12 +80,17 @@ def set_path_from_nise_cfg(nise_cfg):
     if nise_cfg.ALG.FILTER_HUMAN_WHEN_DETECT:
         detect_part.append('boxThres')
         detect_part.append(str(nise_cfg.ALG._HUMAN_THRES))
-        
+    
     est_part = []
     if nise_cfg.TEST.FLIP_TEST:
         est_part.append('Flip')
     else:
         est_part.append('noFlip')
+    
+    if nise_cfg.TEST.USE_MATCHED_GT_EST_JOINTS:
+        est_part.append('gtJoints')
+    else:
+        est_part.append('estJoints')
     
     prop_part = []
     
@@ -163,7 +181,7 @@ def create_nise_logger(nise_cfg, cfg_name, phase = 'train'):
     return ploger
 
 
-def update_nise_logger(ploger, nise_cfg, cfg_name, phase = 'train'):
+def update_nise_logger(ploger, nise_cfg, cfg_name):
     root_output_dir = Path(nise_cfg.PATH.LOG_SAVE_DIR)
     # set up logger
     if not root_output_dir.exists():
@@ -247,6 +265,8 @@ class NiseConfig:
             
             self.SAVE_DETECTION_TENSOR = False
             self.USE_DETECTION_RESULT = True
+            
+            self.NUM_PROCESSES = -1
     
     class _ALG:
         
@@ -307,7 +327,6 @@ class NiseConfig:
             self.FLOW_JSON_DIR = 'pre_com/flow/'
             self.DET_EST_JSON_DIR = 'pre_com/det_est/'
             
-            
             #  if USE_GT_PEOPLE_BOX, this will be shadowed
             self.UNI_BOX_FOR_TASK_3 = 'unifed_boxes-commi-onlydet/valid_task_1_DETbox_allBox_tfIoU_nmsThres_0.35_0.50'
             self.PRED_JSON_FOR_TASK_3 = 'pred_json-commi-onlydet/valid_task_1_DETbox_allBox_tfIoU_nmsThres_0.35_0.50'
@@ -317,6 +336,8 @@ class NiseConfig:
             self.USE_GT_PEOPLE_BOX = False
             
             self.FLIP_TEST = False
+            
+            self.USE_MATCHED_GT_EST_JOINTS = False
             
             self.USE_GT_JOINTS_TO_PROP = True
             self.USE_ALL_GT_JOINTS_TO_PROP = True
@@ -353,19 +374,19 @@ class NiseConfig:
         
         self.TEST = NiseConfig._TEST()
         
-        self.MODEL=NiseConfig._MODEL()
+        self.MODEL = NiseConfig._MODEL()
 
 
 cfg = NiseConfig()
 nise_cfg = get_edcfg_from_nisecfg(cfg)
 nise_args = get_nise_arg_parser()
-update_nise_config(nise_cfg, nise_args.nise_config)
+update_nise_config(nise_cfg, nise_args)
 
 suffix, suffix_with_range = set_path_from_nise_cfg(nise_cfg)
 print('SUFFIX', suffix_with_range)
 nise_logger = get_logger()
 update_nise_logger(nise_logger, nise_cfg, suffix)
-# print('original cfg and logger', id(nise_cfg), id(nise_logger))
+
 mkrs = Munkres()
 nise_cfg_pack = {
     'cfg': nise_cfg,

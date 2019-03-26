@@ -72,9 +72,9 @@ class FrameItem:
             
             gt_box = joints_to_boxes(gt_joints[:, :, :2], gt_joints[:, :, 2], (self.img_w, self.img_h))
             gt_box = expand_vector_to_tensor(gt_box)
-            gt_scores = torch.ones([gt_box.shape[0]])
-            gt_scores.unsqueeze_(1)
-            self.gt_boxes, idx = filter_bbox_with_area(torch.cat([gt_box, gt_scores], -1))
+            gt_box_scores = torch.ones([gt_box.shape[0]])
+            gt_box_scores.unsqueeze_(1)
+            self.gt_boxes, idx = filter_bbox_with_area(torch.cat([gt_box, gt_box_scores], -1))
             self.gt_joints = expand_vector_to_tensor(gt_joints[idx, :], 3)
         else:
             self.gt_boxes = torch.tensor([])
@@ -430,12 +430,12 @@ class FrameItem:
                 # 'images_joint/valid/015860_mpii_single_person/00000001_0.jpg'
                 resized_human = im_to_torch(resized_human_np)
                 resized_human_batch[i, ...] = resized_human
-                
+            
             with torch.no_grad():
                 joint_hmap = joint_detector(resized_human_batch)
                 
                 # FLIP
-                if nise_cfg.TEST.FLIP_TEST:  # from function.py/validate
+                if self.cfg.TEST.FLIP_TEST:  # from function.py/validate
                     # this part is ugly, because pytorch has not supported negative index
                     flip_pairs = [[0, 5], [1, 4], [2, 3], [6, 11], [7, 10], [8, 9]]
                     resized_human_flipped = np.flip(resized_human_batch.cpu().numpy(), 3).copy()
@@ -470,8 +470,21 @@ class FrameItem:
                 #         flags = cv2.INTER_LINEAR)
                 #     cv2.imwrite(os.path.join(out_dir, p.stem + "_" + "{:02d}".format(i) + '.jpg'),
                 #                 resized_human_np_with_joints)
-            
-            
+                
+                if self.cfg.TEST.USE_MATCHED_GT_EST_JOINTS and self.gt_boxes.numel() != 0:
+                    # use matched gt joints to be the output joints
+                    
+                    # match一下，只用检测到的gt的joint
+                    uni_box_np = self.unified_boxes.numpy()[:, :4]
+                    gt_box_np = self.gt_boxes.numpy()[:, :4]
+                    uni_to_gt_iou = tf_iou(uni_box_np, gt_box_np, )
+                    
+                    inds = get_matching_indices(uni_to_gt_iou)
+                    for i, ind in enumerate(inds):
+                        prev, gt = ind
+                        if uni_to_gt_iou[prev, gt] > .5:
+                            self.joints[prev, :, :] = self.gt_joints[gt, :, :2]
+                            self.joints_score[prev,:] = self.gt_joints[gt, :, 2]
             
             self.joints = expand_vector_to_tensor(self.joints, 3)
         

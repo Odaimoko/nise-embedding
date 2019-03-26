@@ -58,7 +58,7 @@ def nise_pred_task_1_debug(gt_anno_dir, vis_dataset, hunam_detector, joint_estim
             if nise_cfg.TEST.USE_GT_PEOPLE_BOX and \
                     (annorects is not None or len(annorects) != 0):
                 # if only use gt bbox, then for those frames which dont have annotations, we dont estimate
-                gt_joints = get_joints_from_annorects(annorects)
+                gt_joints, gt_scores = get_joints_from_annorects(annorects)
             else:
                 gt_joints = torch.tensor([])
             #
@@ -156,7 +156,7 @@ def nise_pred_task_2_debug(gt_anno_dir, vis_dataset, hunam_detector, joint_estim
             annorects = frame['annorect']
             if annorects is not None or len(annorects) != 0:
                 # if only use gt bbox, then for those frames which dont have annotations, we dont estimate
-                gt_joints = get_joints_from_annorects(annorects)
+                gt_joints, gt_scores = get_joints_from_annorects(annorects)
             else:
                 gt_joints = torch.tensor([])
             if nise_cfg.DEBUG.USE_DETECTION_RESULT:
@@ -297,9 +297,8 @@ def run_one_video_task_1(_nise_cfg, _simple_cfg, i: int, file_name: str, human_d
         img_file_path = os.path.join(_nise_cfg.PATH.POSETRACK_ROOT, frame['image'][0]['name'])
         debug_print(j, img_file_path, indent = 1)
         gt_annorects = frame['annorect']
-        if nise_cfg.TEST.USE_GT_PEOPLE_BOX and \
-                (gt_annorects is not None or len(gt_annorects) != 0):
-            gt_joints = get_joints_from_annorects(gt_annorects)
+        if (gt_annorects is not None or len(gt_annorects) != 0):
+            gt_joints, gt_scores = get_joints_from_annorects(gt_annorects)
         else:
             gt_joints = torch.tensor([])
         
@@ -384,11 +383,11 @@ def run_one_video_tracking_debug(_nise_cfg, _simple_cfg, i: int, file_name: str,
     vis_threads = []
     for j, frame in enumerate(gt):
         img_file_path = os.path.join(_nise_cfg.PATH.POSETRACK_ROOT, frame['image'][0]['name'])
-        # debug_print(j, img_file_path, indent = 1)
+        debug_print(j, img_file_path, indent = 1)
         gt_annorects = frame['annorect']
         if gt_annorects is not None and len(gt_annorects) != 0:
             # if only use gt bbox, then for those frames which dont have annotations, we dont estimate
-            gt_joints = get_joints_from_annorects(gt_annorects)
+            gt_joints, gt_scores = get_joints_from_annorects(gt_annorects)
             gt_id = torch.tensor([t['track_id'][0] for t in gt_annorects])
         else:
             gt_joints = torch.tensor([])
@@ -407,8 +406,7 @@ def run_one_video_tracking_debug(_nise_cfg, _simple_cfg, i: int, file_name: str,
             pred_annorects = pred[j]['annorect']
             if pred_annorects is not None and len(pred_annorects) != 0:
                 # if only use gt bbox, then for those frames which dont have annotations, we dont estimate
-                pred_joints = get_joints_from_annorects(pred_annorects)
-                pred_joints_scores = get_joint_scores(pred_annorects)
+                pred_joints, pred_joints_scores = get_joints_from_annorects(pred_annorects)
             else:
                 pred_joints = torch.tensor([])
                 pred_joints_scores = torch.tensor([])
@@ -425,7 +423,10 @@ def run_one_video_tracking_debug(_nise_cfg, _simple_cfg, i: int, file_name: str,
             #     fi.joints = gt_joints
             #     fi.joints_score = gt_joints[:, :, 2]
             # else:
-            fi.joints = pred_joints
+            if pred_joints.numel() != 0:
+                fi.joints = pred_joints[:, :, :2]  # 3d here,
+            else:
+                fi.joints = pred_joints
             fi.joints_score = pred_joints_scores
             fi.joints_detected = True
             
@@ -512,7 +513,7 @@ def run_one_video_flow_debug(_nise_cfg, _simple_cfg, i, file_name, human_detecto
         annorects = frame['annorect']
         if annorects is not None or len(annorects) != 0:
             # if only use gt bbox, then for those frames which dont have annotations, we dont estimate
-            gt_joints = get_joints_from_annorects(annorects)
+            gt_joints, gt_scores = get_joints_from_annorects(annorects)
         else:
             gt_joints = torch.tensor([])
         if _nise_cfg.DEBUG.USE_DETECTION_RESULT:
