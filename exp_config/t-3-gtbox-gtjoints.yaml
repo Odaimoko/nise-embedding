@@ -1,3 +1,4 @@
+# Using this file requires setting the PATH_FOR_TASK_3 in command line
 ALG:
   FILTER_HUMAN_WHEN_DETECT: False
   _HUMAN_THRES: 0.5
@@ -16,14 +17,15 @@ ALG:
 TEST:
   USE_GT_PEOPLE_BOX: True
   FLIP_TEST: True
+  USE_MATCHED_GT_EST_JOINTS: True
   USE_GT_JOINTS_TO_PROP: False
   USE_ALL_GT_JOINTS_TO_PROP: False
   GT_BOX_SCORE: .7
   FROM: 0
   TO: 50
-#  ONLY_TEST:
-#    - '14102_mpii'
-#     - '24621'
+  ONLY_TEST:
+    - '03742'
+#    - 14102_mpii
 #    -  20880_mpii_relpath_5sec_testsub
 
   TASK: -2
@@ -44,8 +46,8 @@ DEBUG:
   load_joint_est_model: False
   load_human_det_model: False
 PATH:
-  _JOINTS_DIR: 'images_joint-track-90-withflip/'
-  _IMAGES_OUT_DIR: 'images_out-track-90-withflip/'
-  _JSON_SAVE_DIR: 'pred_json-track-90-withflip/'
-  _UNIFIED_JSON_DIR: 'unifed_boxes-track-90-withflip/'
-  PRED_JSON_FOR_TASK_3: 'pred_json-single-est/valid_task_1_res152_GTbox_allBox_Flip_noNMS'
+  _JOINTS_DIR: 'images_joint-track/'
+  _IMAGES_OUT_DIR: 'images_out-track/'
+  _JSON_SAVE_DIR: 'pred_json-track/'
+  _UNIFIED_JSON_DIR: 'unified_boxes-track/'
+  PRED_JSON_FOR_TASK_3: 'data/pt17/valid_anno_json/'

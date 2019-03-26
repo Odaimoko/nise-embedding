@@ -10,8 +10,8 @@ ALG:
   UNIFY_NMS_THRES_2: .5
 
   ASSGIN_ID_TO_FILTERED_BOX: True
-  ASSIGN_BOX_THRES: 0.5
-  OUTPUT_JOINT_THRES: 0.4
+  ASSIGN_BOX_THRES: 0.8
+  OUTPUT_JOINT_THRES: 0.5
   MATCHING_ALG: 0
 TEST:
   USE_GT_PEOPLE_BOX: false
@@ -22,7 +22,7 @@ TEST:
   FROM: 0
   TO: 50
 #  ONLY_TEST:
-#    - '03742'
+#    - '14102_mpii'
 #    - 14102_mpii
 #    -  20880_mpii_relpath_5sec_testsub
 
