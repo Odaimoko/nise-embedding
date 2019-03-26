@@ -50,9 +50,33 @@ $ diff my_e2e_mask_rcnn_X-101-64x4d-FPN_1x.yaml ../Detectron.pytorch/tron_config
 >   MASK_ON: True
 ```
 
+## 2019-3-17
+
+### GT joints 和 DET joints的ablation study，以及和gt box 的横向对比
+
+在 weekly report 里。
+
+
+
 ## 2019-3-15
 
 为了确定是不是`更好的est影响比更好的matching和box更大`，需要怎么做？
+
+如果运行的时候卡住，很有可能就是哪里报错了，但是多线程不会跳出来。
+
+88的结果
+
+```
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 93.4 & 93.4 & 93.7 & 92.5 & 92.3 & 91.9 & 90.1 & 92.5 \\
+```
+
+90的结果
+
+```
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 93.5 & 93.5 & 93.8 & 92.8 & 92.4 & 92.0 & 90.2 & 92.7 \\
+```
 
 ## 2019-03-13
 
@@ -131,54 +155,7 @@ gtbox的结果
  
 & Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
 & 82.8 & 79.5 & 72.7 & 61.6 & 69.4 & 67.4 & 62.8 & 71.7 \\
-
 ```
-
-#### ablation study on using gt boxes
-
-| GT/DET | EST  | MISS  | FP    | SW    | TOTAL | MOTA |
-| ------ | ---- | ----- | ----- | ----- | ----- | ---- |
-| GT     | 88   | 65869 | 19057 | 9468  | 94394 | 54.4 |
-| GT     | 90   | 50897 | 23910 | 10198 | 85005 | 58.9 |
-| DET    | 88   | 72368 | 18894 | 4452  | 95714 | 53.8 |
-| DET    | 90   | 58578 | 23733 | 5076  | 87387 | 57.9 |
-
-#### DET-GTbox
-
-|      |       | 88    | 90    |
-| ---- | ----- | ----- | ----- |
-| -    | FP    | -163  | -177  |
-| -    | SW    | -5016 | -5122 |
-| +    | miss  | 6499  | 7681  |
-| -    | TOTAL | 1320  | 2382  |
-
-DET和GT相比
-
-- FP少了
-- switch少了
-- 多了很多miss
-
-miss多得很多，导致总体结果不如GT。
-
-est模型越好，反而会有更多的miss？
-
-为什么GT会多出那么多switch？因为减少了miss，然后这些“**新检测出来的**”都**经常交换ID**？这些增加的miss是由于少了box引起的吗？
-
-#### 用更好的est
-
-|      |       | GT     | DET    |
-| ---- | ----- | ------ | ------ |
-| -    | miss  | -14972 | -13790 |
-| +    | FP    | 4853   | 4839   |
-| +    | SW    | 730    | 624    |
-| -    | TOTAL | -9389  | -8327  |
-
-更好的est有
-
-- 更少的miss
-- 更多的FP和switch
-
-由于miss少得更多，整体结果更好。
 
 ### 使用gtbox+gt joints的结果
 
