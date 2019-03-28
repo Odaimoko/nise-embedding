@@ -2,5 +2,7 @@ opencv-python
 Munkres
 visdom
 easydict
+Cython
 pycocotools
 torchvision
+
