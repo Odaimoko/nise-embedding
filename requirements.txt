@@ -1,8 +1,9 @@
+Cython
 opencv-python
 Munkres
 visdom
 easydict
-Cython
 pycocotools
+torch==0.4.0
 torchvision
 
