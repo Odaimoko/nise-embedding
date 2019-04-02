@@ -857,7 +857,7 @@ def create_yaml_track_filter(series, thres, original_yaml = 'exp_config/t-flow-d
     nc['TEST']['ONLY_TEST'] = []
     nc['ALG']['ASSIGN_BOX_THRES'] = thres[0]
     nc['ALG']['OUTPUT_JOINT_THRES'] = thres[1]
-    long_file_name = 'exp_config/%s-batch-%02d_%02d-box_joint_thres-%.2f,%.2f.yaml' % (
+    long_file_name = 'exp_config/commi/%s-batch-%02d_%02d-box_joint_thres-%.2f,%.2f.yaml' % (
         training_start_time, series[0], series[-1], thres[0], thres[1])
     with open(long_file_name, 'w')as f:
         yaml.dump(nc, f)

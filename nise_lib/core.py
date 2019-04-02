@@ -246,8 +246,8 @@ def nise_flow_debug(gt_anno_dir, human_detector, joint_estimator, flow_model):
         fun = run_one_video_flow_debug
     elif nise_cfg.TEST.TASK == -2:
         fun = run_one_video_tracking_debug
-    num_process = len(os.environ.get('CUDA_VISIBLE_DEVICES', default = '').split(',')) * 2
-    num_process = 2
+    num_process = len(os.environ.get('CUDA_VISIBLE_DEVICES', default = '').split(','))
+    # num_process = 2
     global locks
     locks = [Lock() for _ in range(gm.gpu_num)]
     __spec__ = None
@@ -393,7 +393,7 @@ def run_one_video_tracking_debug(_nise_cfg, est_cfg, i: int, file_name: str, hum
     vis_threads = []
     for j, frame in enumerate(gt):
         img_file_path = os.path.join(_nise_cfg.PATH.POSETRACK_ROOT, frame['image'][0]['name'])
-        debug_print(j, img_file_path, indent = 1)
+        # debug_print(j, img_file_path, indent = 1)
         gt_annorects = frame['annorect']
         if gt_annorects is not None and len(gt_annorects) != 0:
             # if only use gt bbox, then for those frames which dont have annotations, we dont estimate

@@ -1,12 +1,11 @@
 cuda_all=export CUDA_VISIBLE_DEVICES=0,1,2,3
 cuda_0=export CUDA_VISIBLE_DEVICES=0
-eval_env=export PYTHONPATH=/root/zhangxt/disk/posetrack/poseval/py-motmetrics:$${PYTHONPATH}
+mot_pypath=export PYTHONPATH=/root/zhangxt/disk/posetrack/poseval/py-motmetrics:$${PYTHONPATH}
 nise_main=python scripts/run.py
 
 # cd
 cd_deep=cd ../deep-pt
 cd_simple=cd ../simple-baseline-pytorch
-
 
 tron_cfg_mask=--tron_cfg exp_config/detectron/my_e2e_mask_rcnn_X-101-64x4d-FPN_1x.yaml --load_detectron ~/zhangxt/disk/pretrained/e2e_mask_rcnn_X-101-64x4d-FPN_1x.pkl  --dataset coco2017
 tron_cfg_faster=--tron_cfg ../Detectron.forpt/tron_configs/baselines/e2e_faster_rcnn_X-101-64x4d-FPN_1x.yaml --load_detectron ~/zhangxt/disk/pretrained/e2e_faster_rcnn_X-101-64x4d-FPN_1x.pkl  --dataset coco2017
@@ -24,21 +23,27 @@ nise_1_gtjoints=--nise_config exp_config/1/t-nmsON+flip-gtjoints.yaml
 nise_1_nmson_debug=--nise_config exp_config/1/t-nmsON+flip-debug.yaml
 nise_1_gtbox_debug=--nise_config exp_config/1/t-gt+flip-debug.yaml
 
+nise_3_root=--nise_config exp_config/3/t-3-root.yaml
+
 # eval
 
 eval-t1-sb-88:
-	$(eval_env); python ../poseval/py/evaluate.py -g pred_json-pre-commissioning/val_gt_task1/ -p pred_json-single-est/valid_task_1_DETbox_allBox_Flip_estJoints_tfIoU_nmsThres_0.35_0.50/ --evalPoseEstimation -o out-single-est
+	$(mot_pypath); python ../poseval/py/evaluate.py -g pred_json-pre-commissioning/val_gt_task1/ -p pred_json-single-est/sb88-valid_task_1_mask_DETbox_allBox_Flip_estJoints_tfIoU_nmsThres_0.35_0.50/ --evalPoseEstimation -o out-single-est
 eval-t1-hr-904:
-	$(eval_env); python ../poseval/py/evaluate.py -g pred_json-pre-commissioning/val_gt_task1/ -p pred_json-single-est/hr904-valid_task_1_DETbox_allBox_Flip_estJoints_tfIoU_nmsThres_0.35_0.50/ --evalPoseEstimation -o out-single-est
+	$(mot_pypath); python ../poseval/py/evaluate.py -g pred_json-pre-commissioning/val_gt_task1/ -p pred_json-single-est/hr904-valid_task_1_mask_DETbox_allBox_Flip_estJoints_tfIoU_nmsThres_0.35_0.50/ --evalPoseEstimation -o out-single-est
 eval-t1-faster:
-	$(eval_env); python ../poseval/py/evaluate.py -g pred_json-pre-commissioning/val_gt_task1/ -p pred_json-single-est/valid_task_1_faster_DETbox_allBox_Flip_estJoints_tfIoU_nmsThres_0.35_0.50/ --evalPoseEstimation -o out-single-est
+	$(mot_pypath); python ../poseval/py/evaluate.py -g pred_json-pre-commissioning/val_gt_task1/ -p pred_json-single-est/valid_task_1_faster_DETbox_allBox_Flip_estJoints_tfIoU_nmsThres_0.35_0.50/ --evalPoseEstimation -o out-single-est
 
 eval-t1-sb-88-debug:
-	$(eval_env); python ../poseval/py/evaluate.py -g pred_json-pre-commissioning/val_gt_task3-debugging/ -p pred_json-single-est/72.9-valid_res50_task_1_DETbox_allBox_Flip_tfIoU_nmsThres_0.35_0.50/ --evalPoseEstimation -o out-single-est
+	$(mot_pypath); python ../poseval/py/evaluate.py -g pred_json-pre-commissioning/val_gt_task3-debugging/ -p pred_json-single-est/72.9-valid_res50_task_1_DETbox_allBox_Flip_tfIoU_nmsThres_0.35_0.50/ --evalPoseEstimation -o out-single-est
 eval-t1-hr-905-debug:
-	$(eval_env); python ../poseval/py/evaluate.py -g pred_json-pre-commissioning/val_gt_task3-debugging/ -p pred_json-single-est/hr905-valid_task_1_DETbox_allBox_Flip_estJoints_tfIoU_nmsThres_0.35_0.50/ --evalPoseEstimation -o out-single-est
+	$(mot_pypath); python ../poseval/py/evaluate.py -g pred_json-pre-commissioning/val_gt_task3-debugging/ -p pred_json-single-est/hr905-valid_task_1_DETbox_allBox_Flip_estJoints_tfIoU_nmsThres_0.35_0.50/ --evalPoseEstimation -o out-single-est
 eval-t1-hr-904-debug:
-	$(eval_env); python ../poseval/py/evaluate.py -g pred_json-pre-commissioning/val_gt_task3-debugging/ -p pred_json-single-est/valid_task_1_mask_DETbox_allBox_Flip_estJoints_tfIoU_nmsThres_0.35_0.50/ --evalPoseEstimation -o out-single-est
+	$(mot_pypath); python ../poseval/py/evaluate.py -g pred_json-pre-commissioning/val_gt_task3-debugging/ -p pred_json-single-est/valid_task_1_mask_DETbox_allBox_Flip_estJoints_tfIoU_nmsThres_0.35_0.50/ --evalPoseEstimation -o out-single-est
+
+eval-t3-hr904:
+	$(mot_pypath); python ../poseval/py/evaluate.py -g pred_json-pre-commissioning/val_gt_task1/ -p  pred_json-track/hr904-64.0-valid_task_-2_mask_DETbox_allBox_Flip_estJoints_tfIoU_nmsThres_0.35_0.50_IoUMetric_mkrs_box_0.80_joint_0.50_matchID/ --evalPoseEstimation --evalPoseTracking -o out-hr904-tracking
+
 
 # sb
 sb-val-mpii:
@@ -46,6 +51,9 @@ sb-val-mpii:
 	--cfg experiments/mpii/resnet101/384x384_d256x3_adam_lr1e-3.yaml \
     --flip-test \
     --model-file models/pose_mpii/pose_resnet_101_384x384.pth.tar
+
+sb-val-88:
+	$(cd_simple);$(cuda_all); python pose_estimation/valid_for_pt.py --cfg experiments/pt17/res50-coco-256x192_d256x3_adam_lr1e-3.yaml  --model-file output-pt17-freeze/pt17/pose_resnet_50/res50-coco-256x192_d256x3_adam_lr1e-3/pt17-epoch-16-88.01324110762047
 
 
 # hr
@@ -80,9 +88,22 @@ t1-hr-90.472-debug:
 t1-hr-90.472-gtbox:
 	$(cuda_all); $(nise_main) $(flow_cfg) $(hr_90472) $(tron_cfg_mask) $(nise_1_gtbox)
 
+t1-sb-88-gtbox-debug:
+	$(cuda_all); $(nise_main) $(flow_cfg) $(sb_88) $(tron_cfg_mask) $(nise_1_gtbox_debug)
 t1-hr-90.472-gtbox-debug:
 	$(cuda_all); $(nise_main) $(flow_cfg) $(hr_90472) $(tron_cfg_mask) $(nise_1_gtbox_debug)
 
 
 t1-faster-sb-88:
 	$(cuda_0); $(nise_main) $(flow_cfg) $(sb_88) $(tron_cfg_faster) $(nise_1_nmson_faster)
+
+#tracking
+t3-hr904-nms-.35-.5-boxjoint-.8-.5:
+	$(nise_main) --task1pred pred_json-single-est/81.9-hr904-valid_task_1_mask_DETbox_allBox_Flip_estJoints_tfIoU_nmsThres_0.35_0.50 $(nise_3_root)
+
+t3-sb88-nms-.35-.5-boxjoint-.8-.5:
+	$(nise_main) --task1pred pred_json-single-est/79.0-sb88-valid_task_1_mask_DETbox_allBox_Flip_estJoints_tfIoU_nmsThres_0.35_0.50 $(nise_3_root)
+
+#commissioning
+commi-bjthres:
+	python scripts/param_box_joint.py --nise_config exp_config/3/t-3-root-commi-box-joint.yaml

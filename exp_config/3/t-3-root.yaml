@@ -44,8 +44,8 @@ DEBUG:
   load_simple_model: False
   load_human_det_model: False
 PATH:
-  _JOINTS_DIR: 'images_joint-track-fliptest/'
-  _IMAGES_OUT_DIR: 'images_out-track-fliptest/'
-  _JSON_SAVE_DIR: 'pred_json-track-fliptest/'
-  _UNIFIED_JSON_DIR: 'unified_boxes-track-fliptest/'
-  PRED_JSON_FOR_TASK_3: 'pred_json-single-est/72.9-valid_res50_task_1_DETbox_allBox_Flip_tfIoU_nmsThres_0.35_0.50'
+  _JOINTS_DIR: 'images_joint-track/'
+  _IMAGES_OUT_DIR: 'images_out-track/'
+  _JSON_SAVE_DIR: 'pred_json-track/'
+  _UNIFIED_JSON_DIR: 'unified_boxes-track/'
+  PRED_JSON_FOR_TASK_3: 'pred_json-single-est/81.9-hr904-valid_task_1_mask_DETbox_allBox_Flip_estJoints_tfIoU_nmsThres_0.35_0.50'

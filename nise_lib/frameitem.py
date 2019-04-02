@@ -17,6 +17,13 @@ import torchvision.transforms as vision_transfroms
 
 class FrameItem:
     max_id = 0
+
+    transform = vision_transfroms.Compose([
+        vision_transfroms.ToTensor(),
+        vision_transfroms.Normalize(
+            mean = [0.485, 0.456, 0.406], std = [0.229, 0.224, 0.225]
+        ),
+    ])
     '''
         Item in Deque, storing image (for flow generation), joints(for propagation),
          trackids.
@@ -431,19 +438,7 @@ class FrameItem:
                     flags = cv2.INTER_LINEAR)
                 if self.cfg.DEBUG.VIS_SINGLE_NO_JOINTS == True:
                     cv2.imwrite(os.path.join(out_dir, p.stem + "_nojoints_" + str(i) + '.jpg'), resized_human_np)
-                
-                normalize = vision_transfroms.Normalize(
-                    mean = [0.485, 0.456, 0.406], std = [0.229, 0.224, 0.225]
-                )
-                transform = vision_transfroms.Compose([
-                    vision_transfroms.ToTensor(),
-                    normalize,
-                ])
-                if is_hr_net:
-                    resized_human=transform(resized_human_np)
-                else:
-                    # 'images_joint/valid/015860_mpii_single_person/00000001_0.jpg'
-                    resized_human = im_to_torch(resized_human_np)
+                resized_human = FrameItem.transform(resized_human_np)
                 resized_human_batch[i, ...] = resized_human
             
             with torch.no_grad():
@@ -483,16 +478,6 @@ class FrameItem:
                 self.joints = to_torch(preds)
                 self.joints_score = to_torch(np.multiply(max_val[..., 0].T, self.unified_boxes[:, 4].numpy()).T)
                 
-                # if self.cfg.DEBUG.VIS_EST_SINGLE:
-                #     # debug_print(i, indent = 1)
-                #     img_with_joints = get_batch_image_with_joints(torch_img, to_torch(preds), torch.ones(1, 15, 1))
-                #     resized_human_np_with_joints = cv2.warpAffine(
-                #         img_with_joints,  # hw3
-                #         trans,
-                #         (int(self.joint_est_mode_size[0]), int(self.joint_est_mode_size[1])),
-                #         flags = cv2.INTER_LINEAR)
-                #     cv2.imwrite(os.path.join(out_dir, p.stem + "_" + "{:02d}".format(i) + '.jpg'),
-                #                 resized_human_np_with_joints)
                 
                 if self.cfg.TEST.USE_MATCHED_GT_EST_JOINTS and self.gt_boxes.numel() != 0:
                     # use matched gt joints to be the output joints

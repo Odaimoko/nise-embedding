@@ -53,7 +53,7 @@ def update_nise_config(_config, args):
     if args.hr_cfg is not None:
         _config.DEBUG.load_hr_model = True
         _config.DEBUG.load_simple_model = False
-    else:
+    elif args.simple_cfg is not None:
         _config.DEBUG.load_simple_model = True
         _config.DEBUG.load_hr_model = False
     

@@ -50,9 +50,30 @@ $ diff my_e2e_mask_rcnn_X-101-64x4d-FPN_1x.yaml ../Detectron.pytorch/tron_config
 >   MASK_ON: True
 ```
 
+
+
+
+
+## 2019-04-03
+
+新 code + sb88
+
+```
+make eval-t1-sb-88
+# gt frames  : 2607 # pred frames: 2607
+& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
+& 85.8 & 86.7 & 80.8 & 73.0 & 79.3 & 76.7 & 67.2 & 79.0 \\
+```
+
+
+
+
+
 ## 2019-04-02
 
-一步一步检测HRnet 在 posetrack 的错误。
+- [x] 一步一步检测HRnet 在 posetrack 的错误。
+
+
 
 ### posetrack task 1 visualize
 
@@ -85,11 +106,23 @@ hrnet三个视频 run 了260s。simple相比之下用了**63.260 s.**
 所有视频 HRnet 跑了，**2085.147**，也差不多？
 
 + [x] 可能是 pt17 的 eval 函数问
-+ [ ] train 有问题
++ [x] train 有问题
 + [x] get-db 有问题
     + [x] 应该就是这个了，训练的时候 vis 出来的图片里，RGB 是反着的。
-    + [ ] 结果也不是
+    + [x] 结果也不是
 + [ ] pt-est 的代码问题
+    + [ ] DONE，就是你了。
+
+所以结果还是应该将作者的代码run一遍，然后看看里面这些变量具体是什么，然后全部复制过来不要扔掉一些东西。如果要扔掉，一定要确定这个东西真的没用。
+
+代码问题是作者还有一个对图片 normalize 的 transform，之前我都忽略了。
+
+```python
+if self.transform:
+	input = self.transform(input)
+```
+
+
 
 
 

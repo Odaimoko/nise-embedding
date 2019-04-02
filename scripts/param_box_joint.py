@@ -12,7 +12,10 @@ from nise_lib.nise_functions import *
 from nise_lib.nise_debugging_func import *
 from nise_lib.core import *
 from tron_lib.core.config import cfg as tron_cfg
+from easydict import EasyDict as edict
 from simple_lib.core.config import config as simple_cfg
+from copy import  deepcopy
+
 
 if __name__ == '__main__':
     # https://github.com/pytorch/pytorch/issues/3492#issuecomment-382660636
@@ -30,10 +33,14 @@ if __name__ == '__main__':
             joint_thres = float(joint_thres)
             
             y = create_yaml_track_filter([0, 50], (box_thres, joint_thres), original_yaml = nise_args.nise_config)
-            # debug_print('New Yaml:', y)
-            update_nise_config(nise_cfg, y)
+            debug_print('New Yaml:', y)
+            new_args = deepcopy(nise_args)
+            setattr(new_args,'nise_config',y)
+            update_nise_config(nise_cfg, new_args)
             suffix, suffix_with_range = set_path_from_nise_cfg(nise_cfg)
+            print(suffix)
             # make_nise_dirs()
+            
             update_nise_logger(nise_logger, nise_cfg, suffix)
             debug_print('Running posetrack 17: NMS thresholds are %.2f, %.2f.' % (box_thres, joint_thres))
             # t=threading.Thread(target = nise_flow_debug, args = (dataset_path,None,None))
