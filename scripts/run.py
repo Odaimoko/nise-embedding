@@ -8,6 +8,7 @@ from pathlib import PurePosixPath
 import argparse
 import pprint
 import torch.multiprocessing as mp
+import warnings
 
 # local packages
 import _init_paths
@@ -22,11 +23,20 @@ from simple_lib.core.config import config as simple_cfg
 if __name__ == '__main__':
     
     mp.set_start_method('spawn', force = True)
-    
+    warnings.filterwarnings('ignore')
+
     flow_model = None
     maskRCNN = None
     joint_est_model = None
     human_det_dataset = None
+    
+    
+    # ─── HUMAN DETECT ───────────────────────────────────────────────────────────────
+    if nise_cfg.DEBUG.load_human_det_model:
+        human_detect_args = human_detect_parse_args()
+        maskRCNN, human_det_dataset = load_human_detect_model(human_detect_args, tron_cfg)
+        # maskRCNN = nn.DataParallel(maskRCNN)
+        
     # ─── FROM FLOWNET 2.0 ───────────────────────────────────────────────────────────
     if nise_cfg.DEBUG.load_flow_model:
         parser = argparse.ArgumentParser()
@@ -45,11 +55,6 @@ if __name__ == '__main__':
         # simple_joint_est_model = nn.DataParallel(simple_joint_est_model)
         debug_print('HR pose detector loaded.')
         
-    # ─── HUMAN DETECT ───────────────────────────────────────────────────────────────
-    if nise_cfg.DEBUG.load_human_det_model:
-        human_detect_args = human_detect_parse_args()
-        maskRCNN, human_det_dataset = load_human_detect_model(human_detect_args, tron_cfg)
-        # maskRCNN = nn.DataParallel(maskRCNN)
     
     make_nise_dirs()
     
@@ -57,5 +62,6 @@ if __name__ == '__main__':
         dataset_path = nise_cfg.PATH.GT_VAL_ANNOTATION_DIR
     elif nise_cfg.TEST.MODE == 'train':
         dataset_path = nise_cfg.PATH.GT_TRAIN_ANNOTATION_DIR
-     
-    nise_flow_debug(dataset_path, maskRCNN, joint_est_model, flow_model)
+    # 用于生成 box
+    # nise_pred_task_1_debug(dataset_path, maskRCNN, joint_est_model, flow_model)
+    nise_flow_debug(dataset_path, maskRCNN, joint_est_model, flow_model)    # 用于利用生成好的 box
