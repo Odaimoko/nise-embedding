@@ -8,7 +8,9 @@ import os.path as osp
 
 paths = [
     '.',
+    # 这个是为了能够在这个 repo 里用其他的 repo
     'other_libs/',
+    # 下面都是为了原 repo 能用起来
     'other_libs/flownet_utils/',
     'other_libs/simple_lib/',
     'other_libs/tron_lib/',

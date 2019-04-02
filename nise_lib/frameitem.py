@@ -12,6 +12,7 @@ from tron_lib.core.test_for_pt import im_detect_all
 from simple_lib.core.inference import get_final_preds
 # from nise_utils.cpn_transforms import get_affine_transform
 from nise_utils.simple_transforms import flip_back, get_affine_transform
+import torchvision.transforms as vision_transfroms
 
 
 class FrameItem:
@@ -114,18 +115,18 @@ class FrameItem:
     
     # def get_box_from_joints
     
-    # @log_time('\t Person Det……')
+    # @log_time('\tPerson Det……')
     def detect_human(self, detector, prepared_detection = None):
         '''
         :param detector:
         :return: people is represented as tensor of size num_people x 4. The result is NMSed.
         '''
-        
         if self.cfg.TEST.USE_GT_PEOPLE_BOX:
             self.detected_boxes = self.gt_boxes
         elif prepared_detection is not None:  # 0 is 0 and prepared_detection.numel() >= 5:
             self.detected_boxes = prepared_detection
         else:
+            # debug_print('manually detect', indent = 1)
             cls_boxes = im_detect_all(detector, self.original_img)  # the example from detectron use this in this way
             human_bboxes = torch.from_numpy(cls_boxes[1])  # people is the first class of coco， 0 for background
             self.detected_boxes = human_bboxes
@@ -133,11 +134,11 @@ class FrameItem:
         if self.cfg.ALG.FILTER_HUMAN_WHEN_DETECT:
             # Dont use all, only high confidence
             self.detected_boxes, _ = filter_bbox_with_scores(self.detected_boxes)
-            # 有可能出现没检测到的情况，大部分不可能，但是工程起见。
-            # 2TODO 比如 bonn_mpii_train_5sec\00098_mpii 最前面几个是全黑所以检测不到……emmmm怎么办呢
-            self.detected_boxes = expand_vector_to_tensor(self.detected_boxes)
+        # 有可能出现没检测到的情况，大部分不可能，但是工程起见。
+        # 2TODO 比如 bonn_mpii_train_5sec\00098_mpii 最前面几个是全黑所以检测不到……emmmm怎么办呢
+        self.detected_boxes = expand_vector_to_tensor(self.detected_boxes)
         
-        # debug_print('Detected', self.detected_boxes.shape[0], 'boxes', indent = 1)
+        debug_print('Detected', self.detected_boxes.shape[0], 'boxes', indent = 1)
         self.human_detected = True
     
     # @log_time('\t生成flow……')
@@ -431,8 +432,18 @@ class FrameItem:
                 if self.cfg.DEBUG.VIS_SINGLE_NO_JOINTS == True:
                     cv2.imwrite(os.path.join(out_dir, p.stem + "_nojoints_" + str(i) + '.jpg'), resized_human_np)
                 
-                # 'images_joint/valid/015860_mpii_single_person/00000001_0.jpg'
-                resized_human = im_to_torch(resized_human_np)
+                normalize = vision_transfroms.Normalize(
+                    mean = [0.485, 0.456, 0.406], std = [0.229, 0.224, 0.225]
+                )
+                transform = vision_transfroms.Compose([
+                    vision_transfroms.ToTensor(),
+                    normalize,
+                ])
+                if is_hr_net:
+                    resized_human=transform(resized_human_np)
+                else:
+                    # 'images_joint/valid/015860_mpii_single_person/00000001_0.jpg'
+                    resized_human = im_to_torch(resized_human_np)
                 resized_human_batch[i, ...] = resized_human
             
             with torch.no_grad():

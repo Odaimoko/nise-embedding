@@ -13,14 +13,17 @@ from nise_lib.nise_functions import *
 from nise_lib.manager_torch import gm
 from plogs.plogs import get_logger
 from simple_lib.core.config import config as simple_cfg
+from hr_lib.config import cfg as hr_cfg
 
 
-def nise_pred_task_1_debug(gt_anno_dir, vis_dataset, hunam_detector, joint_estimator, flow_model):
+def nise_pred_task_1_debug(gt_anno_dir, hunam_detector, joint_estimator, flow_model):
     # PREDICT ON TRAINING SET OF 2017
     anno_file_names = get_type_from_dir(gt_anno_dir, ['.json'])
     anno_file_names = sorted(anno_file_names)
     mkdir(nise_cfg.PATH.JSON_SAVE_DIR)
     mkdir(nise_cfg.PATH.DETECT_JSON_DIR)
+    est_cfg = simple_cfg if nise_cfg.DEBUG.load_simple_model else hr_cfg
+
     for i, file_name in enumerate(anno_file_names):
         debug_print(i, file_name)
         if is_skip_video(nise_cfg, i, file_name):
@@ -69,9 +72,9 @@ def nise_pred_task_1_debug(gt_anno_dir, vis_dataset, hunam_detector, joint_estim
                 detect_box = detection_result_from_json[j][img_file_path]
                 detect_box = torch.tensor(detect_box)
             else:
-                detect_box = torch.tensor([])
+                detect_box = None
             
-            fi = FrameItem(nise_cfg, simple_cfg, img_file_path, 1, True, gt_joints)
+            fi = FrameItem(nise_cfg, est_cfg, img_file_path, 1, True, gt_joints)
             fi.detect_human(hunam_detector, detect_box)
             if nise_cfg.DEBUG.SAVE_FLOW_TENSOR:
                 fi.gen_flow(flow_model, None if j == 0 else Q[-1].flow_img)
@@ -80,8 +83,7 @@ def nise_pred_task_1_debug(gt_anno_dir, vis_dataset, hunam_detector, joint_estim
             
             if nise_cfg.DEBUG.VISUALIZE:
                 fi.assign_id_task_1_2(Q)
-                threading.Thread(target = fi.visualize, args = [vis_dataset]).start()
-                # fi.visualize(dataset = vis_dataset)
+                threading.Thread(target = fi.visualize, args = ()).start()
             
             detect_result_to_record.append({img_file_path: fi.detect_results()})
             flow_result_to_record.append({img_file_path: fi.flow_result()})
@@ -149,7 +151,8 @@ def nise_pred_task_2_debug(gt_anno_dir, vis_dataset, hunam_detector, joint_estim
             assert len(det_est_result_from_json) == len(gt)
         else:
             det_est_result_from_json = {}
-        
+        est_cfg = simple_cfg if nise_cfg.DEBUG.load_simple_model else hr_cfg
+
         Q = deque(maxlen = nise_cfg.ALG._DEQUE_CAPACITY)
         for j, frame in enumerate(gt):
             # frame dict_keys(['image', 'annorect', 'imgnum', 'is_labeled', 'ignore_regions'])
@@ -167,7 +170,7 @@ def nise_pred_task_2_debug(gt_anno_dir, vis_dataset, hunam_detector, joint_estim
                 detect_box = detection_result_from_json[j][img_file_path]
                 detect_box = torch.tensor(detect_box)
             else:
-                detect_box = torch.tensor([])
+                detect_box = None
             
             if nise_cfg.DEBUG.USE_FLOW_RESULT:
                 pre_com_flow = flow_result_from_json[j][img_file_path]
@@ -180,7 +183,7 @@ def nise_pred_task_2_debug(gt_anno_dir, vis_dataset, hunam_detector, joint_estim
                 pre_com_det_est = torch.tensor([])
             
             if j == 0:  # first frame doesnt have flow, joint prop
-                fi = FrameItem(nise_cfg, simple_cfg, img_file_path, is_first = True, gt_joints = gt_joints)
+                fi = FrameItem(nise_cfg, est_cfg, img_file_path, is_first = True, gt_joints = gt_joints)
                 fi.detect_human(hunam_detector, detect_box)
                 fi.unify_bbox()
                 fi.est_joints(joint_estimator)
@@ -188,7 +191,7 @@ def nise_pred_task_2_debug(gt_anno_dir, vis_dataset, hunam_detector, joint_estim
                 if nise_cfg.DEBUG.VISUALIZE:
                     fi.visualize(dataset = vis_dataset)
             else:
-                fi = FrameItem(nise_cfg, simple_cfg, img_file_path, gt_joints = gt_joints)
+                fi = FrameItem(nise_cfg, est_cfg, img_file_path, gt_joints = gt_joints)
                 fi.detect_human(hunam_detector, detect_box)
                 if nise_cfg.DEBUG.USE_FLOW_RESULT:
                     fi.flow_to_current = pre_com_flow
@@ -227,7 +230,10 @@ def nise_flow_debug(gt_anno_dir, human_detector, joint_estimator, flow_model):
     anno_file_names = sorted(anno_file_names)
     mkdir(nise_cfg.PATH.JSON_SAVE_DIR)
     # if don't pass in nise_cfg, in run_video function, nise_will be the original one
-    all_video = [(nise_cfg, simple_cfg, i, file_name, human_detector, joint_estimator, flow_model) for i, file_name in
+    
+    est_cfg = simple_cfg if nise_cfg.DEBUG.load_simple_model else hr_cfg
+    
+    all_video = [(nise_cfg, est_cfg, i, file_name, human_detector, joint_estimator, flow_model) for i, file_name in
                  enumerate(anno_file_names)]
     debug_print('MultiProcessing start method:', mp.get_start_method(), lvl = Levels.STATUS)
     
@@ -241,13 +247,12 @@ def nise_flow_debug(gt_anno_dir, human_detector, joint_estimator, flow_model):
     elif nise_cfg.TEST.TASK == -2:
         fun = run_one_video_tracking_debug
     num_process = len(os.environ.get('CUDA_VISIBLE_DEVICES', default = '').split(',')) * 2
-    # if num_process == 0:  # use all devices
-    # num_process = 3
+    num_process = 2
     global locks
     locks = [Lock() for _ in range(gm.gpu_num)]
     __spec__ = None
     # with Pool(initializer = init_gm, initargs = (locks, nise_cfg)) as po:
-    print('Numprocesses', num_process)#这是每个 GPU 都要跑num_process 个的意思
+    print('Numprocesses', num_process)  # 这是每个 GPU 都要跑num_process 个的意思，但好像也不对。。。不是很懂这个，待看
     with Pool(processes = num_process, initializer = init_gm, initargs = (locks, nise_cfg)) as po:
         
         debug_print('Pool created.')
@@ -255,7 +260,7 @@ def nise_flow_debug(gt_anno_dir, human_detector, joint_estimator, flow_model):
 
 
 @log_time('One video...')
-def run_one_video_task_1(_nise_cfg, _simple_cfg, i: int, file_name: str, human_detector, joint_estimator, flow_model):
+def run_one_video_task_1(_nise_cfg, est_cfg, i: int, file_name: str, human_detector, joint_estimator, flow_model):
     '''
     Use precomputed unified boxes and joints to do matching.
     :param i:
@@ -311,9 +316,9 @@ def run_one_video_task_1(_nise_cfg, _simple_cfg, i: int, file_name: str, human_d
             detect_box = detection_result_from_json[j][img_file_path]
             detect_box = torch.tensor(detect_box)
         else:
-            detect_box = torch.tensor([])
+            detect_box = None
         
-        fi = FrameItem(_nise_cfg, _simple_cfg, img_file_path, is_first = True, task = 1, gt_joints = gt_joints)
+        fi = FrameItem(_nise_cfg, est_cfg, img_file_path, is_first = True, task = 1, gt_joints = gt_joints)
         fi.detect_human(human_detector, detect_box)
         if _nise_cfg.DEBUG.SAVE_FLOW_TENSOR:
             fi.gen_flow(flow_model, None if j == 0 else Q[-1].flow_img)
@@ -356,7 +361,7 @@ def run_one_video_task_1(_nise_cfg, _simple_cfg, i: int, file_name: str, human_d
 
 
 @log_time('One video...')
-def run_one_video_tracking_debug(_nise_cfg, _simple_cfg, i: int, file_name: str, human_detector, joint_estimator,
+def run_one_video_tracking_debug(_nise_cfg, est_cfg, i: int, file_name: str, human_detector, joint_estimator,
                                  flow_model):
     '''
     Use precomputed unified boxes and joints to do matching.
@@ -399,10 +404,10 @@ def run_one_video_tracking_debug(_nise_cfg, _simple_cfg, i: int, file_name: str,
             gt_id = torch.tensor([])
         
         if len(Q) == 0:  # first frame doesnt have flow, joint prop
-            fi = FrameItem(_nise_cfg, _simple_cfg, img_file_path, is_first = True, task = 3, gt_joints = gt_joints,
+            fi = FrameItem(_nise_cfg, est_cfg, img_file_path, is_first = True, task = 3, gt_joints = gt_joints,
                            gt_id = gt_id)
         else:
-            fi = FrameItem(_nise_cfg, _simple_cfg, img_file_path, task = 3, gt_joints = gt_joints, gt_id = gt_id)
+            fi = FrameItem(_nise_cfg, est_cfg, img_file_path, task = 3, gt_joints = gt_joints, gt_id = gt_id)
         
         if _nise_cfg.TEST.USE_GT_PEOPLE_BOX and gt_joints.numel() == 0:
             # we want to use gt box to debug, so ignore those which dont have annotations
@@ -454,7 +459,7 @@ def run_one_video_tracking_debug(_nise_cfg, _simple_cfg, i: int, file_name: str,
 
 
 @log_time('One video...')
-def run_one_video_flow_debug(_nise_cfg, _simple_cfg, i, file_name, human_detector, joint_estimator, flow_model):
+def run_one_video_flow_debug(_nise_cfg, est_cfg, i, file_name, human_detector, joint_estimator, flow_model):
     '''
     Atom function. A video be run sequentially.
     :param i:
@@ -526,7 +531,7 @@ def run_one_video_flow_debug(_nise_cfg, _simple_cfg, i, file_name, human_detecto
             detect_box = detection_result_from_json[j][img_file_path]
             detect_box = torch.tensor(detect_box)
         else:
-            detect_box = torch.tensor([])
+            detect_box = None
         
         if _nise_cfg.DEBUG.USE_FLOW_RESULT:
             pre_com_flow = flow_result_from_json[j][img_file_path]
@@ -534,13 +539,13 @@ def run_one_video_flow_debug(_nise_cfg, _simple_cfg, i, file_name, human_detecto
             pre_com_flow = torch.tensor([])
         
         if j == 0 or _nise_cfg.TEST.TASK == 1:  # first frame doesnt have flow, joint prop
-            fi = FrameItem(_nise_cfg, _simple_cfg, img_file_path, is_first = True, gt_joints = gt_joints)
+            fi = FrameItem(_nise_cfg, est_cfg, img_file_path, is_first = True, gt_joints = gt_joints)
             fi.detected_boxes = detect_box
             fi.human_detected = True
             fi.unify_bbox()
             fi.est_joints(joint_estimator)
         else:
-            fi = FrameItem(_nise_cfg, _simple_cfg, img_file_path, gt_joints = gt_joints)
+            fi = FrameItem(_nise_cfg, est_cfg, img_file_path, gt_joints = gt_joints)
             fi.detected_boxes = detect_box
             fi.human_detected = True
             fi.flow_to_current = pre_com_flow

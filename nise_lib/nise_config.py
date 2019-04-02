@@ -16,11 +16,12 @@ from plogs.plogs import get_logger
 def get_nise_arg_parser():
     parser = argparse.ArgumentParser(description = 'NISE PT')
     parser.add_argument('--nise_config', type = str, metavar = 'nise config file',
-                        help = 'path to yaml format config file', default = 'exp_config/t.yaml')
+                        help = 'path to yaml format config file', default = '')
     parser.add_argument('--est-model-file', type = str, )
     parser.add_argument('--hr-cfg', type = str, )
     parser.add_argument('--simple-cfg', type = str, )
-
+    parser.add_argument('--load_detectron', type = str, )
+    
     parser.add_argument('--task1pred', type = str, metavar = 'nise task 1 pred json',
                         help = 'path to prediction json directory', default = '')
     args, rest = parser.parse_known_args()
@@ -31,7 +32,7 @@ def get_nise_arg_parser():
 def update_nise_config(_config, args):
     config_file = args.nise_config
     
-    if config_file is None: return
+    if not config_file: return
     
     def update_dict(_config, k, v):
         
@@ -47,13 +48,15 @@ def update_nise_config(_config, args):
             update_dict(_config, k, v)
     if args.task1pred:
         _config.PATH.PRED_JSON_FOR_TASK_3 = args.task1pred
+    if args.load_detectron:
+        _config.MODEL.det_model = args.load_detectron
     if args.hr_cfg is not None:
         _config.DEBUG.load_hr_model = True
         _config.DEBUG.load_simple_model = False
     else:
-        _config.DEBUG.load_simple_model=True
+        _config.DEBUG.load_simple_model = True
         _config.DEBUG.load_hr_model = False
-
+    
     return _config
 
 
@@ -83,6 +86,7 @@ def set_path_from_nise_cfg(nise_cfg):
                 model_part.append(net_name)
     
     detect_part = [
+        'faster' if 'faster_rcnn' in nise_cfg.MODEL.det_model else 'mask',
         'GTbox' if nise_cfg.TEST.USE_GT_PEOPLE_BOX else 'DETbox',
         'filterBox' if nise_cfg.ALG.FILTER_HUMAN_WHEN_DETECT else 'allBox'
     ]
@@ -249,6 +253,7 @@ class NiseConfig:
             # not even only for naming the config file
             self.simple_cfg = '../simple-baseline-pytorch/experiments/pt17/res152-coco-384x288.yaml'
             self.simple_model = '/home/zhangxt/disk/posetrack/simple-baseline-pytorch/output-pt17-fromfreeze/pt17/pose_resnet_152/res152-coco-384x288/pt17-epoch-20-90.04363546829477'
+            self.det_model = ''
     
     class _DEBUG:
         def __init__(self):
@@ -256,6 +261,8 @@ class NiseConfig:
             self.DEVELOPING = True
             self.load_flow_model = False
             self.load_human_det_model = True
+            
+            # These two will be decided  dynamically
             self.load_simple_model = True
             self.load_hr_model = False
             
@@ -292,6 +299,7 @@ class NiseConfig:
             # if not filtered when detected, filter when prop??
             self.JOINT_PROP_WITH_FILTERED_HUMAN = True
             self.FILTER_BBOX_WITH_SMALL_AREA = False
+            self.USE_COCO_IOU_IN_NMS = False
             self.UNIFY_NMS_THRES_1 = .3
             self.UNIFY_NMS_THRES_2 = .5
             
@@ -340,8 +348,9 @@ class NiseConfig:
     
     class _TEST:
         def __init__(self):
+            self.TASK = 1  # default
+            self.MODE = 'valid'
             self.USE_GT_PEOPLE_BOX = False
-            
             self.FLIP_TEST = False
             
             self.USE_MATCHED_GT_EST_JOINTS = False
@@ -355,6 +364,8 @@ class NiseConfig:
             # those detected boxes which have corresponding gt boxes will have gt id, but others will have -1
             self.ASSIGN_GT_ID = False
             
+            self.FROM = 0
+            self.TO = 50
             self.ONLY_TEST = []
             
             self.MAP_TP_IOU_THRES = .5

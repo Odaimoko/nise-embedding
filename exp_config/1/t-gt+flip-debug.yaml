@@ -21,13 +21,13 @@ TEST:
   GT_BOX_SCORE: .7
   FROM: 0
   TO: 50
-#  ONLY_TEST:
-#    - '8760'
-#    - '00522'
+  ONLY_TEST:
+    - '342'
+    - '00522'
   TASK: 1
   MODE: valid
 DEBUG:
-  VISUALIZE: True
+  VISUALIZE: False
   VIS_JOINTS_FULL: True
   VIS_HUMAN_THRES: 0.0
   VIS_SINGLE_NO_JOINTS: False

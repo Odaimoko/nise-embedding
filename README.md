@@ -50,10 +50,31 @@ $ diff my_e2e_mask_rcnn_X-101-64x4d-FPN_1x.yaml ../Detectron.pytorch/tron_config
 >   MASK_ON: True
 ```
 
+## 2019-04-02
+
+一步一步检测HRnet 在 posetrack 的错误。
+
+### posetrack task 1 visualize
+
+使用sb88和 hr904对比
+
+#### 做了什么
+
+如题
+
+#### 结果
+
+左图是 sb88，右图是 hr 904，对于 detection box 来说，确实hr904的 val 结果要差点。
+
+![image-20190402093231957](assets/image-20190402093231957.png)
+
+那是不是 gtbox 就差不多了呢？发现并不是， gt 一样差很多。
+
+
 
 ## 2019-04-01
 
-- [ ] 使用 make 管理项目
+- [x] 使用 make 管理项目
 
 
 
@@ -63,11 +84,11 @@ hrnet三个视频 run 了260s。simple相比之下用了**63.260 s.**
 
 所有视频 HRnet 跑了，**2085.147**，也差不多？
 
-+ [x] 可能是 pt17 的 eval 函数问题
-    + [ ] 
++ [x] 可能是 pt17 的 eval 函数问
 + [ ] train 有问题
-+ [ ] get-db 有问题
-    + [ ] 应该就是这个了，训练的时候 vis 出来的图片里，RGB 是反着的。
++ [x] get-db 有问题
+    + [x] 应该就是这个了，训练的时候 vis 出来的图片里，RGB 是反着的。
+    + [ ] 结果也不是
 + [ ] pt-est 的代码问题
 
 
