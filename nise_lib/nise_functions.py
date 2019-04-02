@@ -2,6 +2,7 @@ import argparse
 import json
 import os
 import pathlib
+import torch
 import sys
 import time
 from functools import wraps
@@ -9,15 +10,14 @@ from pathlib import PurePosixPath
 import yaml
 
 import colorama
-import flow_datasets
-import flow_losses
-import flow_models
+
+# local packages
+
 from simple_lib.core.config import config as simple_cfg
 from simple_lib.core.config import update_config
-from simple_models.pose_resnet import get_pose_net
+from simple_models.pose_resnet import get_pose_net as get_simple_pose_net
 
 from nise_lib.nise_config import mkrs
-# local packages
 from nise_lib.nise_debugging_func import *
 from nise_utils.imutils import *
 from plogs.logutils import Levels
@@ -58,8 +58,8 @@ def log_time(*text, record = None):
 from tron_lib.core.config import cfg_from_file, cfg_from_list, assert_and_infer_cfg
 from tron_lib.modeling.model_builder import Generalized_RCNN_for_posetrack
 import tron_lib.nn as mynn
-from tron_lib.utils.detectron_weight_helper import load_detectron_weight
-import tron_lib.utils.net as net_utils
+from tron_lib.tron_utils.detectron_weight_helper import load_detectron_weight
+import tron_lib.tron_utils.net as net_utils
 import tron_lib.datasets.dummy_datasets as datasets
 
 
@@ -141,6 +141,9 @@ def load_human_detect_model(args, tron_cfg):
 
 
 def flow_init_parser_and_tools(parser, tools):
+    import flow_datasets
+    import flow_losses
+    import flow_models
     parser.add_argument('--crop_size', type = int, nargs = '+', default = [256, 256],
                         help = "Spatial dimension to crop training samples for training")
     parser.add_argument('--gradient_clip', type = float, default = None)
@@ -215,6 +218,9 @@ def flow_init_parser_and_tools(parser, tools):
 
 
 def load_flow_model(args, parser, tools):
+    import flow_datasets
+    import flow_losses
+    import flow_models
     # Parse the official arguments
     with tools.TimerBlock("Parsing Arguments") as block:
         if args.number_gpus < 0:
@@ -344,7 +350,6 @@ def load_simple_model():
         # general
         parser.add_argument('--simple_cfg',
                             help = 'experiment configure file name',
-                            required = True,
                             type = str)
         
         args, rest = parser.parse_known_args()
@@ -374,7 +379,7 @@ def load_simple_model():
     simple_args = simple_parse_args()
     reset_config(simple_cfg, simple_args)
     
-    simple_human_det_model = get_pose_net(
+    simple_human_det_model = get_simple_pose_net(
         simple_cfg, is_train = True
     )
     gpus = [int(i) for i in simple_cfg.GPUS.split(',')]
@@ -390,6 +395,59 @@ def load_simple_model():
     simple_human_det_model = torch.nn.DataParallel(
         simple_human_det_model, device_ids = gpus).cuda()
     return simple_args, simple_human_det_model
+
+
+from hr_lib.config import cfg as hr_cfg
+from hr_lib.models.pose_hrnet import get_pose_net as get_hr_pose_net
+
+
+def load_hr_model():
+    def hr_update_cfg(cfg, args):
+        cfg.defrost()
+        cfg.merge_from_file(args.hr_cfg)
+        
+        cfg.DATASET.ROOT = os.path.join(
+            cfg.DATA_DIR, cfg.DATASET.ROOT
+        )
+        
+        cfg.MODEL.PRETRAINED = os.path.join(
+            cfg.DATA_DIR, cfg.MODEL.PRETRAINED
+        )
+        
+        cfg.freeze()
+        
+        
+    def hr_parse_args():
+        parser = argparse.ArgumentParser(description = 'Train keypoints network')
+        # general
+        parser.add_argument('--hr-cfg',
+                            help = 'experiment configure file name',
+                            type = str)
+        
+        
+        parser.add_argument('--hr-model',
+                            help = 'model state file',
+                            type = str)
+
+        args, rest = parser.parse_known_args()
+        
+        return args
+    
+    hr_args = hr_parse_args()
+    hr_update_cfg(hr_cfg, hr_args)
+    
+    simple_human_det_model = get_hr_pose_net(
+        hr_cfg, is_train = True
+    )
+    
+    assert (hr_cfg.TEST.MODEL_FILE is not None)
+    meta_info = torch.load(hr_args.hr_model)
+    state_dict = {k.replace('module.', ''): v
+                  for k, v in meta_info['state_dict'].items()}
+    simple_human_det_model.load_state_dict(state_dict,strict = False)
+    simple_human_det_model = torch.nn.DataParallel(
+        simple_human_det_model, device_ids = hr_cfg.GPUS).cuda()
+    return hr_args, simple_human_det_model
 
 
 # ─── USE MODEL ──────────────────────────────────────────────────────────────────
@@ -422,29 +480,9 @@ def pred_flow(two_images, model):
 # ─── CHECKPOINT UTIL ────────────────────────────────────────────────────────────
 
 
-from tron_lib.utils.logging import setup_logging
+from tron_lib.tron_utils.logging import setup_logging
 
 logger = setup_logging(__name__)
-
-
-def save_ckpt(output_dir, args, step, train_size, model, optimizer):
-    """Save checkpoint"""
-    if args.no_save:
-        return
-    ckpt_dir = os.path.join(output_dir, 'ckpt')
-    if not os.path.exists(ckpt_dir):
-        os.makedirs(ckpt_dir)
-    save_name = os.path.join(ckpt_dir, 'model_step{}.pth'.format(step))
-    if isinstance(model, mynn.DataParallel):
-        model = model.module
-    model_state_dict = model.state_dict()
-    torch.save({
-        'step': step,
-        'train_size': train_size,
-        'batch_size': args.batch_size,
-        'model': model.state_dict(),
-        'optimizer': optimizer.state_dict()}, save_name)
-    logger.info('save model: %s', save_name)
 
 
 # ─── IMAGE UTILS ────────────────────────────────────────────────────────────────
@@ -729,6 +767,7 @@ def get_type_from_dir(dirpath, type_list):
             files.append(os.path.join(dirpath, f))
     return files
 
+
 def get_joints_from_annorects(annorects):
     all_joints = []
     is_from_gt = False
@@ -761,7 +800,7 @@ def get_joints_from_annorects(annorects):
     
     joints = torch.tensor(all_joints).float()
     joints = expand_vector_to_tensor(joints)
-    if is_from_gt: # ones for those labeled
+    if is_from_gt:  # ones for those labeled
         scores = joints[:, :, 2]
     else:
         scores = get_pred_joint_scores(annorects)
@@ -887,7 +926,7 @@ def eval_load_gt_and_pred_boxes(anno_file_names, pred_anno_dir = None):
             # debug_print(j, img_file_path, indent = 1)
             annorects = frame['annorect']
             if (annorects is not None and len(annorects) != 0):
-                gt_joints,gt_scores = get_joints_from_annorects(annorects)
+                gt_joints, gt_scores = get_joints_from_annorects(annorects)
             else:
                 # dont eval
                 continue

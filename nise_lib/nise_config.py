@@ -17,7 +17,10 @@ def get_nise_arg_parser():
     parser = argparse.ArgumentParser(description = 'NISE PT')
     parser.add_argument('--nise_config', type = str, metavar = 'nise config file',
                         help = 'path to yaml format config file', default = 'exp_config/t.yaml')
-    parser.add_argument('--simple-model-file', type = str, )
+    parser.add_argument('--est-model-file', type = str, )
+    parser.add_argument('--hr-cfg', type = str, )
+    parser.add_argument('--simple-cfg', type = str, )
+
     parser.add_argument('--task1pred', type = str, metavar = 'nise task 1 pred json',
                         help = 'path to prediction json directory', default = '')
     args, rest = parser.parse_known_args()
@@ -42,8 +45,15 @@ def update_nise_config(_config, args):
         exp_config = edict(yaml.load(f))
         for k, v in exp_config.items():
             update_dict(_config, k, v)
-    if args.task1pred :
+    if args.task1pred:
         _config.PATH.PRED_JSON_FOR_TASK_3 = args.task1pred
+    if args.hr_cfg is not None:
+        _config.DEBUG.load_hr_model = True
+        _config.DEBUG.load_simple_model = False
+    else:
+        _config.DEBUG.load_simple_model=True
+        _config.DEBUG.load_hr_model = False
+
     return _config
 
 
@@ -71,7 +81,6 @@ def set_path_from_nise_cfg(nise_cfg):
         elif nise_cfg.TEST.TASK == -2:
             if net_name in nise_cfg.PATH.PRED_JSON_FOR_TASK_3:
                 model_part.append(net_name)
-            
     
     detect_part = [
         'GTbox' if nise_cfg.TEST.USE_GT_PEOPLE_BOX else 'DETbox',
@@ -246,11 +255,9 @@ class NiseConfig:
             self.PRINT = True
             self.DEVELOPING = True
             self.load_flow_model = False
-            self.FLOW = False
             self.load_human_det_model = True
-            self.HUMAN = False
-            self.load_joint_est_model = True
-            self.SIMPLE = False
+            self.load_simple_model = True
+            self.load_hr_model = False
             
             self.NO_NMS = False
             

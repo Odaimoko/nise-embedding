@@ -8,44 +8,43 @@ ALG:
   USE_COCO_IOU_IN_NMS: False
   UNIFY_NMS_THRES_1: .35
   UNIFY_NMS_THRES_2: .5
-
+#meaningless for task1
   ASSGIN_ID_TO_FILTERED_BOX: True
   ASSIGN_BOX_THRES: 0.5
   OUTPUT_JOINT_THRES: 0.4
   MATCHING_ALG: 0
 TEST:
-  USE_GT_PEOPLE_BOX: false
+  USE_GT_PEOPLE_BOX: False
   FLIP_TEST: True
   USE_GT_JOINTS_TO_PROP: False
   USE_ALL_GT_JOINTS_TO_PROP: False
   GT_BOX_SCORE: .7
   FROM: 0
   TO: 50
-#  ONLY_TEST:
-#    - '03742'
-#    - 14102_mpii
-#    -  20880_mpii_relpath_5sec_testsub
+  ONLY_TEST:
+    - '14102'
+    - '00522'
+    - '03742'
 
-  TASK: -2
+  TASK: 1
   MODE: valid
 DEBUG:
-  VISUALIZE: False
-  VIS_BOX: True
+  VISUALIZE: True
+  VIS_JOINTS_FULL: True
   VIS_HUMAN_THRES: 0.0
+  VIS_SINGLE_NO_JOINTS: False
+  VIS_EST_SINGLE: False
+  VIS_BOX: True
+  VIS_PROPED_JOINTS: False
+
+  NO_NMS: False
 
   SAVE_DETECTION_TENSOR: False
   SAVE_FLOW_TENSOR: False
   SAVE_DETECTION_S_EST: False
   SAVE_NMS_TENSOR: False
-  NO_NMS: False
-  USE_DETECTION_RESULT: False
+
+
+  USE_DETECTION_RESULT: True
   USE_FLOW_RESULT: False
   USE_DET_EST_RESULT: False
-  load_simple_model: False
-  load_human_det_model: False
-PATH:
-  _JOINTS_DIR: 'images_joint-track-debugging-fliptest/'
-  _IMAGES_OUT_DIR: 'images_out-track-debugging-fliptest/'
-  _JSON_SAVE_DIR: 'pred_json-track-debugging-fliptest/'
-  _UNIFIED_JSON_DIR: 'unifed_boxes-track-debugging-fliptest/'
-  PRED_JSON_FOR_TASK_3: 'pred_json-single-est/72.9-valid_res50_task_1_DETbox_allBox_Flip_tfIoU_nmsThres_0.35_0.50'

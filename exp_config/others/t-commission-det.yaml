@@ -42,5 +42,5 @@ DEBUG:
   USE_DETECTION_RESULT: True
   USE_FLOW_RESULT: false
   USE_DET_EST_RESULT: False
-  load_joint_est_model: true
+  load_simple_model: true
   load_human_det_model: False

@@ -7,10 +7,9 @@ from nise_lib.nise_debugging_func import *
 
 from nise_utils.simple_vis import get_batch_image_with_joints, \
     save_single_whole_image_with_joints
-import tron_lib.utils.vis as vis_utils
+import tron_lib.tron_utils.vis as vis_utils
 from tron_lib.core.test_for_pt import im_detect_all
 from simple_lib.core.inference import get_final_preds
-from simple_lib.core.config import config as simple_cfg
 # from nise_utils.cpn_transforms import get_affine_transform
 from nise_utils.simple_transforms import flip_back, get_affine_transform
 
@@ -24,12 +23,13 @@ class FrameItem:
     '''
     
     # @log_time('\tInit FI……')
-    def __init__(self, nise_cfg, simple_cfg, img_path, task = 2, is_first = False, gt_joints = None, gt_id = None):
+    def __init__(self, nise_cfg, est_cfg, img_path, task = 2, is_first = False, gt_joints = None, gt_id = None):
         '''
 
         :param is_first: is this frame the first of the sequence
         '''
         self.cfg = nise_cfg
+        self.est_cfg = est_cfg
         self.task = task  # 1 for single-frame, 2 for multi-frame and tracking
         self.is_first = is_first
         self.img_path = img_path
@@ -39,7 +39,7 @@ class FrameItem:
         self.original_img = cv2.imread(self.img_path)  # with original size
         self.ori_img_h, self.ori_img_w, _ = self.original_img.shape
         # 依然是W/H， 回忆model第一个192是宽。
-        self.joint_est_mode_size = simple_cfg.MODEL.IMAGE_SIZE
+        self.joint_est_mode_size = est_cfg.MODEL.IMAGE_SIZE
         self.img_ratio = self.joint_est_mode_size[0] / self.joint_est_mode_size[1]
         
         if self.cfg.TEST.USE_GT_PEOPLE_BOX and self.task == 1:
@@ -114,7 +114,7 @@ class FrameItem:
     
     # def get_box_from_joints
     
-    # @log_time('\t人检测……')
+    # @log_time('\t Person Det……')
     def detect_human(self, detector, prepared_detection = None):
         '''
         :param detector:
@@ -383,7 +383,7 @@ class FrameItem:
         final_valid_idx = valid_score_idx
         return filtered, final_valid_idx
     
-    @log_time('\t关节预测……')
+    @log_time('\tJoint est...')
     def est_joints(self, joint_detector):
         """detect current image's bboxes' joints pos using people-pose-estimation - """
         
@@ -391,23 +391,27 @@ class FrameItem:
             # if first, no unified box because no flow to prop, so dont raise
             raise ValueError('Should unify bboxes first')
         p = PurePosixPath(self.img_path)
+        joint_detector.eval()
+        
+        if 'PoseHighResolutionNet' in str(joint_detector):
+            is_hr_net = True
+        else:
+            is_hr_net = False
         
         num_person = self.unified_boxes.shape[0]
         if num_person != 0:
             out_dir = os.path.join(self.cfg.PATH.JOINTS_DIR + "_single", p.parts[-2])
             mkdir(out_dir)
-            torch_img = im_to_torch(self.img_outside_flow).unsqueeze(0)
             self.joints = torch.zeros(self.unified_boxes.shape[0], self.cfg.DATA.num_joints, 2)  # FloatTensor
             self.joints_score = torch.zeros(self.unified_boxes.shape[0], self.cfg.DATA.num_joints)  # FloatTensor
             # if no people boxes, self.joints is tensor([])
-            joint_detector.eval()
             resized_human_batch = torch.zeros(
                 [num_person, 3, int(self.joint_est_mode_size[1]), int(self.joint_est_mode_size[0])])
             center_batch = np.zeros([num_person, 2])
             scale_batch = np.zeros([num_person, 2])
             
             for i in range(self.unified_boxes.shape[0]):
-                # For each people
+                # For each person
                 bb = self.unified_boxes[i, :4]  # no score
                 
                 center, scale = box2cs(bb, self.img_ratio)
@@ -417,7 +421,7 @@ class FrameItem:
                 rotation = 0
                 # from simple/JointDataset.py
                 trans = get_affine_transform(center, scale, rotation, self.joint_est_mode_size)
-                # In simple_cfg, 0 is h/1 for w. in warpAffine should be (w,h)
+                # In self.est_cfg, 0 is h/1 for w. in warpAffine should be (w,h)
                 # 哦是因为192是宽256是高
                 resized_human_np = cv2.warpAffine(
                     self.img_outside_flow,  # hw3
@@ -432,29 +436,37 @@ class FrameItem:
                 resized_human_batch[i, ...] = resized_human
             
             with torch.no_grad():
-                joint_hmap = joint_detector(resized_human_batch)
+                outputs = joint_detector(resized_human_batch)
+                
+                if isinstance(outputs, list) and is_hr_net:
+                    output = outputs[-1]
+                else:
+                    output = outputs
                 
                 # FLIP
                 if self.cfg.TEST.FLIP_TEST:  # from function.py/validate
                     # this part is ugly, because pytorch has not supported negative index
                     flip_pairs = [[0, 5], [1, 4], [2, 3], [6, 11], [7, 10], [8, 9]]
-                    resized_human_flipped = np.flip(resized_human_batch.cpu().numpy(), 3).copy()
-                    resized_human_flipped = torch.from_numpy(resized_human_flipped).cuda()
-                    output_flipped = joint_detector(resized_human_flipped)
+                    input_flipped = np.flip(resized_human_batch.cpu().numpy(), 3).copy()
+                    input_flipped = torch.from_numpy(input_flipped).cuda()
+                    outputs_flipped = joint_detector(input_flipped)
+                    
+                    if isinstance(outputs, list) and is_hr_net:
+                        output_flipped = outputs_flipped[-1]
+                    else:
+                        output_flipped = outputs_flipped
+                    
                     output_flipped = flip_back(output_flipped.cpu().numpy(), flip_pairs)
                     output_flipped = torch.from_numpy(output_flipped.copy()).cuda()
                     
                     # feature is not aligned, shift flipped heatmap for higher accuracy
-                    if simple_cfg.TEST.SHIFT_HEATMAP:
-                        output_flipped[:, :, :, 1:] = \
-                            output_flipped.clone()[:, :, :, 0:-1]
-                        # output_flipped[:, :, :, 0] = 0
-                    
-                    joint_hmap = (joint_hmap + output_flipped) * 0.5
+                    if self.est_cfg.TEST.SHIFT_HEATMAP:
+                        output_flipped[:, :, :, 1:] = output_flipped.clone()[:, :, :, 0:-1]
+                    output = (output + output_flipped) * 0.5
                 
-                # make it batch so we can get right preds
+                # this is from simple and compatible with hrnet
                 preds, max_val = get_final_preds(
-                    simple_cfg, joint_hmap.cpu().numpy(),
+                    self.est_cfg, output.clone().cpu().numpy(),
                     center_batch, scale_batch)  # bs x 16 x 2,  bs x 16 x 1
                 
                 self.joints = to_torch(preds)
@@ -484,7 +496,7 @@ class FrameItem:
                         prev, gt = ind
                         if uni_to_gt_iou[prev, gt] > .5:
                             self.joints[prev, :, :] = self.gt_joints[gt, :, :2]
-                            self.joints_score[prev,:] = self.gt_joints[gt, :, 2]
+                            self.joints_score[prev, :] = self.gt_joints[gt, :, 2]
             
             self.joints = expand_vector_to_tensor(self.joints, 3)
         
@@ -612,7 +624,7 @@ class FrameItem:
         resized_joints[:, :, 1] = self._resize_y(joints[:, :, 1])
         return resized_joints
     
-    @log_time('\t画图……')
+    @log_time('\tVis...')
     def visualize(self):
         if self.id_assigned is False and self.task != 1:
             raise ValueError('Should assign id first.')
@@ -654,12 +666,12 @@ class FrameItem:
             joint_visible = torch.ones([num_people, num_joints, 1])
             
             nise_batch_joints = torch.cat([joints_to_show, joint_visible], 2)  # 16 x 3
-            
+            boxes = expand_vector_to_tensor(self.unified_boxes[self.id_idx_in_unified])
             save_single_whole_image_with_joints(
                 im_to_torch(self.original_img).unsqueeze(0),
                 nise_batch_joints,
                 os.path.join(out_dir, self.img_name + "_withbox.jpg"),
-                boxes = self.unified_boxes[self.id_idx_in_unified]
+                boxes = boxes
             )
             
             save_single_whole_image_with_joints(
@@ -669,7 +681,7 @@ class FrameItem:
                 boxes = None
             )
             for i in range(num_people):
-                print(i)
+                # print(i)
                 nise_batch_joints = torch.cat([joints_to_show[i, ...], joint_visible[i, ...]], 1)  # 16 x 3
                 ID = self.people_ids[i].item() if self.people_ids[i].item() != 0 else i
                 save_single_whole_image_with_joints(

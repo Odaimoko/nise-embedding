@@ -4,7 +4,7 @@ import torch.multiprocessing as mp
 import pprint
 
 # local packages
-import nise_lib._init_paths
+import _init_paths
 from flownet_utils import tools
 from nise_lib.nise_config import nise_cfg, nise_logger, update_nise_config, set_path_from_nise_cfg, update_nise_logger,nise_args
 from nise_lib.nise_functions import *
@@ -25,7 +25,7 @@ if __name__ == '__main__':
     # viz = visdom.Visdom(env = 'run-with-flownet')
     
     # ─── FROM SIMPLE BASELINE ───────────────────────────────────────────────────────
-    if nise_cfg.DEBUG.load_joint_est_model:
+    if nise_cfg.DEBUG.load_simple_model:
         simple_args, simple_joint_est_model = load_simple_model()
         simple_joint_est_model = nn.DataParallel(simple_joint_est_model).cuda()
         debug_print('Simple pose detector loaded.')

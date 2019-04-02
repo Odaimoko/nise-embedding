@@ -41,7 +41,7 @@ DEBUG:
   USE_DETECTION_RESULT: False
   USE_FLOW_RESULT: False
   USE_DET_EST_RESULT: False
-  load_joint_est_model: False
+  load_simple_model: False
   load_human_det_model: False
 PATH:
   _JOINTS_DIR: 'images_joint-track/'

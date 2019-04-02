@@ -50,6 +50,29 @@ $ diff my_e2e_mask_rcnn_X-101-64x4d-FPN_1x.yaml ../Detectron.pytorch/tron_config
 >   MASK_ON: True
 ```
 
+
+## 2019-04-01
+
+- [ ] 使用 make 管理项目
+
+
+
+### hrnet debug 中
+
+hrnet三个视频 run 了260s。simple相比之下用了**63.260 s.**
+
+所有视频 HRnet 跑了，**2085.147**，也差不多？
+
++ [x] 可能是 pt17 的 eval 函数问题
+    + [ ] 
++ [ ] train 有问题
++ [ ] get-db 有问题
+    + [ ] 应该就是这个了，训练的时候 vis 出来的图片里，RGB 是反着的。
++ [ ] pt-est 的代码问题
+
+
+
+
 ## 2019-3-17
 
 ### GT joints 和 DET joints的ablation study，以及和gt box 的横向对比

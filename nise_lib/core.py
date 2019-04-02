@@ -4,6 +4,9 @@ import torch.multiprocessing as mp
 from multiprocessing.pool import Pool
 from multiprocessing import Lock
 import pprint
+import torch
+import json
+from pathlib import PurePosixPath
 
 from nise_lib.frameitem import FrameItem
 from nise_lib.nise_functions import *
@@ -214,7 +217,7 @@ def init_gm(_gm, n_cfg, ):
     nise_cfg = n_cfg
 
 
-@log_time('validation 跑了')
+@log_time('validation has run')
 def nise_flow_debug(gt_anno_dir, human_detector, joint_estimator, flow_model):
     # PREDICT ON POSETRACK 2017
     pp = pprint.PrettyPrinter(indent = 2)
@@ -233,23 +236,25 @@ def nise_flow_debug(gt_anno_dir, human_detector, joint_estimator, flow_model):
     
     if nise_cfg.TEST.TASK == 1:
         fun = run_one_video_task_1
-    
     elif nise_cfg.TEST.TASK == -1:
         fun = run_one_video_flow_debug
     elif nise_cfg.TEST.TASK == -2:
         fun = run_one_video_tracking_debug
-    num_process = len(os.environ.get('CUDA_VISIBLE_DEVICES', default = '').split(',')) * 3
-    if num_process == 0:  # use all devices
-        num_process = 12
+    num_process = len(os.environ.get('CUDA_VISIBLE_DEVICES', default = '').split(',')) * 2
+    # if num_process == 0:  # use all devices
+    # num_process = 3
     global locks
     locks = [Lock() for _ in range(gm.gpu_num)]
+    __spec__ = None
     # with Pool(initializer = init_gm, initargs = (locks, nise_cfg)) as po:
-    with Pool(processes = 1, initializer = init_gm, initargs = (locks, nise_cfg)) as po:
+    print('Numprocesses', num_process)#这是每个 GPU 都要跑num_process 个的意思
+    with Pool(processes = num_process, initializer = init_gm, initargs = (locks, nise_cfg)) as po:
+        
         debug_print('Pool created.')
         po.starmap(fun, all_video, chunksize = 4)
 
 
-@log_time('一个视频跑了')
+@log_time('One video...')
 def run_one_video_task_1(_nise_cfg, _simple_cfg, i: int, file_name: str, human_detector, joint_estimator, flow_model):
     '''
     Use precomputed unified boxes and joints to do matching.
@@ -350,7 +355,7 @@ def run_one_video_task_1(_nise_cfg, _simple_cfg, i: int, file_name: str, human_d
         t.join()
 
 
-@log_time('一个视频跑了')
+@log_time('One video...')
 def run_one_video_tracking_debug(_nise_cfg, _simple_cfg, i: int, file_name: str, human_detector, joint_estimator,
                                  flow_model):
     '''
@@ -448,7 +453,7 @@ def run_one_video_tracking_debug(_nise_cfg, _simple_cfg, i: int, file_name: str,
         t.join()
 
 
-@log_time('一个视频跑了')
+@log_time('One video...')
 def run_one_video_flow_debug(_nise_cfg, _simple_cfg, i, file_name, human_detector, joint_estimator, flow_model):
     '''
     Atom function. A video be run sequentially.

@@ -1,15 +1,18 @@
+
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 import sys
 import os.path as osp
 
 paths = [
-    '../nise_lib',
-    '..',
-    'nise_lib',
+    '.',
     'other_libs/',
-    'other_libs/flownet_utils',
-    'other_libs/simple_lib',
-    'other_libs/tron_lib',
-    'other_libs/hr_lib',
+    'other_libs/flownet_utils/',
+    'other_libs/simple_lib/',
+    'other_libs/tron_lib/',
+    'other_libs/hr_lib/',
 ]
 
 
@@ -22,6 +25,6 @@ def add_path(path):
 this_dir = osp.dirname(__file__)
 
 for p in paths:
-    # lib_path = osp.join(this_dir, '..', p)
-    lib_path = p
+    lib_path = osp.join(this_dir, '..', p)
+    # lib_path = p
     add_path(lib_path)

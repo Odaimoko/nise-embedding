@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 
 plt.switch_backend('agg')
 # local packages
-import nise_lib._init_paths
+import _init_paths
 from nise_lib.core import *
 from nise_lib.nise_config import suffix
 from plogs.logutils import Levels
