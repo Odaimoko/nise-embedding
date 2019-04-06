@@ -1,0 +1,52 @@
+ALG:
+  FILTER_HUMAN_WHEN_DETECT: False
+  _HUMAN_THRES: 0.5
+
+  JOINT_PROP_WITH_FILTERED_HUMAN: False
+  PROP_HUMAN_THRES: .5
+
+  USE_COCO_IOU_IN_NMS: False
+  UNIFY_NMS_THRES_1: .35
+  UNIFY_NMS_THRES_2: .5
+
+  ASSGIN_ID_TO_FILTERED_BOX: True
+  ASSIGN_BOX_THRES: 0
+  OUTPUT_JOINT_THRES: 0
+  MATCHING_ALG: 0
+TEST:
+  USE_GT_PEOPLE_BOX: false
+  FLIP_TEST: True
+  USE_GT_JOINTS_TO_PROP: False
+  USE_ALL_GT_JOINTS_TO_PROP: False
+  GT_BOX_SCORE: .7
+  FROM: 0
+  TO: 50
+#  ONLY_TEST:
+#    - '03742'
+#    - 14102_mpii
+#    -  20880_mpii_relpath_5sec_testsub
+
+  TASK: -3
+  MODE: valid
+DEBUG:
+  VISUALIZE: False
+  VIS_BOX: True
+  VIS_HUMAN_THRES: 0.0
+
+  SAVE_DETECTION_TENSOR: False
+  SAVE_FLOW_TENSOR: False
+  SAVE_DETECTION_S_EST: False
+  SAVE_NMS_TENSOR: True
+  NO_NMS: False
+  USE_DETECTION_RESULT: False
+  USE_FLOW_RESULT: False
+  USE_DET_EST_RESULT: False
+  load_simple_model: False
+  load_human_det_model: False
+PATH:
+  _JOINTS_DIR: 'images_joint-track/'
+  _IMAGES_OUT_DIR: 'images_out-track/'
+  _JSON_SAVE_DIR: 'pred_json-track/'
+  _UNIFIED_JSON_DIR: 'unified_boxes-track/'
+  DETECT_JSON_DIR: 'pre_com/det_matched_gtid'
+  PRED_JSON_FOR_TASK_3: 'pred_json-single-est/79.0-sb88-valid_task_1_mask_DETbox_allBox_Flip_estJoints_tfIoU_nmsThres_0.35_0.50'

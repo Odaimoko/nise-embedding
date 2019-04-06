@@ -28,8 +28,8 @@ Use GT box to estimate。(meaningless)
 
 + [ ] 只用有标注的进行 prop（四个连续的 flow 加起来作为整体 flow，比较smooth）。
     + [ ] 因为并不是所有都有标注。如果前一帧没有gt 那就用的是 det 的 box，降低精确度。
-+ [x] 确认 det ==模型的准确性==
-+ [ ] 确认 esti 的准确性
++ [x] 确认 det 模型的准确性
++ [x] 确认 esti 的准确性
     + [x] 确定使用ptval 上88的那个模型跑出的结果。
 + [ ] 确认 flow 的有效性
 + [x] 确认 matching 的正确性
@@ -52,7 +52,24 @@ $ diff my_e2e_mask_rcnn_X-101-64x4d-FPN_1x.yaml ../Detectron.pytorch/tron_config
 
 
 
+nise-yaml 里 task 的作用
 
+| task | description                                     |
+| ---- | ----------------------------------------------- |
+| 1    | single frame                                    |
+| -1   | flow， 暂时不用                                 |
+| -2   | tracking                                        |
+| -3   | 生成tracking看删除 gt 与 det 匹配之外的 fp 结果 |
+
+
+
+## 2019-04-04
+
+yaml 的意义
+
+t-1-matched_detbox，使用某 task1的结果，和 gt 的 annotation 进行match，生成用于 eval 的 json 文件，也就是上面的-3。
+
+t-3-matched_detbox，本质和 t-3root 一样，但是使用的是t-1-matched_detbox出来的 uni_box。
 
 ## 2019-04-03
 
@@ -64,6 +81,8 @@ make eval-t1-sb-88
 & Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
 & 85.8 & 86.7 & 80.8 & 73.0 & 79.3 & 76.7 & 67.2 & 79.0 \\
 ```
+
+需要换一种减少fp 的方法，不用 thres 滤掉
 
 
 
@@ -424,11 +443,11 @@ So, my Venn diagram is correct, but my understanding of the output of the evalua
 
 ### [solved]How to find correspondence
 
-Will be summarized later. This is in function `assignGTmulti` of `eval_helpers.py`. Remember that we focus on different types of joints. The procedure is 
+This is in function `assignGTmulti` of `eval_helpers.py`. Remember that we focus on different types of joints. The procedure is 
 
 1. For each frame, for each joint type, compute the distance between gts and predictions. Distance is `np.linalg.norm(np.subtract(pointGT, pointPr)) / headSize`. There are `num_pred` and `num_gt` preds and gts respectively.
 2. `match = dist <= distThresh`.
-3. For each frame and person, accumulate how many joints of this person are annotated. For each predicted person, let the score of a (person, gt ) pair be `the number of joints of this person with gt / the number of joints annotated with gt`, i.e. the matching rate.
+3. For each frame and person, accumulate how many joints of this person are annotated. For each predicted person, let the score of a (person, gt ) pair be `the number of joints of this person with gt / the number of joints annotated`, i.e. the matching rate.
 4. Let the pair (person, gt) with greatest matching rate be matched. But this is just an intermediate result. This  match is only used to filter out gt joints without annotations. Call this `prematch`.
 5. The final output of `assignGTmulti` is `motAll`, which is a `dict` containing MOT info for each joint type.
 6. Each joint info is a `dict`, with keys

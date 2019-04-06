@@ -17,7 +17,7 @@ import torchvision.transforms as vision_transfroms
 
 class FrameItem:
     max_id = 0
-
+    
     transform = vision_transfroms.Compose([
         vision_transfroms.ToTensor(),
         vision_transfroms.Normalize(
@@ -478,7 +478,6 @@ class FrameItem:
                 self.joints = to_torch(preds)
                 self.joints_score = to_torch(np.multiply(max_val[..., 0].T, self.unified_boxes[:, 4].numpy()).T)
                 
-                
                 if self.cfg.TEST.USE_MATCHED_GT_EST_JOINTS and self.gt_boxes.numel() != 0:
                     # use matched gt joints to be the output joints
                     
@@ -511,8 +510,7 @@ class FrameItem:
         if not self.id_boxes.numel() == 0:
             
             if self.is_first:
-                # if it's the first frame, just assign every, starting from 1
-                # no problem when no people detected
+                # if it's the first frame, just assign every, starting from 1, no problem when no people detected
                 self.people_ids = torch.tensor(range(1, self.id_boxes.shape[0] + 1)).long()
                 FrameItem.max_id = self.id_boxes.shape[0]  # not +1
             else:
@@ -566,7 +564,33 @@ class FrameItem:
     
     # @log_time('\tID分配……')
     def assign_id_using_gt_id(self, get_dist_mat = None) -> None:
-        """ input: distance matrix; output: correspondence   """
+        """ input: distance matrix; output: correspondence
+          first matching the current matrix with gt, if matched det's id is set to according gt id
+          and the unmatched dets will be abandoned;
+          This serves to get rid of false positives
+          """
+        
+        def match_use_PCKh(gt_joints, det_joints):
+            '''
+            calculate matrix between gt and pred, and then match them
+            For default, we assume the inputs are not empty
+            :param gt_joints: num_gt x 15 x 2
+            :param det_joints:
+            :return:
+            '''
+            num_pred = det_joints.shape[0]
+            num_gt = gt_joints.shape[0]
+            nJoints = gt_joints.shape[1]
+            dist = np.full((num_pred, num_gt, nJoints), np.inf)
+            score = np.full((num_pred, nJoints), np.nan)
+            hasPr = np.zeros((num_pred, nJoints), dtype = bool)
+            # body joint is annotated
+            hasGT = np.zeros((num_gt, nJoints), dtype = bool)
+            
+            if num_pred and num_gt:
+                for ridxGT in range(num_gt):
+                    pass
+        
         if not self.joints_detected:
             raise ValueError('Should detect joints first')
         self.id_boxes, self.id_idx_in_unified = self.get_filtered_bboxes_with_thres(self.cfg.ALG.ASSIGN_BOX_THRES)
@@ -687,7 +711,6 @@ class FrameItem:
                     boxes = self.id_boxes[i].unsqueeze(0), human_ids = self.people_ids[i].unsqueeze(0)
                 )
     
-    # @log_time('\tTo dict......')
     def to_dict(self):
         '''
         Output string for json dump
@@ -695,7 +718,7 @@ class FrameItem:
 
         :return:
         '''
-        if self.task == 1 or self.task == 2:
+        if self.task in [1, 2, -3]:
             # output all joints
             d = {
                 'image': [

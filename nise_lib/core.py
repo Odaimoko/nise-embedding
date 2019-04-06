@@ -23,7 +23,7 @@ def nise_pred_task_1_debug(gt_anno_dir, hunam_detector, joint_estimator, flow_mo
     mkdir(nise_cfg.PATH.JSON_SAVE_DIR)
     mkdir(nise_cfg.PATH.DETECT_JSON_DIR)
     est_cfg = simple_cfg if nise_cfg.DEBUG.load_simple_model else hr_cfg
-
+    
     for i, file_name in enumerate(anno_file_names):
         debug_print(i, file_name)
         if is_skip_video(nise_cfg, i, file_name):
@@ -152,7 +152,7 @@ def nise_pred_task_2_debug(gt_anno_dir, vis_dataset, hunam_detector, joint_estim
         else:
             det_est_result_from_json = {}
         est_cfg = simple_cfg if nise_cfg.DEBUG.load_simple_model else hr_cfg
-
+        
         Q = deque(maxlen = nise_cfg.ALG._DEQUE_CAPACITY)
         for j, frame in enumerate(gt):
             # frame dict_keys(['image', 'annorect', 'imgnum', 'is_labeled', 'ignore_regions'])
@@ -246,15 +246,17 @@ def nise_flow_debug(gt_anno_dir, human_detector, joint_estimator, flow_model):
         fun = run_one_video_flow_debug
     elif nise_cfg.TEST.TASK == -2:
         fun = run_one_video_tracking_debug
+    elif nise_cfg.TEST.TASK == -3:
+        fun = oracle_id_filter
+    
     num_process = len(os.environ.get('CUDA_VISIBLE_DEVICES', default = '').split(','))
-    # num_process = 2
+    # num_process = 1
     global locks
     locks = [Lock() for _ in range(gm.gpu_num)]
-    __spec__ = None
     # with Pool(initializer = init_gm, initargs = (locks, nise_cfg)) as po:
-    print('Numprocesses', num_process)  # 这是每个 GPU 都要跑num_process 个的意思，但好像也不对。。。不是很懂这个，待看
+    debug_print('Numprocesses', num_process)  # 这是每个 GPU 都要跑num_process 个的意思，
+    # 但好像也不对。。。不是很懂这个，待看
     with Pool(processes = num_process, initializer = init_gm, initargs = (locks, nise_cfg)) as po:
-        
         debug_print('Pool created.')
         po.starmap(fun, all_video, chunksize = 4)
 
@@ -564,3 +566,250 @@ def run_one_video_flow_debug(_nise_cfg, est_cfg, i, file_name, human_detector, j
     if _nise_cfg.DEBUG.SAVE_NMS_TENSOR:
         torch.save(uni_result_to_record, uni_path)
         debug_print('NMSed boxes saved: ', uni_path)
+
+
+def oracle_id_filter(_nise_cfg, est_cfg, i: int, file_name: str, human_detector, joint_estimator,
+                     flow_model):
+    '''
+    Use precomputed unified boxes and joints to do matching.
+    思路，将 gtannorect 和 det annorect 进行匹配，剩下的 det 直接输入 frameitem 作为 det 最后输出
+    但是那些没有 gt 的图无法过滤掉，姑且保留所有的
+    :param i:
+    :param file_name:
+    :param joint_estimator:
+    :param flow_model:
+    :return:
+    '''
+    torch.cuda.empty_cache()
+    if is_skip_video(_nise_cfg, i, file_name):
+        debug_print('Skip', i, file_name)
+        return
+    debug_print(i, file_name)
+    p = PurePosixPath(file_name)
+    json_path = os.path.join(_nise_cfg.PATH.JSON_SAVE_DIR, p.parts[-1])
+    uni_path_torecord = os.path.join(nise_cfg.PATH.UNIFIED_JSON_DIR, p.stem + '.pkl')
+
+    with open(file_name, 'r') as f:
+        gt = json.load(f)['annolist']
+    pred_frames = []
+    detect_result_to_record = []
+    uni_result_to_record = []
+
+    # load pre computed boxes
+    uni_path = os.path.join(_nise_cfg.PATH.UNI_BOX_FOR_TASK_3, p.stem + '.pkl')
+    uni_boxes = torch.load(uni_path)
+    
+    pred_json_path = os.path.join(_nise_cfg.PATH.PRED_JSON_FOR_TASK_3, p.stem + '.json')
+    with open(pred_json_path, 'r') as f:
+        pred = json.load(f)['annolist']
+    Q = deque(maxlen = _nise_cfg.ALG._DEQUE_CAPACITY)
+    vis_threads = []
+    
+    def getPointGTbyID(points, pidx):
+        point = []
+        for i in range(len(points)):
+            if (points[i]["id"] != None and points[i]["id"][0] == pidx):  # if joint id matches
+                point = points[i]
+                break
+        
+        return point
+    
+    def getHeadSize(x1, y1, x2, y2):
+        headSize = 0.6 * np.linalg.norm(np.subtract([x2, y2], [x1, y1]))
+        return headSize
+    
+    def get_match( gt_annorects, pred_annorects):
+        num_pred = len(pred_annorects)
+        num_gt = len(gt_annorects)
+        # print(num_pred, num_gt)
+        
+        if not num_gt or not num_pred:
+            return
+        
+        nJoints = 15
+        # distance between predicted and GT joints
+        dist = np.full((num_pred, num_gt, nJoints), np.inf)
+        # score of the predicted joint
+        score = np.full((num_pred, nJoints), np.nan)
+        # body joint prediction exist
+        hasPr = np.zeros((num_pred, nJoints), dtype = bool)
+        # body joint is annotated
+        hasGT = np.zeros((num_gt, nJoints), dtype = bool)
+        
+        trackidxGT = []
+        trackidxPr = []
+        idxsPr = []
+        for ridxPr in range(num_pred):
+            if (("annopoints" in pred_annorects[ridxPr].keys()) and
+                    ("point" in pred_annorects[ridxPr]["annopoints"][0].keys())):
+                # 如果在prFrames里有anno，那就加入对应的 idx
+                idxsPr += [ridxPr]
+        # 这一句就是过滤一下
+        pred_annorects = [pred_annorects[ridx] for ridx in idxsPr]
+        
+        # iterate over GT poses
+        for ridxGT in range(num_gt):
+            # GT pose
+            rectGT = gt_annorects[ridxGT]  # 一个人
+            if ("track_id" in rectGT.keys()):
+                trackidxGT += [rectGT["track_id"][0]]
+            pointsGT = []
+            if len(rectGT["annopoints"]) > 0:
+                pointsGT = rectGT["annopoints"][0]["point"]
+            # iterate over all possible body joints
+            for i in range(nJoints):
+                # GT joint in LSP format
+                ppGT = getPointGTbyID(pointsGT, i)
+                if len(ppGT) > 0:
+                    hasGT[ridxGT, i] = True
+        
+        for ridxPr in range(num_pred):
+            # predicted pose
+            rectPr = pred_annorects[ridxPr]  # a person including track_id
+            if ("track_id" in rectPr.keys()):
+                trackidxPr += [rectPr["track_id"][0]]
+            pointsPr = rectPr["annopoints"][0]["point"]
+            for i in range(nJoints):
+                # predicted joint in LSP format
+                ppPr = getPointGTbyID(pointsPr, i)
+                if len(ppPr) > 0:
+                    if not ("score" in ppPr.keys()):
+                        score[ridxPr, i] = MIN_SCORE
+                    else:
+                        score[ridxPr, i] = ppPr["score"][0]
+                    hasPr[ridxPr, i] = True
+        
+        # predictions and GT are present
+        # iterate over GT poses
+        # 计算两两之间的距离
+        for ridxGT in range(num_gt):
+            # GT pose
+            rectGT = gt_annorects[ridxGT]
+            # compute reference distance as head size
+            headSize = getHeadSize(rectGT["x1"][0], rectGT["y1"][0],
+                                   rectGT["x2"][0], rectGT["y2"][0])
+            pointsGT = []
+            if len(rectGT["annopoints"]) > 0:
+                pointsGT = rectGT["annopoints"][0]["point"]
+            # iterate over predicted poses
+            for ridxPr in range(num_pred):
+                # predicted pose
+                rectPr = pred_annorects[ridxPr]
+                pointsPr = rectPr["annopoints"][0]["point"]
+                
+                # iterate over all possible body joints
+                for i in range(nJoints):
+                    # GT joint
+                    ppGT = getPointGTbyID(pointsGT, i)
+                    # predicted joint
+                    ppPr = getPointGTbyID(pointsPr, i)
+                    # compute distance between predicted and GT joint locations
+                    if hasPr[ridxPr, i] and hasGT[ridxGT, i]:
+                        pointGT = [ppGT["x"][0], ppGT["y"][0]]
+                        pointPr = [ppPr["x"][0], ppPr["y"][0]]
+                        dist[ridxPr, ridxGT, i] = np.linalg.norm(np.subtract(pointGT, pointPr)) / headSize
+        
+        dist = np.array(dist)
+        hasGT = np.array(hasGT)
+        
+        # number of annotated joints，每个gt有多少个点标注了的
+        nGTp = np.sum(hasGT, axis = 1)
+        # 距离太小，根据headsize占比来match一个。
+        # 由于最终输出的是人的trackid来决定joint的id，这里先匹配人，pck这个变量就是pred和gt里人的相近程度。
+        match = dist <= distThresh
+        pck = 1.0 * np.sum(match, axis = 2)
+        for i in range(hasPr.shape[0]):
+            for j in range(hasGT.shape[0]):
+                if nGTp[j] > 0:
+                    pck[i, j] = pck[i, j] / nGTp[j]
+        
+        # print("pck", pck.shape)
+        # print(pck)
+        
+        # preserve best GT match only，因为有可能出现一个gt对应多个pred或者反之，这里只取分数最高的，把更小的entry都设置成0。
+        idx = np.argmax(pck, axis = 1)  # 对pred来说，每个pred对应第几个gt
+        val = np.max(pck, axis = 1)
+        for ridxPr in range(pck.shape[0]):
+            for ridxGT in range(pck.shape[1]):
+                if (ridxGT != idx[ridxPr]):
+                    pck[ridxPr, ridxGT] = 0
+        prToGT = np.argmax(pck, axis = 0)
+        val = np.max(pck, axis = 0)
+        prToGT[val == 0] = -1  # prToGT是index，所以以0打头，
+        # 如果有一个gt没有pred对应，这个gt对所有pred都是0，argmax自然也是0.
+        # 不过好在这个没有pred对应的gt肯定在pck里没有score的，可以排除掉。
+        
+        # print( prToGT) # 一个list，长度为 num_gt，entry 是第 i 个 gt对应的pred 的 index(数据类型是 ndarray)
+        
+        # assign predicted poses to GT poses
+        for ridxPr in range(hasPr.shape[0]):
+            if (ridxPr in prToGT):  # pose matches to GT
+                # GT pose that matches the predicted pose
+                ridxGT = np.argwhere(prToGT == ridxPr)
+                assert (ridxGT.size == 1)
+                ridxGT = ridxGT[0, 0]
+                # debug_print(ridxPr, ridxGT)
+        return [i for i in prToGT if i != -1]
+    
+    distThresh = 0.5
+    MIN_SCORE = -9999
+    for j, frame in enumerate(gt):
+        img_file_path = os.path.join(_nise_cfg.PATH.POSETRACK_ROOT, frame['image'][0]['name'])
+        # debug_print(j, img_file_path, indent = 1)
+        gt_annorects = frame['annorect']
+        pred_annorects = pred[j]['annorect']
+        prToGT = get_match( gt_annorects, pred_annorects)
+        
+        uni_box = uni_boxes[j][img_file_path]
+        if pred_annorects is not None and len(pred_annorects) != 0:
+            # if only use gt bbox, then for those frames which dont have annotations, we dont estimate，
+            pred_joints, pred_joints_scores = get_joints_from_annorects(pred_annorects)
+
+            if pred_joints.numel() != 0:
+                pred_joints = pred_joints[:, :, :2]  # 3d here, only position is needed
+            assert (len(uni_box) == pred_joints.shape[0])
+        else:
+            pred_joints = torch.tensor([])
+            pred_joints_scores = torch.tensor([])
+        
+        if prToGT:
+            # debug_print('original prtogt',prToGT)
+            prToGT = [int(pr) for pr in prToGT]
+            prToGT_tensor = torch.tensor(prToGT)
+            # debug_print(prToGT_tensor)
+            uni_box = uni_box[prToGT_tensor]
+            pred_joints = pred_joints[prToGT_tensor]
+            pred_joints_scores = pred_joints_scores[prToGT_tensor]
+        
+        fi = FrameItem(_nise_cfg, est_cfg, img_file_path, is_first = True, task = 1)
+    
+        if _nise_cfg.TEST.USE_GT_PEOPLE_BOX:
+            fi.detect_human(None, uni_box)
+        else:
+            fi.detected_boxes = uni_box
+            fi.human_detected = True
+        fi.joints_proped = True  # no prop here is used
+        fi.unify_bbox()
+        fi.joints = pred_joints
+        fi.joints_score = pred_joints_scores
+        fi.joints_detected = True
+
+        
+        fi.assign_id_task_1_2(Q)
+        if nise_cfg.DEBUG.VISUALIZE:
+            t = threading.Thread(target = fi.visualize, args = ())
+            vis_threads.append(t)
+            t.start()
+        Q.append(fi)
+        pred_frames.append(fi.to_dict())
+        uni_result_to_record.append({img_file_path: fi.unfied_result()})
+
+    with open(json_path, 'w') as f:
+        json.dump({'annolist': pred_frames}, f)
+        debug_print('json saved:', json_path)
+
+    if nise_cfg.DEBUG.SAVE_NMS_TENSOR:
+        torch.save(uni_result_to_record, uni_path_torecord)
+        debug_print('NMSed boxes saved: ', uni_path_torecord)
+    for t in vis_threads:
+        t.join()

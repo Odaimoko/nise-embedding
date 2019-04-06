@@ -1,6 +1,6 @@
 cuda_all=export CUDA_VISIBLE_DEVICES=0,1,2,3
 cuda_0=export CUDA_VISIBLE_DEVICES=0
-mot_pypath=export PYTHONPATH=/root/zhangxt/disk/posetrack/poseval/py-motmetrics:$${PYTHONPATH}
+mot_pypath=export PYTHONPATH=../poseval/py-motmetrics:$${PYTHONPATH}
 nise_main=python scripts/run.py
 
 # cd
@@ -24,6 +24,9 @@ nise_1_nmson_debug=--nise_config exp_config/1/t-nmsON+flip-debug.yaml
 nise_1_gtbox_debug=--nise_config exp_config/1/t-gt+flip-debug.yaml
 
 nise_3_root=--nise_config exp_config/3/t-3-root.yaml
+nise_3_gen_matched_detbox=--nise_config exp_config/3/t-1-matched_detbox.yaml
+nise_3_matched_detbox=--nise_config exp_config/3/t-3-matched_detbox.yaml
+
 
 # eval
 
@@ -35,7 +38,7 @@ eval-t1-faster:
 	$(mot_pypath); python ../poseval/py/evaluate.py -g pred_json-pre-commissioning/val_gt_task1/ -p pred_json-single-est/valid_task_1_faster_DETbox_allBox_Flip_estJoints_tfIoU_nmsThres_0.35_0.50/ --evalPoseEstimation -o out-single-est
 
 eval-t1-sb-88-debug:
-	$(mot_pypath); python ../poseval/py/evaluate.py -g pred_json-pre-commissioning/val_gt_task3-debugging/ -p pred_json-single-est/72.9-valid_res50_task_1_DETbox_allBox_Flip_tfIoU_nmsThres_0.35_0.50/ --evalPoseEstimation -o out-single-est
+	$(mot_pypath); python ../poseval/py/evaluate.py -g pred_json-pre-commissioning/val_gt_task3-debugging/ -p pred_json-single-est/79.0-sb88-valid_task_1_mask_DETbox_allBox_Flip_estJoints_tfIoU_nmsThres_0.35_0.50/ --evalPoseEstimation -o out-single-est
 eval-t1-hr-905-debug:
 	$(mot_pypath); python ../poseval/py/evaluate.py -g pred_json-pre-commissioning/val_gt_task3-debugging/ -p pred_json-single-est/hr905-valid_task_1_DETbox_allBox_Flip_estJoints_tfIoU_nmsThres_0.35_0.50/ --evalPoseEstimation -o out-single-est
 eval-t1-hr-904-debug:
@@ -43,6 +46,19 @@ eval-t1-hr-904-debug:
 
 eval-t3-hr904:
 	$(mot_pypath); python ../poseval/py/evaluate.py -g pred_json-pre-commissioning/val_gt_task1/ -p  pred_json-track/hr904-64.0-valid_task_-2_mask_DETbox_allBox_Flip_estJoints_tfIoU_nmsThres_0.35_0.50_IoUMetric_mkrs_box_0.80_joint_0.50_matchID/ --evalPoseEstimation --evalPoseTracking -o out-hr904-tracking
+
+
+eval-t3-sb88-t1json: # f
+	$(mot_pypath); python ../poseval/py/evaluate.py -g pred_json-pre-commissioning/val_gt_task1/ -p  pred_json-single-est/79.0-sb88-valid_task_1_mask_DETbox_allBox_Flip_estJoints_tfIoU_nmsThres_0.35_0.50/ --evalPoseEstimation --evalPoseTracking -o out-hr904-tracking > evalt3-sb88-t1json
+
+eval-t3-sb88-gen_matched_box: # f
+	$(mot_pypath); python ../poseval/py/evaluate.py -g pred_json-pre-commissioning/val_gt_task1/ -p  pred_json-track/80.8-sb88-valid_task_-3_mask_DETbox_allBox_Flip_estJoints_tfIoU_nmsThres_0.35_0.50/ --evalPoseEstimation --evalPoseTracking >  evalt3-sb88-gen_matched_box
+
+eval-t3-sb88-matched_box: # f
+	$(mot_pypath); python ../poseval/py/evaluate.py -g pred_json-pre-commissioning/val_gt_task1/ -p  pred_json-track/sb88-12.4-valid_task_-2_box_0.00_joint_0/ --evalPoseEstimation --evalPoseTracking >  evalt3-sb88-matched_box
+
+eval-t3-sb88-matched_box-filtered_joints: # f
+	$(mot_pypath); python ../poseval/py/evaluate.py -g pred_json-pre-commissioning/val_gt_task1/ -p  pred_json-track/valid_task_-2_mask_DETbox_allBox_Flip_estJoints_tfIoU_nmsThres_0.35_0.50_IoUMetric_mkrs_box_0.00_joint_0.50_matchID/ --evalPoseEstimation --evalPoseTracking >  evalt3-sb88-matched_box
 
 
 # sb
@@ -69,6 +85,10 @@ hr-test-90.472:
 # task1
 t1-sb-88:
 	$(cuda_all); $(nise_main) $(flow_cfg) $(sb_88) $(tron_cfg_mask) $(nise_1_nmson)
+
+
+t1-sb-90:
+	$(cuda_all); $(nise_main) $(flow_cfg) $(sb_90) $(tron_cfg_mask) $(nise_1_nmson)
 
 t1-hr-90.544:
 	$(cuda_all); $(nise_main) $(flow_cfg) $(hrcfg) $(tron_cfg_mask) $(nise_1_nmson)
@@ -104,6 +124,20 @@ t3-hr904-nms-.35-.5-boxjoint-.8-.5:
 t3-sb88-nms-.35-.5-boxjoint-.8-.5:
 	$(nise_main) --task1pred pred_json-single-est/79.0-sb88-valid_task_1_mask_DETbox_allBox_Flip_estJoints_tfIoU_nmsThres_0.35_0.50 $(nise_3_root)
 
+t3-sb88-gen-oracle-matched_detbox:
+	$(nise_main) --task1pred pred_json-single-est/79.0-sb88-valid_task_1_mask_DETbox_allBox_Flip_estJoints_tfIoU_nmsThres_0.35_0.50 $(nise_3_gen_matched_detbox)
+	
+t3-sb88-matched_detbox:
+	$(nise_main) $(nise_3_matched_detbox)
+
 #commissioning
 commi-bjthres:
 	python scripts/param_box_joint.py --nise_config exp_config/3/t-3-root-commi-box-joint.yaml
+
+commi-bjthres-88:
+	python scripts/param_box_joint.py --nise_config exp_config/3/t-3-88-commi-box-joint.yaml
+commi-eval-bjthres-hr904:
+	$(mot_pypath); python scripts/task3-batch-eval.py --root pred_json-track-bjparam-hr904
+
+commi-eval-bjthres-sb88:
+	$(mot_pypath); python scripts/task3-batch-eval.py --root pred_json-track-bjparam-sb88

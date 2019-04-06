@@ -32,12 +32,14 @@ propDET = 'unifed_boxes-pre-commissioning/valid_task_-1_DETbox_allBox_propAll_pr
 baseline_tfiou = 'unifed_boxes/valid_task_1_DETbox_allBox_tfIoU_nmsThres_0.05_0.5'
 propDET_tfiou = 'unifed_boxes/valid_task_-1_DETbox_allBox_propAll_propDET_tfIoU_nmsThres_0.05_0.5'
 propGT_tfiou = 'unifed_boxes-pre-commissioning/valid_task_-1_DETbox_allBox_propAll_propGT_tfIoU_nmsThres_0.05_0.5'
-debugging_617 = 'unifed_boxes-debug/61.7-valid_task_-1_DETbox_allBox_propAll_propGT_tfIoU_nmsThres_0.05_0.50'
-debugging_705 = 'unifed_boxes-debug/70.5-valid_task_1_DETbox_allBox_tfIoU_nmsThres_0.05_0.50/'
-debugging_706 = 'unifed_boxes-debug/70.6-valid_task_1_DETbox_allBox_tfIoU_nmsThres_0.05_0.51/'
+
+uni_for_t3='unifed_boxes-commi-onlydet/valid_task_1_DETbox_allBox_tfIoU_nmsThres_0.35_0.50'
+
+matched_det_box ='unified_boxes-track/valid_task_-3_mask_DETbox_allBox_Flip_estJoints_tfIoU_nmsThres_0.35_0.50'
+
 info_level = Levels.SKY_BLUE
 
-eval_dir = allDet
+eval_dir = uni_for_t3
 # eval_dir = nise_cfg.PATH._UNIFIED_JSON_DIR + 'valid_task_-1_DETbox_allBox_propAll_propGT_tfIoU_nmsThres_0.05_0.90'
 rec, prec, ap, total_pred_boxes_scores, npos = voc_eval_for_pt(dataset_path, eval_dir)
 torch.save([rec, prec, ap], os.path.join(*[eval_dir, 'ap.pkl']))
