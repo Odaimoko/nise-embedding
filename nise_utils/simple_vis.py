@@ -14,7 +14,8 @@ import numpy as np
 import torchvision
 import cv2
 
-from nise_lib.nise_config import  nise_cfg
+from nise_lib.nise_config import nise_cfg
+
 
 # from core.inference import get_max_preds
 
@@ -52,25 +53,51 @@ def save_single_whole_image_with_joints(torch_img, src_joints,
                         cv2.FONT_HERSHEY_COMPLEX,
                         .5, (0, 255, 0), 1)
     
-    # nmaps = torch_img.size(0)
-    # xmaps = min(nrow, nmaps)
-    # ymaps = int(math.ceil(float(nmaps) / xmaps))
-    # height = int(torch_img.size(2) + padding)
-    # width = int(torch_img.size(3) + padding)
     num_people, num_joints, _ = src_joints.shape
-    colores = [(255, 0, 0), (255, 0, 255)]
+    colores = [
+        # red + black
+        (112, 18, 52,),
+        (247, 29, 53,),
+        (45, 52, 62,),
+        # blue + green
+        (13, 114, 113),
+        (11, 110, 79),
+        (8, 160, 69),
+        (107, 191, 89),
+        (221, 183, 113),
+        # purple
+        (84, 74, 155),
+        (162, 163, 187),
+        (147, 149, 211),
+        (179, 183, 238),
+        (251, 249, 255),
+        # pink + yellow
+        (199, 234, 228),
+        (167, 232, 189),
+        (252, 188, 184),
+        (239, 167, 167),
+        (255, 217, 114)
+    ]
+    
     joint_id_offset = [(5, 5), (-5, -5)]
     for k in range(num_people):
         joints = src_joints[k]
         joints_vis = joints[:, 2]
-        
+        if human_ids is not None:
+            color_k = human_ids[k].item() if human_ids is not None else k
+            color_k = color_k % len(colores)
+        else:
+            color_k = k
+        # print(k, color_k, human_ids[k])
         for i, (joint, joint_vis) in enumerate(zip(joints, joints_vis)):
             if joint_vis.item():
-                cv2.circle(ndarr, (int(joint[0]), int(joint[1])), 2, colores[k % len(colores)], 2)
-                cv2.putText(ndarr, str(i), (int(joint[0]) + joint_id_offset[k % len(joint_id_offset)][0],
-                                            int(joint[1]) + joint_id_offset[k % len(joint_id_offset)][1]),
-                            cv2.FONT_HERSHEY_COMPLEX,
-                            .6, (0, 0, 255), 1)
+                # use id as index to get color, if no id is presented, use k.
+                
+                cv2.circle(ndarr, (int(joint[0]), int(joint[1])), 2, colores[color_k], 2)
+                # cv2.putText(ndarr, str(i), (int(joint[0]) + joint_id_offset[k % len(joint_id_offset)][0],
+                #                             int(joint[1]) + joint_id_offset[k % len(joint_id_offset)][1]),
+                #             cv2.FONT_HERSHEY_COMPLEX,
+                #             .6, (0, 0, 255), 1)
     cv2.imwrite(file_name, ndarr)
 
 
