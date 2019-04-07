@@ -269,13 +269,14 @@ class NiseConfig:
             self.NO_NMS = False
             
             self.FRAME = True
-            self.VISUALIZE = True
-            self.VIS_HUMAN_THRES = .5
+            self.VISUALIZE = False
+            self.VIS_HUMAN_THRES = 0
             self.VIS_SINGLE_NO_JOINTS = False
             self.VIS_BOX = False
             self.VIS_EST_SINGLE = False
             self.VIS_PROPED_JOINTS = False
             self.VIS_JOINTS_FULL = False
+            self.VIS_SINGLE_JOINTS_WITH_FULL_IMG=False
             
             self.SAVE_DETECTION_TENSOR = False
             self.USE_DETECTION_RESULT = True

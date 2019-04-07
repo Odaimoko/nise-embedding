@@ -499,7 +499,6 @@ class FrameItem:
     
     # @log_time('\tID分配……')
     def assign_id(self, Q, get_dist_mat = None) -> None:
-        """ input: distance matrix; output: correspondence   """
         """ - Associate ids. question: how to associate using more than two frames?between each 2?- """
         if not self.joints_detected:
             raise ValueError('Should detect joints first')
@@ -524,7 +523,7 @@ class FrameItem:
                         pre_boxes = prev_frame.id_boxes.numpy()[:, :4]
                         # wat if empty
                         dist_mat = tf_iou(cur_boxes, pre_boxes)
-                    else:
+                    else: # flow based similarity
                         proped_joints = self.new_joints.squeeze()  # squeeze is not for the first dim
                         proped_ids = prev_frame.human_ids
                         
@@ -558,13 +557,14 @@ class FrameItem:
                         self.people_ids[cur] = prev_frame.people_ids[prev]
                 for i in range(self.people_ids.shape[0]):
                     if self.people_ids[i] == 0:  # unassigned
+                        # 每个线程都会有新的 FI类变量，所以新的 video 还是会从零开始
                         self.people_ids[i] = FrameItem.max_id = FrameItem.max_id + 1
         # debug_print('ID Assigned')
         self.id_assigned = True
     
     # @log_time('\tID分配……')
     def assign_id_using_gt_id(self, get_dist_mat = None) -> None:
-        """ input: distance matrix; output: correspondence
+        """
           first matching the current matrix with gt, if matched det's id is set to according gt id
           and the unmatched dets will be abandoned;
           This serves to get rid of false positives
@@ -690,26 +690,30 @@ class FrameItem:
             save_single_whole_image_with_joints(
                 im_to_torch(self.original_img).unsqueeze(0),
                 nise_batch_joints,
-                os.path.join(out_dir, self.img_name + "_withbox.jpg"),
-                boxes = boxes
+                os.path.join(out_dir, "withbox" + self.img_name + ".jpg"),
+                boxes = boxes,
+                human_ids = self.people_ids
             )
             
-            save_single_whole_image_with_joints(
-                im_to_torch(self.original_img).unsqueeze(0),
-                nise_batch_joints,
-                os.path.join(out_dir, self.img_name + "_nobox.jpg"),
-                boxes = None
-            )
-            for i in range(num_people):
-                # print(i)
-                nise_batch_joints = torch.cat([joints_to_show[i, ...], joint_visible[i, ...]], 1)  # 16 x 3
-                ID = self.people_ids[i].item() if self.people_ids[i].item() != 0 else i
-                save_single_whole_image_with_joints(
-                    im_to_torch(self.original_img).unsqueeze(0),
-                    nise_batch_joints.unsqueeze(0),
-                    os.path.join(out_dir, self.img_name + "_id_" + "{:02d}".format(ID) + ".jpg"),
-                    boxes = self.id_boxes[i].unsqueeze(0), human_ids = self.people_ids[i].unsqueeze(0)
-                )
+            # save_single_whole_image_with_joints(
+            #     im_to_torch(self.original_img).unsqueeze(0),
+            #     nise_batch_joints,
+            #     os.path.join(out_dir, "nobox" + self.img_name + ".jpg"),
+            #     boxes = None,
+            #     human_ids = self.people_ids
+            # )
+            
+            if self.cfg.DEBUG.VIS_SINGLE_JOINTS_WITH_FULL_IMG:
+                for i in range(num_people):
+                    # print(i)
+                    nise_batch_joints = torch.cat([joints_to_show[i, ...], joint_visible[i, ...]], 1)  # 16 x 3
+                    ID = self.people_ids[i].item() if self.people_ids[i].item() != 0 else i
+                    save_single_whole_image_with_joints(
+                        im_to_torch(self.original_img).unsqueeze(0),
+                        nise_batch_joints.unsqueeze(0),
+                        os.path.join(out_dir, "id_" + "{:02d}".format(ID) + '_' + self.img_name + ".jpg"),
+                        boxes = self.id_boxes[i].unsqueeze(0), human_ids = self.people_ids[i].unsqueeze(0)
+                    )
     
     def to_dict(self):
         '''
