@@ -10,8 +10,8 @@ ALG:
   UNIFY_NMS_THRES_2: .5
 
   ASSGIN_ID_TO_FILTERED_BOX: True
-  ASSIGN_BOX_THRES: 0
-  OUTPUT_JOINT_THRES: 0
+  ASSIGN_BOX_THRES: 0.8
+  OUTPUT_JOINT_THRES: 0.5
   MATCHING_ALG: 0
 TEST:
   USE_GT_PEOPLE_BOX: false
@@ -24,19 +24,22 @@ TEST:
 #  ONLY_TEST:
 #    - '03742'
 #    - 14102_mpii
-#    -  '24158'
+#    -  20880_mpii_relpath_5sec_testsub
+#    -  '24165'
 
-  TASK: -3
+  TASK: -2
   MODE: valid
 DEBUG:
-  VISUALIZE: False
+  VISUALIZE: True
   VIS_BOX: True
   VIS_HUMAN_THRES: 0.0
+  VIS_JOINTS_FULL: True
+  VIS_SINGLE_JOINTS_WITH_FULL_IMG: False
 
   SAVE_DETECTION_TENSOR: False
   SAVE_FLOW_TENSOR: False
   SAVE_DETECTION_S_EST: False
-  SAVE_NMS_TENSOR: True
+  SAVE_NMS_TENSOR: False
   NO_NMS: False
   USE_DETECTION_RESULT: False
   USE_FLOW_RESULT: False
@@ -44,9 +47,9 @@ DEBUG:
   load_simple_model: False
   load_human_det_model: False
 PATH:
-  _JOINTS_DIR: 'images_joint-matchedDet/'
-  _IMAGES_OUT_DIR: 'images_out-matchedDet/'
-  _JSON_SAVE_DIR: 'pred_json-matchedDet/'
-  _UNIFIED_JSON_DIR: 'unified_boxes-matchedDet/'
-  DETECT_JSON_DIR: 'pre_com/det_matched_gtid' # dont mess up original detection result
-  PRED_JSON_FOR_TASK_3: 'pred_json-single-est/79.0-sb88-valid_task_1_mask_DETbox_allBox_Flip_estJoints_tfIoU_nmsThres_0.35_0.50'
+  _JOINTS_DIR: 'images_joint-track/'
+  _IMAGES_OUT_DIR: 'images_out-track/'
+  _JSON_SAVE_DIR: 'pred_json-track/'
+  _UNIFIED_JSON_DIR: 'unified_boxes-track/'
+  UNI_BOX_FOR_TASK_3: 'unifed_boxes-commi-onlydet/valid_task_1_DETbox_allBox_tfIoU_nmsThres_0.35_0.50'
+  PRED_JSON_FOR_TASK_3: 'pred_json-single-est/81.9-hr904-valid_task_1_mask_DETbox_allBox_Flip_estJoints_tfIoU_nmsThres_0.35_0.50'

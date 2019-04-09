@@ -63,6 +63,39 @@ nise-yaml 里 task 的作用
 
 
 
+## 2019-04-08
+
+### debug
+
+新生成的 box 和 joint 组合明显有问题
+
+```
+(Pdb) p self.unified_boxes[i] 
+tensor([  927.9857,   265.1651,  1023.2566,   513.4333,     0.9987])
+(Pdb) p self.joints[i]
+tensor([[ 145.2113,  513.1005],
+        [ 117.9475,  469.4784],
+        [ 117.9475,  409.4980],
+        [ 134.3058,  412.2243],
+        [ 120.6739,  472.2048],
+        [ 134.3058,  529.4588],
+        [ 107.0419,  406.7716],
+        [ 131.5794,  365.8758],
+        [ 112.4947,  322.2537],
+        [ 126.1266,  324.9801],
+        [ 139.7585,  365.8758],
+        [ 123.4002,  406.7716],
+        [ 112.4947,  314.0745],
+        [  96.1364,  297.7162],
+        [  98.8628,  275.9052]])
+```
+
+900+的怎么会有145的 joint 坐标，所以需要重新检查生成的代码。
+
+啊，unify_box 的时候会将 box 按照 score 从大到小排。prToGT(配对结果索引)是`prToGT[i]`包含的是第 i 个gt 对应的 pred 的位置。所以就算配对之前的 predbox 是排好的，但是直接按照prToGT 会打乱，sort 一下就好了。
+
+
+
 ## 2019-04-04
 
 yaml 的意义
@@ -367,7 +400,7 @@ I read the PoseFlow paper, which is the second best now, it has much lower MOTP(
 
 Nope, I don't think this is important? This is mainly about the precision (by pixel) of estimation, the distance between GT and pred.
 
-### New finding
+### [Solved]New finding
 
 In Paper simple baseline, I find a sentence I didn't notice before
 
@@ -403,7 +436,7 @@ If I want to test the mAP, I can use only the detection result and filter out bo
 
 The problem that the numbers don't match still exists.
 
-- [ ] After summarizing all the miss/fp/mismatches for `nmsThres_0.35_0.70_box_0.5_joint_0.4`, I found that the numbers don't match.
+- [x] After summarizing all the miss/fp/mismatches for `nmsThres_0.35_0.70_box_0.5_joint_0.4`, I found that the numbers don't match.
 
 For example in sequence `020910`, joint 0 has the following data:
 

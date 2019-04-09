@@ -92,7 +92,7 @@ class FrameItem:
         else:
             self.gt_id = torch.tensor([])
         
-        # tensor num_person x num_joints x 2
+        # tensor num_people x num_joints x 2
         # should be LongTensor since we are going to use them as index. same length with unified_bbox
         self.joints = torch.tensor([])
         self.joints_score = torch.tensor([])
@@ -406,17 +406,17 @@ class FrameItem:
         else:
             is_hr_net = False
         
-        num_person = self.unified_boxes.shape[0]
-        if num_person != 0:
+        num_people = self.unified_boxes.shape[0]
+        if num_people != 0:
             out_dir = os.path.join(self.cfg.PATH.JOINTS_DIR + "_single", p.parts[-2])
             mkdir(out_dir)
             self.joints = torch.zeros(self.unified_boxes.shape[0], self.cfg.DATA.num_joints, 2)  # FloatTensor
             self.joints_score = torch.zeros(self.unified_boxes.shape[0], self.cfg.DATA.num_joints)  # FloatTensor
             # if no people boxes, self.joints is tensor([])
             resized_human_batch = torch.zeros(
-                [num_person, 3, int(self.joint_est_mode_size[1]), int(self.joint_est_mode_size[0])])
-            center_batch = np.zeros([num_person, 2])
-            scale_batch = np.zeros([num_person, 2])
+                [num_people, 3, int(self.joint_est_mode_size[1]), int(self.joint_est_mode_size[0])])
+            center_batch = np.zeros([num_people, 2])
+            scale_batch = np.zeros([num_people, 2])
             
             for i in range(self.unified_boxes.shape[0]):
                 # For each person
@@ -497,14 +497,22 @@ class FrameItem:
         
         self.joints_detected = True
     
-    # @log_time('\tID分配……')
     def assign_id(self, Q, get_dist_mat = None) -> None:
         """ - Associate ids. question: how to associate using more than two frames?between each 2?- """
         if not self.joints_detected:
             raise ValueError('Should detect joints first')
         self.id_boxes, self.id_idx_in_unified = self.get_filtered_bboxes_with_thres(self.cfg.ALG.ASSIGN_BOX_THRES)
+        num_people = self.id_boxes.shape[0]
         
-        self.people_ids = torch.zeros(self.id_boxes.shape[0]).long()
+        # joints_to_print = self.joints[self.id_idx_in_unified, ...]
+        # joints_score_to_print = self.joints_score[self.id_idx_in_unified, ...]
+        # debug_print(len(self.id_boxes), len(joints_to_print), len(joints_score_to_print))
+        # for i in range(num_people):
+        #     debug_print(self.id_boxes[i, :], indent = 1, lvl = Levels.SKY_BLUE)
+        #     debug_print(joints_to_print[i, ...].mean(dim = 0), joints_score_to_print[i, :].mean(), indent = 1,
+        #                 lvl = Levels.SUCCESS)
+        
+        self.people_ids = torch.zeros(num_people).long()
         
         if not self.id_boxes.numel() == 0:
             
@@ -523,7 +531,7 @@ class FrameItem:
                         pre_boxes = prev_frame.id_boxes.numpy()[:, :4]
                         # wat if empty
                         dist_mat = tf_iou(cur_boxes, pre_boxes)
-                    else: # flow based similarity
+                    else:  # flow based similarity
                         proped_joints = self.new_joints.squeeze()  # squeeze is not for the first dim
                         proped_ids = prev_frame.human_ids
                         
@@ -757,7 +765,7 @@ class FrameItem:
             }
         
         else:
-            num_person = self.people_ids.shape[0]
+            num_people = self.people_ids.shape[0]
             d = {
                 'image': [
                     {
@@ -786,7 +794,7 @@ class FrameItem:
                                 ]
                             }
                         ]
-                    } for i in range(num_person)
+                    } for i in range(num_people)
                 
                 ]
                 # 'imgnum'

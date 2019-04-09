@@ -21,15 +21,15 @@ TEST:
   GT_BOX_SCORE: .7
   FROM: 0
   TO: 50
-  ONLY_TEST:
-    - '03742'
+#  ONLY_TEST:
+#    - '03742'
 #    - 14102_mpii
-#    -  20880_mpii_relpath_5sec_testsub
+#    -  '2276'
 
   TASK: -2
   MODE: valid
 DEBUG:
-  VISUALIZE: True
+  VISUALIZE: False
 
   VIS_BOX: True
   VIS_HUMAN_THRES: 0.0
@@ -47,9 +47,10 @@ DEBUG:
   load_simple_model: False
   load_human_det_model: False
 PATH:
-  _JOINTS_DIR: 'images_joint-track/'
-  _IMAGES_OUT_DIR: 'images_out-track/'
-  _JSON_SAVE_DIR: 'pred_json-track/'
-  _UNIFIED_JSON_DIR: 'unified_boxes-track/'
-  UNI_BOX_FOR_TASK_3: 'unified_boxes-track/valid_task_-3_mask_DETbox_allBox_Flip_estJoints_tfIoU_nmsThres_0.35_0.50'
-  PRED_JSON_FOR_TASK_3: 'pred_json-track/sb88-53.8-task_-3'
+  _JOINTS_DIR: 'images_joint-matchedDet/'
+  _IMAGES_OUT_DIR: 'images_out-matchedDet/'
+  _JSON_SAVE_DIR: 'pred_json-matchedDet/'
+  _UNIFIED_JSON_DIR: 'unified_boxes-matchedDet/'
+#  DETECT_JSON_DIR: 'pre_com/det_matched_gtid'
+  UNI_BOX_FOR_TASK_3: 'unified_boxes-matchedDet/valid_task_-3_mask_DETbox_allBox_Flip_estJoints_tfIoU_nmsThres_0.35_0.50'
+  PRED_JSON_FOR_TASK_3: 'pred_json-matchedDet/valid_task_-3_mask_DETbox_allBox_Flip_estJoints_tfIoU_nmsThres_0.35_0.50'
