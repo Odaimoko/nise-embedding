@@ -3,13 +3,14 @@ sys.path.append('nise_lib')
 sys.path.append('other_libs/tron_lib')
 sys.path.append('.')
 #b nise_lib/nise_config.py:387
-b nise_lib/core.py:265
+b nise_lib/core.py:277
 #b scripts/run.py:54
 #b  other_libs/tron_lib/tron_utils/detectron_weight_helper.py:18
 #disable 1
 #disable 2
 #b nise_lib/frameitem.py:42
 # b nise_lib/frameitem.py:450
-#b nise_lib/core.py:192
+b nise_lib/nise_functions.py:1203
+#b scripts/run-detector-on-coco-test.py:62
 
 c

@@ -9,7 +9,7 @@ ALG:
   UNIFY_NMS_THRES_1: .35
   UNIFY_NMS_THRES_2: .5
 
-  ASSGIN_ID_TO_FILTERED_BOX: True
+  
   ASSIGN_BOX_THRES: 0
   OUTPUT_JOINT_THRES: 0
   MATCHING_ALG: 0
@@ -21,9 +21,9 @@ TEST:
   GT_BOX_SCORE: .7
   FROM: 0
   TO: 50
-#  ONLY_TEST:
-#    - '03742'
-#    - 14102_mpii
+  ONLY_TEST:
+    - '03742'
+#    - 14102_mpiin
 #    -  '2276'
 
   TASK: -2
@@ -52,5 +52,5 @@ PATH:
   _JSON_SAVE_DIR: 'pred_json-matchedDet/'
   _UNIFIED_JSON_DIR: 'unified_boxes-matchedDet/'
 #  DETECT_JSON_DIR: 'pre_com/det_matched_gtid'
-  UNI_BOX_FOR_TASK_3: 'unified_boxes-matchedDet/valid_task_-3_mask_DETbox_allBox_Flip_estJoints_tfIoU_nmsThres_0.35_0.50'
-  PRED_JSON_FOR_TASK_3: 'pred_json-matchedDet/valid_task_-3_mask_DETbox_allBox_Flip_estJoints_tfIoU_nmsThres_0.35_0.50'
+  UNI_BOX_FOR_TASK_3: 'unified_boxes-matchedDet/valid_task_-3_noid'
+  PRED_JSON_FOR_TASK_3: 'pred_json-matchedDet/valid_task_-3_noid'

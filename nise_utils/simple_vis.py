@@ -51,7 +51,7 @@ def save_single_whole_image_with_joints(torch_img, src_joints,
             
             cv2.putText(ndarr, 'ID: ' + str(human_id), (int(bbox[0]), int(bbox[1]) - 2),
                         cv2.FONT_HERSHEY_COMPLEX,
-                        .5, (0, 255, 0), 1)
+                        .6, (255, 255, 255), thickness = 2)
     
     num_people, num_joints, _ = src_joints.shape
     colores = [
@@ -94,10 +94,10 @@ def save_single_whole_image_with_joints(torch_img, src_joints,
                 # use id as index to get color, if no id is presented, use k.
                 
                 cv2.circle(ndarr, (int(joint[0]), int(joint[1])), 2, colores[color_k], 2)
-                # cv2.putText(ndarr, str(i), (int(joint[0]) + joint_id_offset[k % len(joint_id_offset)][0],
-                #                             int(joint[1]) + joint_id_offset[k % len(joint_id_offset)][1]),
-                #             cv2.FONT_HERSHEY_COMPLEX,
-                #             .6, (0, 0, 255), 1)
+                cv2.putText(ndarr, str(i), (int(joint[0]) + joint_id_offset[k % len(joint_id_offset)][0],
+                                            int(joint[1]) + joint_id_offset[k % len(joint_id_offset)][1]),
+                            cv2.FONT_HERSHEY_COMPLEX,
+                            .6, (0, 0, 255), 1)
     cv2.imwrite(file_name, ndarr)
 
 

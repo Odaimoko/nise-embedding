@@ -5,6 +5,7 @@ import pathlib
 import torch
 import sys
 import time
+import numpy as np
 from functools import wraps
 from pathlib import PurePosixPath
 import yaml
@@ -415,8 +416,7 @@ def load_hr_model():
         )
         
         cfg.freeze()
-        
-        
+    
     def hr_parse_args():
         parser = argparse.ArgumentParser(description = 'Train keypoints network')
         # general
@@ -424,11 +424,10 @@ def load_hr_model():
                             help = 'experiment configure file name',
                             type = str)
         
-        
         parser.add_argument('--hr-model',
                             help = 'model state file',
                             type = str)
-
+        
         args, rest = parser.parse_known_args()
         
         return args
@@ -444,7 +443,7 @@ def load_hr_model():
     meta_info = torch.load(hr_args.hr_model)
     state_dict = {k.replace('module.', ''): v
                   for k, v in meta_info['state_dict'].items()}
-    simple_human_det_model.load_state_dict(state_dict,strict = False)
+    simple_human_det_model.load_state_dict(state_dict, strict = False)
     simple_human_det_model = torch.nn.DataParallel(
         simple_human_det_model, device_ids = hr_cfg.GPUS).cuda()
     return hr_args, simple_human_det_model
@@ -864,6 +863,23 @@ def create_yaml_track_filter(series, thres, original_yaml = 'exp_config/t-flow-d
     return long_file_name
 
 
+def create_yaml_matchedDet__pckh_filter(series, thres, original_yaml = 'exp_config/t-flow-debug.yaml'):
+    with open(original_yaml, 'r')as f:
+        c = yaml.load(f)
+    training_start_time = time.strftime("%m_%d-%H_%M", time.localtime())
+    
+    nc = copy.deepcopy(c)
+    nc['TEST']['FROM'] = series[0]
+    nc['TEST']['TO'] = series[1]
+    nc['TEST']['ONLY_TEST'] = []
+    nc['DEBUG']['HIGH_PCKH_THRES'] = thres
+    long_file_name = 'exp_config/commi/%s-batch-%02d_%02d-hi_pckh_thres-%.2f.yaml' % (
+        training_start_time, series[0], series[-1], thres)
+    with open(long_file_name, 'w')as f:
+        yaml.dump(nc, f)
+    return long_file_name
+
+
 def is_skip_video(nise_cfg, i, file_name):
     s = True
     for fn in nise_cfg.TEST.ONLY_TEST:
@@ -877,10 +893,21 @@ def is_skip_video(nise_cfg, i, file_name):
             s = False
     return s
 
-def get_anno_match(gt_annorects, pred_annorects):
 
+def removeRectsWithoutPoints(rects):
+    def rectHasPoints(rect):
+        return (("annopoints" in rect.keys()) and
+                (len(rect["annopoints"]) > 0 and len(rect["annopoints"][0]) > 0) and
+                ("point" in rect["annopoints"][0].keys()))
+    
+    rects = [rect for rect in rects if rectHasPoints(rect)]
+    return rects
+
+
+def get_anno_match(gt_annorects, pred_annorects, _nise_cfg):
     distThresh = 0.5
     MIN_SCORE = -9999
+    
     def getPointGTbyID(points, pidx):
         point = []
         for i in range(len(points)):
@@ -897,10 +924,10 @@ def get_anno_match(gt_annorects, pred_annorects):
     num_pred = len(pred_annorects)
     num_gt = len(gt_annorects)
     # print(num_pred, num_gt)
-
+    
     if not num_gt or not num_pred:
-        return
-
+        return np.array([]), np.array([])
+    
     nJoints = 15
     # distance between predicted and GT joints
     dist = np.full((num_pred, num_gt, nJoints), np.inf)
@@ -910,9 +937,7 @@ def get_anno_match(gt_annorects, pred_annorects):
     hasPr = np.zeros((num_pred, nJoints), dtype = bool)
     # body joint is annotated
     hasGT = np.zeros((num_gt, nJoints), dtype = bool)
-
-    trackidxGT = []
-    trackidxPr = []
+    
     idxsPr = []
     for ridxPr in range(num_pred):
         if (("annopoints" in pred_annorects[ridxPr].keys()) and
@@ -921,13 +946,11 @@ def get_anno_match(gt_annorects, pred_annorects):
             idxsPr += [ridxPr]
     # 这一句就是过滤一下
     pred_annorects = [pred_annorects[ridx] for ridx in idxsPr]
-
+    
     # iterate over GT poses
     for ridxGT in range(num_gt):
         # GT pose
         rectGT = gt_annorects[ridxGT]  # 一个人
-        if ("track_id" in rectGT.keys()):
-            trackidxGT += [rectGT["track_id"][0]]
         pointsGT = []
         if len(rectGT["annopoints"]) > 0:
             pointsGT = rectGT["annopoints"][0]["point"]
@@ -937,12 +960,10 @@ def get_anno_match(gt_annorects, pred_annorects):
             ppGT = getPointGTbyID(pointsGT, i)
             if len(ppGT) > 0:
                 hasGT[ridxGT, i] = True
-
+    
     for ridxPr in range(num_pred):
         # predicted pose
         rectPr = pred_annorects[ridxPr]  # a person including track_id
-        if ("track_id" in rectPr.keys()):
-            trackidxPr += [rectPr["track_id"][0]]
         pointsPr = rectPr["annopoints"][0]["point"]
         for i in range(nJoints):
             # predicted joint in LSP format
@@ -953,7 +974,7 @@ def get_anno_match(gt_annorects, pred_annorects):
                 else:
                     score[ridxPr, i] = ppPr["score"][0]
                 hasPr[ridxPr, i] = True
-
+    
     # predictions and GT are present
     # iterate over GT poses
     # 计算两两之间的距离
@@ -971,7 +992,7 @@ def get_anno_match(gt_annorects, pred_annorects):
             # predicted pose
             rectPr = pred_annorects[ridxPr]
             pointsPr = rectPr["annopoints"][0]["point"]
-        
+            
             # iterate over all possible body joints
             for i in range(nJoints):
                 # GT joint
@@ -983,10 +1004,10 @@ def get_anno_match(gt_annorects, pred_annorects):
                     pointGT = [ppGT["x"][0], ppGT["y"][0]]
                     pointPr = [ppPr["x"][0], ppPr["y"][0]]
                     dist[ridxPr, ridxGT, i] = np.linalg.norm(np.subtract(pointGT, pointPr)) / headSize
-
+    
     dist = np.array(dist)
     hasGT = np.array(hasGT)
-
+    
     # number of annotated joints，每个gt有多少个点标注了的
     nGTp = np.sum(hasGT, axis = 1)
     # 距离太小，根据headsize占比来match一个。
@@ -997,10 +1018,10 @@ def get_anno_match(gt_annorects, pred_annorects):
         for j in range(hasGT.shape[0]):
             if nGTp[j] > 0:
                 pck[i, j] = pck[i, j] / nGTp[j]
-
+    
     # print("pck", pck.shape)
     # print(pck)
-
+    
     # preserve best GT match only，因为有可能出现一个gt对应多个pred或者反之，这里只取分数最高的，把更小的entry都设置成0。
     idx = np.argmax(pck, axis = 1)  # 对pred来说，每个pred对应第几个gt
     val = np.max(pck, axis = 1)
@@ -1010,21 +1031,178 @@ def get_anno_match(gt_annorects, pred_annorects):
                 pck[ridxPr, ridxGT] = 0
     prToGT = np.argmax(pck, axis = 0)
     val = np.max(pck, axis = 0)
-    prToGT[val == 0] = -1  # prToGT是index，所以以0打头，
-    # 如果有一个gt没有pred对应，这个gt对所有pred都是0，argmax自然也是0.
-    # 不过好在这个没有pred对应的gt肯定在pck里没有score的，可以排除掉。
-
+    prToGT[val == 0] = -1
     # print( prToGT) # 一个list，长度为 num_gt，entry 是第 i 个 gt对应的pred 的 index(数据类型是 ndarray)
+    
+    gt_id = [t['track_id'][0] for t in gt_annorects]
+    # print(gt_id)
+    det_id = []
+    prToGT_return = []
+    for i, ridxPr in enumerate(prToGT):
+        if ridxPr != -1:
+            if (_nise_cfg.DEBUG.USE_HIGH_PCKH_DET_BOX and
+                pck[ridxPr, i] >= _nise_cfg.DEBUG.HIGH_PCKH_THRES) \
+                    or not _nise_cfg.DEBUG.USE_HIGH_PCKH_DET_BOX:
+                det_id.append(gt_id[i])
+                prToGT_return.append(ridxPr)
+                # debug_print(ridxPr, i, "{:.2f}".format(pck[ridxPr, i]))
+    
+    det_id = np.array(det_id)
+    prToGT_return = np.array(prToGT_return)
+    # debug_print( det_id)
+    
+    sort_prToGT_idx = np.argsort(prToGT_return)
+    
+    return prToGT_return[sort_prToGT_idx], det_id[sort_prToGT_idx]
 
-    # assign predicted poses to GT poses
-    for ridxPr in range(hasPr.shape[0]):
-        if (ridxPr in prToGT):  # pose matches to GT
-            # GT pose that matches the predicted pose
-            ridxGT = np.argwhere(prToGT == ridxPr)
-            assert (ridxGT.size == 1)
-            ridxGT = ridxGT[0, 0]
-            # debug_print(ridxPr, ridxGT)
-    return [i for i in prToGT if i != -1]
+
+def get_anno_matched_joints(gt_annorects, pred_annorects, _nise_cfg):
+    '''
+    find gt box for every detection box, eliminate those joints not matched with gt.
+    This serves to reduce False positives.
+    This function does not reduce prediction boxes
+    :param gt_annorects:
+    :param pred_annorects:
+    :param _nise_cfg:
+    :return:
+    '''
+    distThresh = 0.5
+    MIN_SCORE = -9999
+    
+    def getPointGTbyID(points, pidx):
+        point = []
+        for i in range(len(points)):
+            if (points[i]["id"] != None and points[i]["id"][0] == pidx):  # if joint id matches
+                point = points[i]
+                break
+        
+        return point
+    
+    def getHeadSize(x1, y1, x2, y2):
+        headSize = 0.6 * np.linalg.norm(np.subtract([x2, y2], [x1, y1]))
+        return headSize
+    
+    num_pred = len(pred_annorects)
+    num_gt = len(gt_annorects)
+    # print(num_pred, num_gt)
+    pred_joints, pred_joints_scores = get_joints_from_annorects(pred_annorects)
+    
+    if not num_gt or not num_pred:
+        return pred_joints, pred_joints_scores
+    
+    nJoints = 15
+    # distance between predicted and GT joints
+    dist = np.full((num_pred, num_gt, nJoints), np.inf)
+    # score of the predicted joint
+    score = np.full((num_pred, nJoints), np.nan)
+    # body joint prediction exist
+    hasPr = np.zeros((num_pred, nJoints), dtype = bool)
+    # body joint is annotated
+    hasGT = np.zeros((num_gt, nJoints), dtype = bool)
+    
+    idxsPr = []
+    for ridxPr in range(num_pred):
+        if (("annopoints" in pred_annorects[ridxPr].keys()) and
+                ("point" in pred_annorects[ridxPr]["annopoints"][0].keys())):
+            # 如果在prFrames里有anno，那就加入对应的 idx
+            idxsPr += [ridxPr]
+    # 这一句就是过滤一下
+    pred_annorects = [pred_annorects[ridx] for ridx in idxsPr]
+    
+    # iterate over GT poses
+    for ridxGT in range(num_gt):
+        # GT pose
+        rectGT = gt_annorects[ridxGT]  # 一个人
+        pointsGT = []
+        if len(rectGT["annopoints"]) > 0:
+            pointsGT = rectGT["annopoints"][0]["point"]
+        # iterate over all possible body joints
+        for i in range(nJoints):
+            # GT joint in LSP format
+            ppGT = getPointGTbyID(pointsGT, i)
+            if len(ppGT) > 0:
+                hasGT[ridxGT, i] = True
+    
+    for ridxPr in range(num_pred):
+        # predicted pose
+        rectPr = pred_annorects[ridxPr]  # a person including track_id
+        pointsPr = rectPr["annopoints"][0]["point"]
+        for i in range(nJoints):
+            # predicted joint in LSP format
+            ppPr = getPointGTbyID(pointsPr, i)
+            if len(ppPr) > 0:
+                if not ("score" in ppPr.keys()):
+                    score[ridxPr, i] = MIN_SCORE
+                else:
+                    score[ridxPr, i] = ppPr["score"][0]
+                hasPr[ridxPr, i] = True
+    
+    # predictions and GT are present
+    # iterate over GT poses
+    # 计算两两之间的距离
+    for ridxGT in range(num_gt):
+        # GT pose
+        rectGT = gt_annorects[ridxGT]
+        # compute reference distance as head size
+        headSize = getHeadSize(rectGT["x1"][0], rectGT["y1"][0],
+                               rectGT["x2"][0], rectGT["y2"][0])
+        pointsGT = []
+        if len(rectGT["annopoints"]) > 0:
+            pointsGT = rectGT["annopoints"][0]["point"]
+        # iterate over predicted poses
+        for ridxPr in range(num_pred):
+            # predicted pose
+            rectPr = pred_annorects[ridxPr]
+            pointsPr = rectPr["annopoints"][0]["point"]
+            
+            # iterate over all possible body joints
+            for i in range(nJoints):
+                # GT joint
+                ppGT = getPointGTbyID(pointsGT, i)
+                # predicted joint
+                ppPr = getPointGTbyID(pointsPr, i)
+                # compute distance between predicted and GT joint locations
+                if hasPr[ridxPr, i] and hasGT[ridxGT, i]:
+                    pointGT = [ppGT["x"][0], ppGT["y"][0]]
+                    pointPr = [ppPr["x"][0], ppPr["y"][0]]
+                    dist[ridxPr, ridxGT, i] = np.linalg.norm(np.subtract(pointGT, pointPr)) / headSize
+    
+    dist = np.array(dist)
+    hasGT = np.array(hasGT)
+    
+    # number of annotated joints，每个gt有多少个点标注了的
+    nGTp = np.sum(hasGT, axis = 1)
+    # 距离太小，根据headsize占比来match一个。
+    # 由于最终输出的是人的trackid来决定joint的id，这里先匹配人，pck这个变量就是pred和gt里人的相近程度。
+    match = dist <= distThresh
+    # print(match.shape)
+    # print(match[0,0])
+    pck = 1.0 * np.sum(match, axis = 2)
+    for i in range(hasPr.shape[0]):
+        for j in range(hasGT.shape[0]):
+            if nGTp[j] > 0:
+                pck[i, j] = pck[i, j] / nGTp[j]
+    # print("pck", pck.shape)
+    # print(pck)
+    idx = np.argmax(pck, axis = 1)
+    val = np.max(pck, axis = 1)
+    # print(idx.shape)
+    # print(val.tolist())
+    for idPr in range(num_pred):
+        idGT = idx[idPr]
+        valGT = val[idPr]
+        if valGT != 0:
+            corres = torch.from_numpy(np.array(
+                match[idPr, idGT], dtype = np.uint8)) \
+                .float()
+            pred_joints[idPr, :, :] *= corres.unsqueeze(1)
+            pred_joints_scores[idPr, :] *= corres
+        else:
+            pred_joints[idPr, :, :] = 0
+            pred_joints_scores[idPr, :] = 0
+        # print(pred_joints)
+        # print(pred_joints_scores)
+    return pred_joints, pred_joints_scores
 
 
 # ─── EVALUATION ──────────────────────────────────────────────────────────

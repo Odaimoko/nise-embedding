@@ -27,7 +27,7 @@ from simple_lib.core.config import config as simple_cfg
 write_lock = Lock()
 
 
-def one_img(img, img_dir, det_result,maskRCNN):
+def one_img(img, img_dir, det_result, maskRCNN):
     img_path = os.path.join(img_dir, img)
     print(img_path)
     fi = FrameItem(nise_cfg, simple_cfg, img_path, 1, True, None)
@@ -45,16 +45,25 @@ if __name__ == '__main__':
     
     # img_dir = 'data/coco/images/test2017'
     
-    dirs = ['train', 'val']
+    dirs = ['val']
     for dir in dirs:
         img_dir = 'data/coco/images/' + dir + '2017'
         images = os.listdir(img_dir)
+        print(len(images))
         det_result = {}
-        all_ims = [(img, img_dir, det_result,maskRCNN) for img in images]
-        with Pool(processes = 1) as p:
-            p.starmap(one_img, all_ims, chunksize = 10000)
-        
-        # json_path = 'coco_'+dir+'_det.json'
+        # all_ims = [(img, img_dir, det_result, maskRCNN) for img in images]
+        # with Pool(processes = 5) as p:
+        #     p.starmap(one_img, all_ims, chunksize = 1000)
+        for img in images:
+            if not '00885.jpg' in img:
+                continue
+            img_path = os.path.join(img_dir, img)
+            print(img_path)
+            fi = FrameItem(nise_cfg, simple_cfg, img_path, 1, True, None)
+            fi.detect_human(maskRCNN)
+            det_result.update({img: fi.detect_results()})
+
+        # json_path = 'run_coco_' + dir + '_det.json'
         # with open(json_path, 'w') as f:
         #     json.dump(det_result, f)
         #     debug_print('coco json saved:', json_path)

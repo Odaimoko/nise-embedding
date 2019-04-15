@@ -173,7 +173,7 @@ class FrameItem:
     def joint_prop(self, Q, use_pre_com_det_est = False, pre_com_det_est = None):
         '''
          WHAT IS PROP BOX SCORE???
-        :param prev_frame_joints: 2 x num_people x num_joints
+        :param prev_frame_joints:  num_people x num_joints x 2
         :return:
         '''
         if self.is_first: return
@@ -183,18 +183,6 @@ class FrameItem:
         
         def set_empty_joint():
             self.joints_proped = True
-        
-        def check_joints_format(prev_frame_joints):
-            prev_frame_joints = expand_vector_to_tensor(prev_frame_joints, 3)
-            if not ((prev_frame_joints.shape[2] == self.cfg.DATA.num_joints and prev_frame_joints.shape[0] == 2) or (
-                    prev_frame_joints.shape[2] == 2 and prev_frame_joints.shape[1] == self.cfg.DATA.num_joints)):
-                raise ValueError(
-                    'Size not matched, current size ' + str(prev_frame_joints.shape))
-            if prev_frame_joints.shape[2] == self.cfg.DATA.num_joints:
-                # :param prev_frame_joints: 2x num_people x num_joints. to num_people x num_joints x 2
-                prev_frame_joints = torch.transpose(prev_frame_joints, 0, 1)
-                prev_frame_joints = torch.transpose(prev_frame_joints, 1, 2)
-            return prev_frame_joints
         
         prev_frame = Q[-1]
         prev_frame_joints = prev_frame.joints
@@ -219,14 +207,14 @@ class FrameItem:
                 # 2TODO: 如果 score 是一个标量，在242行就不能在 dim=1的时候 unsqueeze，只有 score 是一个向量才行
                 prev_box_scores = prev_frame.unified_boxes[filtered_idx, -1]
                 prev_frame_joints_scores = prev_frame_joints_scores[filtered_idx]
+                prev_filtered_box = expand_vector_to_tensor(prev_filtered_box)
+                prev_frame_joints = expand_vector_to_tensor(prev_frame_joints, 3)
+                prev_frame_joints_scores = expand_vector_to_tensor(prev_frame_joints_scores)
             else:  # use all prev joints rather than filtered, or should we?
                 prev_filtered_box = prev_frame.unified_boxes
                 prev_box_scores = prev_frame.unified_boxes[:, -1]
-            prev_filtered_box = expand_vector_to_tensor(prev_filtered_box)
-            prev_frame_joints = expand_vector_to_tensor(prev_frame_joints, 3)
             # Todo is visibility right?
             prev_frame_joints_vis = torch.ones(prev_frame_joints.shape)[:, :, 0]  # numpeople x numjoints,
-            prev_frame_joints_scores = expand_vector_to_tensor(prev_frame_joints_scores)
             
             if self.cfg.TEST.USE_GT_JOINTS_TO_PROP and prev_frame.gt_boxes.numel() != 0:
                 # match一下，只用检测到的gt的joint
@@ -251,12 +239,7 @@ class FrameItem:
         # preprocess end
         
         if prev_frame_joints.numel() != 0:
-            
-            # what if no prev_joints
-            prev_frame_joints = check_joints_format(prev_frame_joints)
-            
             prev_frame_joints = prev_frame_joints.int()
-            
             new_joints = torch.zeros(prev_frame_joints.shape)
             # using previous score as new score
             prop_boxes_scores = expand_vector_to_tensor(prev_box_scores).transpose(0, 1)  # tensor numpeople x 1
@@ -265,9 +248,8 @@ class FrameItem:
                 # debug_print('people', people)
                 for joint in range(self.cfg.DATA.num_joints):
                     joint_pos = prev_frame_joints[people, joint, :]  # x,y
-                    joint_vis = prev_frame_joints_vis[people, joint]
                     new_joint_vis = joint_pos[0] < self.img_w and joint_pos[1] < self.img_h \
-                                    and joint_pos[0] > 0 and joint_pos[1] > 0 and joint_vis > 0
+                                    and joint_pos[0] > 0 and joint_pos[1] > 0
                     if new_joint_vis:
                         # TODO 可能和作者不一样的地方，画面外的joint怎么办，我设定的是两个0，然后自然而然就会被clamp
                         joint_flow = self.flow_to_current[:, joint_pos[1], joint_pos[0]].cpu()
@@ -391,7 +373,7 @@ class FrameItem:
         final_valid_idx = valid_score_idx
         return filtered, final_valid_idx
     
-    @log_time('\tJoint est...')
+    # @log_time('\tJoint est...')
     def est_joints(self, joint_detector):
         """detect current image's bboxes' joints pos using people-pose-estimation - """
         
@@ -477,6 +459,7 @@ class FrameItem:
                 
                 self.joints = to_torch(preds)
                 self.joints_score = to_torch(np.multiply(max_val[..., 0].T, self.unified_boxes[:, 4].numpy()).T)
+                self.joints_score = to_torch(max_val[..., 0])
                 
                 if self.cfg.TEST.USE_MATCHED_GT_EST_JOINTS and self.gt_boxes.numel() != 0:
                     # use matched gt joints to be the output joints
@@ -492,7 +475,7 @@ class FrameItem:
                         if uni_to_gt_iou[prev, gt] > .5:
                             self.joints[prev, :, :] = self.gt_joints[gt, :, :2]
                             self.joints_score[prev, :] = self.gt_joints[gt, :, 2]
-            
+            self.joints_score = expand_vector_to_tensor(self.joints_score)
             self.joints = expand_vector_to_tensor(self.joints, 3)
         
         self.joints_detected = True
@@ -623,15 +606,8 @@ class FrameItem:
     
     # @log_time('\tID分配……')
     def assign_id_task_1_2(self, Q, get_dist_mat = None):
-        """ input: distance matrix; output: correspondence   """
-        """ - Associate ids. question: how to associate using more than two frames?between each 2?- """
-        if not self.joints_detected:
-            raise ValueError('Should detect joints first')
         self.id_boxes, self.id_idx_in_unified = self.get_filtered_bboxes_with_thres(self.cfg.ALG.ASSIGN_BOX_THRES)
-        
         self.people_ids = torch.zeros(self.id_boxes.shape[0]).long()
-        
-        # debug_print('ID Assigned')
         self.id_assigned = True
     
     def _resize_x(self, x):
@@ -685,7 +661,17 @@ class FrameItem:
                 # Essentially no joints or no joints after filtering
                 return
             joints_to_show = self.joints[self.id_idx_in_unified]
+            joints_to_show_scores = self.joints_score[self.id_idx_in_unified]
+            joints_to_show = expand_vector_to_tensor(joints_to_show, 3)
+            joints_to_show_scores = expand_vector_to_tensor(joints_to_show_scores)
+            
+            is_joint_shown = joints_to_show_scores >= self.cfg.ALG.OUTPUT_JOINT_THRES
             joints_to_show = self._resize_joints(joints_to_show)
+            # print(joints_to_show.shape, is_joint_shown.shape)
+            # print(joints_to_show)
+            joints_to_show = joints_to_show * is_joint_shown.float().unsqueeze(2)
+            # print(joints_to_show, is_joint_shown)
+            # print('jjjjjj', joints_to_show.shape)
             num_people, num_joints, _ = joints_to_show.shape
             
             out_dir = os.path.join(self.cfg.PATH.JOINTS_DIR, p.parts[-2])
@@ -730,7 +716,7 @@ class FrameItem:
 
         :return:
         '''
-        if self.task in [1, 2, -3]:
+        if self.task in [1, 2,]:
             # output all joints
             d = {
                 'image': [

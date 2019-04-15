@@ -156,12 +156,21 @@ def set_path_from_nise_cfg(nise_cfg):
     else:
         track_part.append('matchID')
     
+    matchDet_part = []
+    if nise_cfg.DEBUG.USE_HIGH_PCKH_DET_BOX:
+        matchDet_part.append('hiPckh')
+        matchDet_part.append(str(nise_cfg.DEBUG.HIGH_PCKH_THRES))
+    if nise_cfg.DEBUG.USE_MATCHED_JOINTS:
+        matchDet_part.append('lessFP')
+    
+    
     model_part = '_'.join(model_part)
     detect_part = '_'.join(detect_part)
     est_part = '_'.join(est_part)
     prop_part = '_'.join(prop_part)
     unify_part = '_'.join(unify_part)
     track_part = '_'.join(track_part)
+    matchDet_part = '_'.join(matchDet_part)
     suffix_list = [
         nise_cfg.TEST.MODE,
         'task',
@@ -169,11 +178,12 @@ def set_path_from_nise_cfg(nise_cfg):
     if model_part: suffix_list.append(model_part)
     if detect_part: suffix_list.append(detect_part)
     if est_part: suffix_list.append(est_part)
-    if nise_cfg.TEST.TASK == 2 or nise_cfg.TEST.TASK == -1:
+    if nise_cfg.TEST.TASK == -1:
         if prop_part: suffix_list.append(prop_part)
     if unify_part: suffix_list.append(unify_part)
-    if nise_cfg.TEST.TASK == -2:
+    if nise_cfg.TEST.TASK in [-2, -3, -4]:
         if track_part: suffix_list.append(track_part)
+    if matchDet_part: suffix_list.append(matchDet_part)
     
     suffix = '_'.join(suffix_list)
     suffix_range = '_'.join(['RANGE',
@@ -265,10 +275,9 @@ class NiseConfig:
             # These two will be decided  dynamically
             self.load_simple_model = True
             self.load_hr_model = False
-            
+            # NMS
             self.NO_NMS = False
-            
-            self.FRAME = True
+            # VIS
             self.VISUALIZE = False
             self.VIS_HUMAN_THRES = 0
             self.VIS_SINGLE_NO_JOINTS = False
@@ -276,12 +285,19 @@ class NiseConfig:
             self.VIS_EST_SINGLE = False
             self.VIS_PROPED_JOINTS = False
             self.VIS_JOINTS_FULL = False
-            self.VIS_SINGLE_JOINTS_WITH_FULL_IMG=False
+            self.VIS_SINGLE_JOINTS_WITH_FULL_IMG = False
+            self.VIS_FILTERED_JOINTS = False
             
             self.SAVE_DETECTION_TENSOR = False
             self.USE_DETECTION_RESULT = True
             
             self.NUM_PROCESSES = -1
+            
+            # if true, when using matched det box, we will filter those boxes with low pckh(with gt)
+            self.USE_HIGH_PCKH_DET_BOX = False
+            self.HIGH_PCKH_THRES = 0
+            # if true, compare pred pose with gt pose; choose the nearest gt joints to be
+            self.USE_MATCHED_JOINTS = False
     
     class _ALG:
         
@@ -356,8 +372,8 @@ class NiseConfig:
             
             self.USE_MATCHED_GT_EST_JOINTS = False
             
-            self.USE_GT_JOINTS_TO_PROP = True
-            self.USE_ALL_GT_JOINTS_TO_PROP = True
+            self.USE_GT_JOINTS_TO_PROP = False
+            self.USE_ALL_GT_JOINTS_TO_PROP = False
             self.GT_BOX_SCORE = 1
             
             self.GT_JOINTS_PROP_IOU_THRES = .5

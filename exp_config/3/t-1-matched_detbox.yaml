@@ -9,22 +9,19 @@ ALG:
   UNIFY_NMS_THRES_1: .35
   UNIFY_NMS_THRES_2: .5
 
-  ASSGIN_ID_TO_FILTERED_BOX: True
+  
   ASSIGN_BOX_THRES: 0
   OUTPUT_JOINT_THRES: 0
   MATCHING_ALG: 0
 TEST:
   USE_GT_PEOPLE_BOX: false
   FLIP_TEST: True
-  USE_GT_JOINTS_TO_PROP: False
-  USE_ALL_GT_JOINTS_TO_PROP: False
-  GT_BOX_SCORE: .7
   FROM: 0
   TO: 50
-#  ONLY_TEST:
+  ONLY_TEST:
 #    - '03742'
-#    - 14102_mpii
-#    -  '24158'
+#    - 14102_mnpii
+    -  '23754'
 
   TASK: -3
   MODE: valid

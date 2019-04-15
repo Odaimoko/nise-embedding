@@ -64,4 +64,6 @@ if __name__ == '__main__':
     # nise_pred_task_1_debug(dataset_path, maskRCNN, joint_est_model, flow_model)
     # nise_pred_task_3_debug(dataset_path)
     # gen_matched_box_debug(dataset_path)
+    # gen_matched_joints(dataset_path)
+    # nise_pred_task_2_debug(dataset_path, maskRCNN, joint_est_model, flow_model)
     nise_flow_debug(dataset_path, maskRCNN, joint_est_model, flow_model)  # 用于利用生成好的 box

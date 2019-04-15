@@ -35,7 +35,7 @@ propGT_tfiou = 'unifed_boxes-pre-commissioning/valid_task_-1_DETbox_allBox_propA
 
 uni_for_t3='unifed_boxes-commi-onlydet/valid_task_1_DETbox_allBox_tfIoU_nmsThres_0.35_0.50'
 
-matched_det_box ='unified_boxes-track/valid_task_-3_mask_DETbox_allBox_Flip_estJoints_tfIoU_nmsThres_0.35_0.50'
+matched_det_box ='unified_boxes-matchedDet/valid_task_-3_noid'
 
 info_level = Levels.SKY_BLUE
 

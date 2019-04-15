@@ -4,23 +4,9 @@
 
 My baseline
 
-Task 1. `valid_task_1_DETbox_propfiltered_propthres_0.5_propGT`. This is obtained by not nms the detected box (i.e. use all detected box to estimate joints).
+Task 1. `valid_task_1_DETbox_propfiltered_propthres_0.5_propGT`. This is obtained by not nms the detected box (i.e. use all detected box to estimate joints). 
 
-虽然样子上写着 propGT 啥的但是由于是 task1，并没有 prop 这一步，我把它取出来吧，名字改成了
-
-​	`baseline/69.6-noProp-valid_task_1_onlyDETbox_noNMS`
-
-```
-& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
-& 79.8 & 78.5 & 70.7 & 59.2 & 70.1 & 65.5 & 58.3 & 69.6 \\
-```
-
-Use GT box to estimate。(meaningless)
-
-```
-& Head & Shou & Elb  & Wri  & Hip  & Knee & Ankl & Total\\
-& 85.8 & 82.3 & 73.8 & 62.6 & 73.4 & 69.5 & 64.5 & 74.0 \\
-```
+**Successfully reproduced the tracking result.**
 
 
 
@@ -60,6 +46,16 @@ nise-yaml 里 task 的作用
 | -1   | flow， 暂时不用                                 |
 | -2   | tracking                                        |
 | -3   | 生成tracking看删除 gt 与 det 匹配之外的 fp 结果 |
+
+
+
+
+
+## 2019-04-14
+
+gtbox + sb88
+
+
 
 
 
@@ -124,6 +120,7 @@ make eval-t1-sb-88
 ## 2019-04-02
 
 - [x] 一步一步检测HRnet 在 posetrack 的错误。
+- [x] 今天之后的 est 才是正确的
 
 
 
@@ -208,6 +205,8 @@ if self.transform:
 ```
 
 ## 2019-03-13
+
+[deprecated]
 
 训练了res152在 pt17，最终PCKh为90.04 ，但是 MOTA 还是很低。
 

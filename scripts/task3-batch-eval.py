@@ -45,8 +45,11 @@ for f in files:
     ])
     print(cmd)
     os.system(cmd)
+    # run(cmd)
     t = threading.Thread(target = run, args = (cmd,))
-    t.start()
+    # t.start()
     ts.append(t)
+for t in ts:
+    t.start()
 for t in ts:
     t.join()

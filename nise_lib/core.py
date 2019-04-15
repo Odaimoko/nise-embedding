@@ -96,12 +96,12 @@ def nise_pred_task_1_debug(gt_anno_dir, hunam_detector, joint_estimator, flow_mo
             Q.append(fi)
         
         with open(json_path, 'w') as f:
-            json.dump({'annolist': pred_frames}, f)
+            json.dump({'annolist': pred_frames}, f, indent = 2)
             debug_print('pt eval json saved:', json_path)
         
         if nise_cfg.DEBUG.SAVE_DETECTION_TENSOR:
             with open(det_path, 'w') as f:
-                json.dump(detect_result_to_record, f)
+                json.dump(detect_result_to_record, f, indent = 2)
                 debug_print('det results json saved:', det_path)
         if nise_cfg.DEBUG.SAVE_FLOW_TENSOR:
             torch.save(flow_result_to_record, flow_path)
@@ -111,6 +111,96 @@ def nise_pred_task_1_debug(gt_anno_dir, hunam_detector, joint_estimator, flow_mo
             debug_print(
                 'Detection\'s estimation saved', est_path
             )
+        if nise_cfg.DEBUG.SAVE_NMS_TENSOR:
+            torch.save(uni_result_to_record, uni_path)
+            debug_print('NMSed boxes saved: ', uni_path)
+
+
+def nise_pred_task_2_debug(gt_anno_dir, hunam_detector, joint_estimator, flow_model):
+    # PREDICT ON TRAINING SET OF 2017
+    anno_file_names = get_type_from_dir(gt_anno_dir, ['.json'])
+    anno_file_names = sorted(anno_file_names)
+    mkdir(nise_cfg.PATH.JSON_SAVE_DIR)
+    mkdir(nise_cfg.PATH.DETECT_JSON_DIR)
+    est_cfg = simple_cfg if nise_cfg.DEBUG.load_simple_model else hr_cfg
+    debug_print(pprint.pformat(nise_cfg))
+    for i, file_name in enumerate(anno_file_names):
+        debug_print(i, file_name)
+        torch.cuda.empty_cache()
+        if is_skip_video(nise_cfg, i, file_name):
+            debug_print('Skip', i, file_name)
+            continue
+        debug_print(i, file_name)
+        
+        p = PurePosixPath(file_name)
+        json_path = os.path.join(nise_cfg.PATH.JSON_SAVE_DIR, p.parts[-1])
+        with open(file_name, 'r') as f:
+            gt = json.load(f)['annolist']
+        pred_frames = []
+        det_path = os.path.join(nise_cfg.PATH.DETECT_JSON_DIR, p.parts[-1])
+        flow_path = os.path.join(nise_cfg.PATH.FLOW_JSON_DIR, p.stem + '.pkl')
+        uni_path = os.path.join(nise_cfg.PATH.UNIFIED_JSON_DIR, p.stem + '.pkl')
+        uni_result_to_record = []
+        
+        if nise_cfg.DEBUG.USE_DETECTION_RESULT:
+            with open(det_path, 'r')as f:
+                detection_result_from_json = json.load(f)
+            assert len(detection_result_from_json) == len(gt)
+        else:
+            detection_result_from_json = {}
+        debug_print('Precomputed detection result loaded', flow_path)
+        
+        if nise_cfg.DEBUG.USE_FLOW_RESULT:
+            flow_result_from_json = torch.load(flow_path)
+            debug_print('Precomputed flow result loaded', flow_path)
+            assert len(flow_result_from_json) == len(gt)
+        else:
+            flow_result_from_json = {}
+        
+        Q = deque(maxlen = nise_cfg.ALG._DEQUE_CAPACITY)
+        
+        for j, frame in enumerate(gt):
+            # frame dict_keys(['image', 'annorect', 'imgnum', 'is_labeled', 'ignore_regions'])
+            img_file_path = frame['image'][0]['name']
+            img_file_path = os.path.join(nise_cfg.PATH.POSETRACK_ROOT, img_file_path)
+            debug_print(j, img_file_path, indent = 1)
+            annorects = frame['annorect']
+            if annorects is not None or len(annorects) != 0:
+                # if only use gt bbox, then for those frames which dont have annotations, we dont estimate
+                gt_joints, gt_scores = get_joints_from_annorects(annorects)
+            else:
+                gt_joints = torch.tensor([])
+            if nise_cfg.DEBUG.USE_DETECTION_RESULT:
+                detect_box = detection_result_from_json[j][img_file_path]
+                detect_box = torch.tensor(detect_box)
+            else:
+                detect_box = None
+            
+            if nise_cfg.DEBUG.USE_FLOW_RESULT:
+                pre_com_flow = flow_result_from_json[j][img_file_path]
+            else:
+                pre_com_flow = torch.tensor([])
+            
+            if j == 0:  # first frame doesnt have flow, joint prop
+                is_first = True
+            else:
+                is_first = False
+            fi = FrameItem(nise_cfg, est_cfg, img_file_path, is_first = is_first, gt_joints = gt_joints)
+            fi.detected_boxes = detect_box
+            fi.human_detected = True
+            if not is_first:
+                fi.flow_to_current = pre_com_flow
+                fi.flow_calculated = True
+                fi.joint_prop(Q)
+            fi.unify_bbox()
+            fi.est_joints(joint_estimator)
+            pred_frames.append(fi.to_dict())
+            uni_result_to_record.append({img_file_path: fi.unfied_result()})
+            Q.append(fi)
+        
+        with open(json_path, 'w') as f:
+            json.dump({'annolist': pred_frames}, f, indent = 2)
+            debug_print('json saved:', json_path)
         if nise_cfg.DEBUG.SAVE_NMS_TENSOR:
             torch.save(uni_result_to_record, uni_path)
             debug_print('NMSed boxes saved: ', uni_path)
@@ -201,7 +291,7 @@ def nise_pred_task_3_debug(gt_anno_dir):
             pred_frames.append(fi.to_dict())
         
         with open(json_path, 'w') as f:
-            json.dump({'annolist': pred_frames}, f)
+            json.dump({'annolist': pred_frames}, f, indent = 2)
             debug_print('json saved:', json_path)
 
 
@@ -211,6 +301,8 @@ def gen_matched_box_debug(gt_anno_dir):
     anno_file_names = sorted(anno_file_names)
     mkdir(nise_cfg.PATH.JSON_SAVE_DIR)
     mkdir(nise_cfg.PATH.DETECT_JSON_DIR)
+    debug_print(pprint.pformat(nise_cfg))
+    
     est_cfg = simple_cfg if nise_cfg.DEBUG.load_simple_model else hr_cfg
     
     for i, file_name in enumerate(anno_file_names):
@@ -238,17 +330,25 @@ def gen_matched_box_debug(gt_anno_dir):
         vis_threads = []
         
         for j, frame in enumerate(gt):
+            # All images
             img_file_path = os.path.join(nise_cfg.PATH.POSETRACK_ROOT, frame['image'][0]['name'])
-            debug_print(j, img_file_path, indent = 1)
+            # debug_print(j, img_file_path, indent = 1)
             gt_annorects = frame['annorect']
             pred_annorects = pred[j]['annorect']
-            prToGT = get_anno_match(gt_annorects, pred_annorects)
+            gt_annorects = removeRectsWithoutPoints(gt_annorects)
+            pred_annorects = removeRectsWithoutPoints(pred_annorects)
+            
+            prToGT, det_id = get_anno_match(gt_annorects, pred_annorects, nise_cfg)
+            # if det_id.size > 0:            print(det_id)
             
             uni_box = uni_boxes[j][img_file_path]
             if pred_annorects is not None and len(pred_annorects) != 0:
                 # if only use gt bbox, then for those frames which dont have annotations, we dont estimate，
-                pred_joints, pred_joints_scores = get_joints_from_annorects(pred_annorects)
-                
+                if nise_cfg.DEBUG.USE_MATCHED_JOINTS:
+                    pred_joints, pred_joints_scores = get_anno_matched_joints(gt_annorects, pred_annorects, nise_cfg)
+                else:
+                    pred_joints, pred_joints_scores = get_joints_from_annorects(pred_annorects)
+                    
                 if pred_joints.numel() != 0:
                     pred_joints = pred_joints[:, :, :2]  # 3d here, only position is needed
                 assert (len(uni_box) == pred_joints.shape[0])
@@ -256,17 +356,13 @@ def gen_matched_box_debug(gt_anno_dir):
                 pred_joints = torch.tensor([])
                 pred_joints_scores = torch.tensor([])
             
-            if prToGT:
+            if prToGT.size > 0:
                 # debug_print('original prtogt',prToGT)
-                prToGT = [int(pr) for pr in prToGT]
-                prToGT=sorted(prToGT)
-                prToGT_tensor = torch.tensor(prToGT)
-                # debug_print(prToGT_tensor)
-                uni_box = uni_box[prToGT_tensor]
-                pred_joints = pred_joints[prToGT_tensor]
-                pred_joints_scores = pred_joints_scores[prToGT_tensor]
+                uni_box = uni_box[prToGT]
+                pred_joints = pred_joints[prToGT]
+                pred_joints_scores = pred_joints_scores[prToGT]
             
-            fi = FrameItem(nise_cfg, est_cfg, img_file_path, is_first = True, task = 1)
+            fi = FrameItem(nise_cfg, est_cfg, img_file_path, is_first = True, task = -3)
             
             if nise_cfg.TEST.USE_GT_PEOPLE_BOX:
                 fi.detect_human(None, uni_box)
@@ -278,8 +374,12 @@ def gen_matched_box_debug(gt_anno_dir):
             fi.joints = pred_joints
             fi.joints_score = pred_joints_scores
             fi.joints_detected = True
-            
-            fi.assign_id_task_1_2(Q)
+            if nise_cfg.TEST.ASSIGN_GT_ID and det_id.size > 0:
+                fi.people_ids = torch.tensor(det_id).long()
+                fi.id_boxes = fi.unified_boxes
+                fi.id_assigned = True
+            else:
+                fi.assign_id_task_1_2(Q)
             if nise_cfg.DEBUG.VISUALIZE:
                 t = threading.Thread(target = fi.visualize, args = ())
                 vis_threads.append(t)
@@ -289,9 +389,93 @@ def gen_matched_box_debug(gt_anno_dir):
             uni_result_to_record.append({img_file_path: fi.unfied_result()})
         
         with open(json_path, 'w') as f:
-            json.dump({'annolist': pred_frames}, f)
+            json.dump({'annolist': pred_frames}, f, indent = 2)
             debug_print('json saved:', json_path)
         
+        if nise_cfg.DEBUG.SAVE_NMS_TENSOR:
+            torch.save(uni_result_to_record, uni_path_torecord)
+            debug_print('NMSed boxes saved: ', uni_path_torecord)
+        for t in vis_threads:
+            t.join()
+
+
+def gen_matched_joints(gt_anno_dir):
+    # PREDICT ON TRAINING SET OF 2017
+    anno_file_names = get_type_from_dir(gt_anno_dir, ['.json'])
+    anno_file_names = sorted(anno_file_names)
+    mkdir(nise_cfg.PATH.JSON_SAVE_DIR)
+    mkdir(nise_cfg.PATH.DETECT_JSON_DIR)
+    debug_print(pprint.pformat(nise_cfg))
+    
+    est_cfg = simple_cfg if nise_cfg.DEBUG.load_simple_model else hr_cfg
+    
+    for i, file_name in enumerate(anno_file_names):
+        if is_skip_video(nise_cfg, i, file_name):
+            debug_print('Skip', i, file_name)
+            continue
+        debug_print(i, file_name)
+        p = PurePosixPath(file_name)
+        json_path = os.path.join(nise_cfg.PATH.JSON_SAVE_DIR, p.parts[-1])
+        uni_path_torecord = os.path.join(nise_cfg.PATH.UNIFIED_JSON_DIR, p.stem + '.pkl')
+        
+        with open(file_name, 'r') as f:
+            gt = json.load(f)['annolist']
+        pred_frames = []
+        uni_result_to_record = []
+        
+        # load pre computed boxes
+        uni_path = os.path.join(nise_cfg.PATH.UNI_BOX_FOR_TASK_3, p.stem + '.pkl')
+        uni_boxes = torch.load(uni_path)
+        
+        pred_json_path = os.path.join(nise_cfg.PATH.PRED_JSON_FOR_TASK_3, p.stem + '.json')
+        with open(pred_json_path, 'r') as f:
+            pred = json.load(f)['annolist']
+        Q = deque(maxlen = nise_cfg.ALG._DEQUE_CAPACITY)
+        vis_threads = []
+        
+        for j, frame in enumerate(gt):
+            # All images
+            img_file_path = os.path.join(nise_cfg.PATH.POSETRACK_ROOT, frame['image'][0]['name'])
+            # debug_print(j, img_file_path, indent = 1)
+            gt_annorects = frame['annorect']
+            pred_annorects = pred[j]['annorect']
+            gt_annorects = removeRectsWithoutPoints(gt_annorects)
+            pred_annorects = removeRectsWithoutPoints(pred_annorects)
+            uni_box = uni_boxes[j][img_file_path]
+            if pred_annorects is not None and len(pred_annorects) != 0:
+                if nise_cfg.DEBUG.USE_MATCHED_JOINTS:
+                    pred_joints, pred_joints_scores = get_anno_matched_joints(gt_annorects, pred_annorects, nise_cfg)
+                else:
+                    pred_joints, pred_joints_scores = get_joints_from_annorects(pred_annorects)
+                    
+                if pred_joints.numel() != 0:
+                    pred_joints = pred_joints[:, :, :2]  # 3d here, only position is needed
+                assert (len(uni_box) == pred_joints.shape[0])
+            else:
+                pred_joints = torch.tensor([])
+                pred_joints_scores = torch.tensor([])
+                
+            fi = FrameItem(nise_cfg, est_cfg, img_file_path, is_first = True, task = -3)
+            fi.detected_boxes = uni_box
+            fi.human_detected = True
+            fi.joints_proped = True  # no prop here is used
+            fi.unify_bbox()
+            fi.joints = pred_joints
+            fi.joints_score = pred_joints_scores
+            fi.joints_detected = True
+            fi.assign_id_task_1_2(Q)
+            if nise_cfg.DEBUG.VISUALIZE:
+                t = threading.Thread(target = fi.visualize, args = ())
+                vis_threads.append(t)
+                t.start()
+            Q.append(fi)
+            pred_frames.append(fi.to_dict())
+            uni_result_to_record.append({img_file_path: fi.unfied_result()})
+
+        with open(json_path, 'w') as f:
+            json.dump({'annolist': pred_frames}, f, indent = 2)
+            debug_print('json saved:', json_path)
+
         if nise_cfg.DEBUG.SAVE_NMS_TENSOR:
             torch.save(uni_result_to_record, uni_path_torecord)
             debug_print('NMSed boxes saved: ', uni_path_torecord)
@@ -309,7 +493,7 @@ def init_gm(_gm, n_cfg, ):
 def nise_flow_debug(gt_anno_dir, human_detector, joint_estimator, flow_model):
     # PREDICT ON POSETRACK 2017
     pp = pprint.PrettyPrinter(indent = 2)
-    debug_print(pp.pformat(nise_cfg))
+    # debug_print(pp.pformat(nise_cfg))
     
     anno_file_names = get_type_from_dir(gt_anno_dir, ['.json'])
     anno_file_names = sorted(anno_file_names)
@@ -333,6 +517,8 @@ def nise_flow_debug(gt_anno_dir, human_detector, joint_estimator, flow_model):
         fun = run_one_video_tracking
     elif nise_cfg.TEST.TASK == -3:
         fun = oracle_id_filter
+    elif nise_cfg.TEST.TASK == -4:
+        fun = run_one_gen_matched_joints
     
     num_process = len(os.environ.get('CUDA_VISIBLE_DEVICES', default = '').split(','))
     # num_process = 1
@@ -424,12 +610,12 @@ def run_one_video_task_1(_nise_cfg, est_cfg, i: int, file_name: str, human_detec
         pred_frames.append(fi.to_dict())
     
     with open(json_path, 'w') as f:
-        json.dump({'annolist': pred_frames}, f)
+        json.dump({'annolist': pred_frames}, f, indent = 2)
         debug_print('pt eval json saved:', json_path)
     
     if nise_cfg.DEBUG.SAVE_DETECTION_TENSOR:
         with open(det_path, 'w') as f:
-            json.dump(detect_result_to_record, f)
+            json.dump(detect_result_to_record, f, indent = 2)
             debug_print('det results json saved:', det_path)
     if nise_cfg.DEBUG.SAVE_FLOW_TENSOR:
         torch.save(flow_result_to_record, flow_path)
@@ -541,7 +727,7 @@ def run_one_video_tracking(_nise_cfg, est_cfg, i: int, file_name: str, human_det
         pred_frames.append(fi.to_dict())
     
     with open(json_path, 'w') as f:
-        json.dump({'annolist': pred_frames}, f)
+        json.dump({'annolist': pred_frames}, f, indent = 2)
         debug_print('json saved:', json_path)
     for t in vis_threads:
         t.join()
@@ -648,7 +834,7 @@ def run_one_video_flow_debug(_nise_cfg, est_cfg, i, file_name, human_detector, j
         Q.append(fi)
     
     with open(json_path, 'w') as f:
-        json.dump({'annolist': pred_frames}, f)
+        json.dump({'annolist': pred_frames}, f, indent = 2)
         debug_print('json saved:', json_path)
     if _nise_cfg.DEBUG.SAVE_NMS_TENSOR:
         torch.save(uni_result_to_record, uni_path)
@@ -661,11 +847,6 @@ def oracle_id_filter(_nise_cfg, est_cfg, i: int, file_name: str, human_detector,
     Use precomputed unified boxes and joints to do matching.
     思路，将 gtannorect 和 det annorect 进行匹配，剩下的 det 直接输入 frameitem 作为 det 最后输出
     但是那些没有 gt 的图无法过滤掉，姑且保留所有的
-    :param i:
-    :param file_name:
-    :param joint_estimator:
-    :param flow_model:
-    :return:
     '''
     torch.cuda.empty_cache()
     if is_skip_video(_nise_cfg, i, file_name):
@@ -690,38 +871,43 @@ def oracle_id_filter(_nise_cfg, est_cfg, i: int, file_name: str, human_detector,
         pred = json.load(f)['annolist']
     Q = deque(maxlen = _nise_cfg.ALG._DEQUE_CAPACITY)
     vis_threads = []
-    
+
     for j, frame in enumerate(gt):
-        img_file_path = os.path.join(_nise_cfg.PATH.POSETRACK_ROOT, frame['image'][0]['name'])
+        # All images
+        img_file_path = os.path.join(nise_cfg.PATH.POSETRACK_ROOT, frame['image'][0]['name'])
         # debug_print(j, img_file_path, indent = 1)
         gt_annorects = frame['annorect']
         pred_annorects = pred[j]['annorect']
-        prToGT = get_anno_match(gt_annorects, pred_annorects)
-        
+        gt_annorects = removeRectsWithoutPoints(gt_annorects)
+        pred_annorects = removeRectsWithoutPoints(pred_annorects)
+    
+        prToGT, det_id = get_anno_match(gt_annorects, pred_annorects, nise_cfg)
+        # if det_id.size > 0:            print(det_id)
+    
         uni_box = uni_boxes[j][img_file_path]
         if pred_annorects is not None and len(pred_annorects) != 0:
             # if only use gt bbox, then for those frames which dont have annotations, we dont estimate，
-            pred_joints, pred_joints_scores = get_joints_from_annorects(pred_annorects)
-            
+            if nise_cfg.DEBUG.USE_MATCHED_JOINTS:
+                pred_joints, pred_joints_scores = get_anno_matched_joints(gt_annorects, pred_annorects, nise_cfg)
+            else:
+                pred_joints, pred_joints_scores = get_joints_from_annorects(pred_annorects)
+        
             if pred_joints.numel() != 0:
                 pred_joints = pred_joints[:, :, :2]  # 3d here, only position is needed
             assert (len(uni_box) == pred_joints.shape[0])
         else:
             pred_joints = torch.tensor([])
             pred_joints_scores = torch.tensor([])
-        
-        if prToGT:
+    
+        if prToGT.size > 0:
             # debug_print('original prtogt',prToGT)
-            prToGT = [int(pr) for pr in prToGT]
-            prToGT_tensor = torch.tensor(prToGT)
-            # debug_print(prToGT_tensor)
-            uni_box = uni_box[prToGT_tensor]
-            pred_joints = pred_joints[prToGT_tensor]
-            pred_joints_scores = pred_joints_scores[prToGT_tensor]
-        
-        fi = FrameItem(_nise_cfg, est_cfg, img_file_path, is_first = True, task = 1)
-        
-        if _nise_cfg.TEST.USE_GT_PEOPLE_BOX:
+            uni_box = uni_box[prToGT]
+            pred_joints = pred_joints[prToGT]
+            pred_joints_scores = pred_joints_scores[prToGT]
+    
+        fi = FrameItem(nise_cfg, est_cfg, img_file_path, is_first = True, task = -3)
+    
+        if nise_cfg.TEST.USE_GT_PEOPLE_BOX:
             fi.detect_human(None, uni_box)
         else:
             fi.detected_boxes = uni_box
@@ -731,7 +917,92 @@ def oracle_id_filter(_nise_cfg, est_cfg, i: int, file_name: str, human_detector,
         fi.joints = pred_joints
         fi.joints_score = pred_joints_scores
         fi.joints_detected = True
+        if nise_cfg.TEST.ASSIGN_GT_ID and det_id.size > 0:
+            fi.people_ids = torch.tensor(det_id).long()
+            fi.id_boxes = fi.unified_boxes
+            fi.id_assigned = True
+        else:
+            fi.assign_id_task_1_2(Q)
+        if nise_cfg.DEBUG.VISUALIZE:
+            t = threading.Thread(target = fi.visualize, args = ())
+            vis_threads.append(t)
+            t.start()
+        Q.append(fi)
+        pred_frames.append(fi.to_dict())
+        uni_result_to_record.append({img_file_path: fi.unfied_result()})
+
+    with open(json_path, 'w') as f:
+        json.dump({'annolist': pred_frames}, f, indent = 2)
+        debug_print('json saved:', json_path)
+
+    if nise_cfg.DEBUG.SAVE_NMS_TENSOR:
+        torch.save(uni_result_to_record, uni_path_torecord)
+        debug_print('NMSed boxes saved: ', uni_path_torecord)
+    for t in vis_threads:
+        t.join()
+
+
+def run_one_gen_matched_joints(_nise_cfg, est_cfg, i: int, file_name: str, human_detector, joint_estimator,
+                     flow_model):
+    '''
+    Use precomputed unified boxes and joints to do matching.
+    思路，将 gtannorect 和 det annorect 进行匹配，剩下的 det 直接输入 frameitem 作为 det 最后输出
+    但是那些没有 gt 的图无法过滤掉，姑且保留所有的
+    '''
+    torch.cuda.empty_cache()
+    if is_skip_video(nise_cfg, i, file_name):
+        debug_print('Skip', i, file_name)
+        return
+    debug_print(i, file_name)
+    p = PurePosixPath(file_name)
+    json_path = os.path.join(nise_cfg.PATH.JSON_SAVE_DIR, p.parts[-1])
+    uni_path_torecord = os.path.join(nise_cfg.PATH.UNIFIED_JSON_DIR, p.stem + '.pkl')
+
+    with open(file_name, 'r') as f:
+        gt = json.load(f)['annolist']
+    pred_frames = []
+    uni_result_to_record = []
+
+    # load pre computed boxes
+    uni_path = os.path.join(nise_cfg.PATH.UNI_BOX_FOR_TASK_3, p.stem + '.pkl')
+    uni_boxes = torch.load(uni_path)
+
+    pred_json_path = os.path.join(nise_cfg.PATH.PRED_JSON_FOR_TASK_3, p.stem + '.json')
+    with open(pred_json_path, 'r') as f:
+        pred = json.load(f)['annolist']
+    Q = deque(maxlen = nise_cfg.ALG._DEQUE_CAPACITY)
+    vis_threads = []
+
+    for j, frame in enumerate(gt):
+        # All images
+        img_file_path = os.path.join(nise_cfg.PATH.POSETRACK_ROOT, frame['image'][0]['name'])
+        # debug_print(j, img_file_path, indent = 1)
+        gt_annorects = frame['annorect']
+        pred_annorects = pred[j]['annorect']
+        gt_annorects = removeRectsWithoutPoints(gt_annorects)
+        pred_annorects = removeRectsWithoutPoints(pred_annorects)
+        uni_box = uni_boxes[j][img_file_path]
+        if pred_annorects is not None and len(pred_annorects) != 0:
+            if nise_cfg.DEBUG.USE_MATCHED_JOINTS:
+                pred_joints, pred_joints_scores = get_anno_matched_joints(gt_annorects, pred_annorects, nise_cfg)
+            else:
+                pred_joints, pred_joints_scores = get_joints_from_annorects(pred_annorects)
         
+            if pred_joints.numel() != 0:
+                pred_joints = pred_joints[:, :, :2]  # 3d here, only position is needed
+            assert (len(uni_box) == pred_joints.shape[0])
+        else:
+            pred_joints = torch.tensor([])
+            pred_joints_scores = torch.tensor([])
+    
+        fi = FrameItem(nise_cfg, est_cfg, img_file_path, is_first = True, task = -3)
+        fi.detected_boxes = uni_box
+        fi.human_detected = True
+        fi.joints_proped = True  # no prop here is used
+        fi.unify_bbox()
+        fi.joints = pred_joints
+        fi.joints_score = pred_joints_scores
+        fi.joints_detected = True
         fi.assign_id_task_1_2(Q)
         if nise_cfg.DEBUG.VISUALIZE:
             t = threading.Thread(target = fi.visualize, args = ())
@@ -740,11 +1011,11 @@ def oracle_id_filter(_nise_cfg, est_cfg, i: int, file_name: str, human_detector,
         Q.append(fi)
         pred_frames.append(fi.to_dict())
         uni_result_to_record.append({img_file_path: fi.unfied_result()})
-    
+
     with open(json_path, 'w') as f:
-        json.dump({'annolist': pred_frames}, f)
+        json.dump({'annolist': pred_frames}, f, indent = 2)
         debug_print('json saved:', json_path)
-    
+
     if nise_cfg.DEBUG.SAVE_NMS_TENSOR:
         torch.save(uni_result_to_record, uni_path_torecord)
         debug_print('NMSed boxes saved: ', uni_path_torecord)
