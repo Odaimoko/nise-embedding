@@ -1,0 +1,29 @@
+
+TEST:
+  FROM: 0
+  TO: 50
+#  ONLY_TEST:
+#    - 3742_m
+#    - 17839_mpii_relpath_5sec_testsub
+#    -  20880_mpii_relpath_5sec_testsub
+  TASK: -5
+  MODE: valid
+DEBUG:
+  VISUALIZE: False
+  VIS_JOINTS_FULL: False
+  VIS_HUMAN_THRES: 0.0
+  VIS_SINGLE_NO_JOINTS: False
+  VIS_EST_SINGLE: False
+  VIS_BOX: False
+  VIS_PROPED_JOINTS: False
+
+  SAVE_DETECTION_TENSOR: False
+  SAVE_FLOW_TENSOR: False
+  SAVE_DETECTION_S_EST: False
+  SAVE_NMS_TENSOR: false
+  NO_NMS: False
+  USE_DETECTION_RESULT: false
+  USE_FLOW_RESULT: false
+  USE_DET_EST_RESULT: False
+  load_simple_model: False
+  load_human_det_model: True

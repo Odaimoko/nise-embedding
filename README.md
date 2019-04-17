@@ -1,5 +1,7 @@
 
 
+
+
 # nise-embedding
 
 My baseline
@@ -40,12 +42,15 @@ $ diff my_e2e_mask_rcnn_X-101-64x4d-FPN_1x.yaml ../Detectron.pytorch/tron_config
 
 nise-yaml 里 task 的作用
 
-| task | description                                     |
-| ---- | ----------------------------------------------- |
-| 1    | single frame                                    |
-| -1   | flow， 暂时不用                                 |
-| -2   | tracking                                        |
-| -3   | 生成tracking看删除 gt 与 det 匹配之外的 fp 结果 |
+| task | description                               |
+| ---- | ----------------------------------------- |
+| 1    | single frame                              |
+| -1   | flow， 暂时不用                           |
+| -2   | tracking                                  |
+| -3   | 只保留 det 中与 gt 匹配上的，去除 dup box |
+| -4   | 只保留 det 的 joint 中与 gt 匹配上的      |
+| -5   | 用 detectron 的模型生成 feature pyramid   |
+|      |                                           |
 
 
 

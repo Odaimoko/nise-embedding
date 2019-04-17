@@ -654,14 +654,26 @@ def filter_bbox_with_area(boxes, thres = nise_cfg.ALG._AREA_THRES):
     return filtered_box, valid_area_idx
 
 
-def expand_vector_to_tensor(tensor, target_dim = 2):
-    if tensor.numel() == 0:
-        # size is 0
-        return tensor
-    while len(tensor.shape) < target_dim:  # vector
-        tensor = tensor.unsqueeze(0)
-    return tensor
+def get_box_fmap(maskRCNN: Generalized_RCNN_for_posetrack, fmap_info: dict, boxes):
+    '''
+    :param maskRCNN: Model
+    :param fmap_info: list of 4 fmaps
+    :param rois: torch tensor
+    :return:
+    '''
+    fmaps, scale = fmap_info['fmap'], fmap_info['scale']
+    boxes_np = boxes.numpy()
+    rois = np.zeros_like(boxes_np)
+    rois[:, 1:5] = boxes_np[:, 0:4] * scale
+    highest_res_fmap = fmaps[3]
+    if isinstance(maskRCNN, mynn.DataParallel):
+        maskRCNN = list(maskRCNN.children())[0]
+    
+    boxes_fmap = maskRCNN.roi_feature_transform(highest_res_fmap, {'rois': rois})
+    return boxes_fmap
 
+
+# ─── MATCHING ───────────────────────────────────────────────────────────────────
 
 def get_joints_oks_mtx(j1, j2):
     '''
@@ -759,6 +771,15 @@ def make_nise_dirs():
     mkdir(nise_cfg.PATH.UNIFIED_JSON_DIR)
 
 
+def expand_vector_to_tensor(tensor, target_dim = 2):
+    if tensor.numel() == 0:
+        # size is 0
+        return tensor
+    while len(tensor.shape) < target_dim:  # vector
+        tensor = tensor.unsqueeze(0)
+    return tensor
+
+
 def get_type_from_dir(dirpath, type_list):
     files = []
     for f in os.listdir(dirpath):
@@ -825,73 +846,6 @@ def get_pred_joint_scores(annorects):
     scores = torch.tensor(all_scores).float()
     
     return scores
-
-
-def create_yaml_nms(series, thres, original_yaml = 'exp_config/t-flow-debug.yaml'):
-    with open(original_yaml, 'r')as f:
-        c = yaml.load(f)
-    training_start_time = time.strftime("%m_%d-%H_%M", time.localtime())
-    
-    nc = copy.deepcopy(c)
-    nc['TEST']['FROM'] = series[0]
-    nc['TEST']['TO'] = series[1]
-    nc['TEST']['ONLY_TEST'] = []
-    nc['ALG']['UNIFY_NMS_THRES_1'] = thres[0]
-    nc['ALG']['UNIFY_NMS_THRES_2'] = thres[1]
-    long_file_name = 'exp_config/%s-batch-%02d_%02d-nmsthres-%.2f,%.2f.yaml' % (
-        training_start_time, series[0], series[-1], thres[0], thres[1])
-    with open(long_file_name, 'w')as f:
-        yaml.dump(nc, f)
-    return long_file_name
-
-
-def create_yaml_track_filter(series, thres, original_yaml = 'exp_config/t-flow-debug.yaml'):
-    with open(original_yaml, 'r')as f:
-        c = yaml.load(f)
-    training_start_time = time.strftime("%m_%d-%H_%M", time.localtime())
-    
-    nc = copy.deepcopy(c)
-    nc['TEST']['FROM'] = series[0]
-    nc['TEST']['TO'] = series[1]
-    nc['TEST']['ONLY_TEST'] = []
-    nc['ALG']['ASSIGN_BOX_THRES'] = thres[0]
-    nc['ALG']['OUTPUT_JOINT_THRES'] = thres[1]
-    long_file_name = 'exp_config/commi/%s-batch-%02d_%02d-box_joint_thres-%.2f,%.2f.yaml' % (
-        training_start_time, series[0], series[-1], thres[0], thres[1])
-    with open(long_file_name, 'w')as f:
-        yaml.dump(nc, f)
-    return long_file_name
-
-
-def create_yaml_matchedDet__pckh_filter(series, thres, original_yaml = 'exp_config/t-flow-debug.yaml'):
-    with open(original_yaml, 'r')as f:
-        c = yaml.load(f)
-    training_start_time = time.strftime("%m_%d-%H_%M", time.localtime())
-    
-    nc = copy.deepcopy(c)
-    nc['TEST']['FROM'] = series[0]
-    nc['TEST']['TO'] = series[1]
-    nc['TEST']['ONLY_TEST'] = []
-    nc['DEBUG']['HIGH_PCKH_THRES'] = thres
-    long_file_name = 'exp_config/commi/%s-batch-%02d_%02d-hi_pckh_thres-%.2f.yaml' % (
-        training_start_time, series[0], series[-1], thres)
-    with open(long_file_name, 'w')as f:
-        yaml.dump(nc, f)
-    return long_file_name
-
-
-def is_skip_video(nise_cfg, i, file_name):
-    s = True
-    for fn in nise_cfg.TEST.ONLY_TEST:
-        if fn in file_name:  # priority
-            s = False
-            break
-    if nise_cfg.TEST.ONLY_TEST:
-        return s
-    if s == True:
-        if i >= nise_cfg.TEST.FROM and i < nise_cfg.TEST.TO:
-            s = False
-    return s
 
 
 def removeRectsWithoutPoints(rects):
@@ -1205,6 +1159,75 @@ def get_anno_matched_joints(gt_annorects, pred_annorects, _nise_cfg):
     return pred_joints, pred_joints_scores
 
 
+# ─── PARAMETER TUNE ─────────────────────────────────────────────────────────────
+
+def create_yaml_nms(series, thres, original_yaml = 'exp_config/t-flow-debug.yaml'):
+    with open(original_yaml, 'r')as f:
+        c = yaml.load(f)
+    training_start_time = time.strftime("%m_%d-%H_%M", time.localtime())
+    
+    nc = copy.deepcopy(c)
+    nc['TEST']['FROM'] = series[0]
+    nc['TEST']['TO'] = series[1]
+    nc['TEST']['ONLY_TEST'] = []
+    nc['ALG']['UNIFY_NMS_THRES_1'] = thres[0]
+    nc['ALG']['UNIFY_NMS_THRES_2'] = thres[1]
+    long_file_name = 'exp_config/%s-batch-%02d_%02d-nmsthres-%.2f,%.2f.yaml' % (
+        training_start_time, series[0], series[-1], thres[0], thres[1])
+    with open(long_file_name, 'w')as f:
+        yaml.dump(nc, f)
+    return long_file_name
+
+
+def create_yaml_track_filter(series, thres, original_yaml = 'exp_config/t-flow-debug.yaml'):
+    with open(original_yaml, 'r')as f:
+        c = yaml.load(f)
+    training_start_time = time.strftime("%m_%d-%H_%M", time.localtime())
+    
+    nc = copy.deepcopy(c)
+    nc['TEST']['FROM'] = series[0]
+    nc['TEST']['TO'] = series[1]
+    nc['TEST']['ONLY_TEST'] = []
+    nc['ALG']['ASSIGN_BOX_THRES'] = thres[0]
+    nc['ALG']['OUTPUT_JOINT_THRES'] = thres[1]
+    long_file_name = 'exp_config/commi/%s-batch-%02d_%02d-box_joint_thres-%.2f,%.2f.yaml' % (
+        training_start_time, series[0], series[-1], thres[0], thres[1])
+    with open(long_file_name, 'w')as f:
+        yaml.dump(nc, f)
+    return long_file_name
+
+
+def create_yaml_matchedDet__pckh_filter(series, thres, original_yaml = 'exp_config/t-flow-debug.yaml'):
+    with open(original_yaml, 'r')as f:
+        c = yaml.load(f)
+    training_start_time = time.strftime("%m_%d-%H_%M", time.localtime())
+    
+    nc = copy.deepcopy(c)
+    nc['TEST']['FROM'] = series[0]
+    nc['TEST']['TO'] = series[1]
+    nc['TEST']['ONLY_TEST'] = []
+    nc['DEBUG']['HIGH_PCKH_THRES'] = thres
+    long_file_name = 'exp_config/commi/%s-batch-%02d_%02d-hi_pckh_thres-%.2f.yaml' % (
+        training_start_time, series[0], series[-1], thres)
+    with open(long_file_name, 'w')as f:
+        yaml.dump(nc, f)
+    return long_file_name
+
+
+def is_skip_video(nise_cfg, i, file_name):
+    s = True
+    for fn in nise_cfg.TEST.ONLY_TEST:
+        if fn in file_name:  # priority
+            s = False
+            break
+    if nise_cfg.TEST.ONLY_TEST:
+        return s
+    if s == True:
+        if i >= nise_cfg.TEST.FROM and i < nise_cfg.TEST.TO:
+            s = False
+    return s
+
+
 # ─── EVALUATION ──────────────────────────────────────────────────────────
 def voc_eval_single_img(gt_boxes, pred_boxes, iou_thres = nise_cfg.TEST.MAP_TP_IOU_THRES):
     '''
@@ -1319,20 +1342,21 @@ def voc_eval_for_pt(gt_anno_dir, pred_anno_dir = None):
 
 if __name__ == '__main__':
     # # test oks distance
-    num_person = 1
-    # h, w = 576, 1024
-    # person = gen_rand_joints(num_person, h, w)
-    # threesome = torch.cat(
-    #     [person + torch.rand(num_person, 16, 2), gen_rand_joints(1, h, w)])
-    # dist = get_joints_oks_mtx(person, threesome)
-    # print(dist)
-    top_boxes = np.ones([num_person, 4])
-    top_boxes[0, 2] -= .5
-    all_boxes = np.ones([num_person + 1, 4])
-    all_boxes[0] += 0.3
-    all_boxes[1] += 0.5
-    print(top_boxes)
-    print(all_boxes)
-    # iou's input is [x,y,w,h]
-    top_to_all_overlaps = tf_iou(top_boxes, all_boxes, np.zeros(1))
-    print(top_to_all_overlaps)
+    # num_person = 1
+    # # h, w = 576, 1024
+    # # person = gen_rand_joints(num_person, h, w)
+    # # threesome = torch.cat(
+    # #     [person + torch.rand(num_person, 16, 2), gen_rand_joints(1, h, w)])
+    # # dist = get_joints_oks_mtx(person, threesome)
+    # # print(dist)
+    # top_boxes = np.ones([num_person, 4])
+    # top_boxes[0, 2] -= .5
+    # all_boxes = np.ones([num_person + 1, 4])
+    # all_boxes[0] += 0.3
+    # all_boxes[1] += 0.5
+    # print(top_boxes)
+    # print(all_boxes)
+    # # iou's input is [x,y,w,h]
+    # top_to_all_overlaps = tf_iou(top_boxes, all_boxes, np.zeros(1))
+    # print(top_to_all_overlaps)
+    pass

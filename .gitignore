@@ -127,3 +127,4 @@ pre_com/
 unifed_boxes/
 exp_config/12*nmsthres*.yaml
 ~$*.xlsx
+scripts/test-fmap-load.py

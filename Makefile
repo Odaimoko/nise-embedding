@@ -47,6 +47,7 @@ nise_3_matched_detbox_fbj=--nise_config exp_config/3/t-3-matched_detbox-fbj.yaml
 nise_3_matched_detbox_hi=--nise_config exp_config/3/t-3-matched_detbox-hi.yaml
 nise_3_matched_detbox_hi_fj=--nise_config exp_config/3/t-3-matched_detbox-hi-fj.yaml
 
+nise_gen_fmap=--nise_config exp_config/others/gen_fmap.yaml
 
 
 # task2
@@ -127,7 +128,6 @@ t3-sb88-gen_mb+mj:
 
 t3-sb88-gen_mb+mj-gtid:
 	$(nise_main) $(nise_3_gen_mb_mj_gtid)
-
 
 t3-sb88-matched_joints:
 	$(nise_main) $(nise_3_matched_joints)
@@ -216,6 +216,9 @@ t1-hr-90.472-gtbox-debug:
 
 t1-faster-sb-88:
 	$(cuda_0); $(nise_main) $(flow_cfg) $(sb_88) $(tron_cfg_faster) $(nise_1_nmson_faster)
+
+t1-gen_fmap:
+	$(cuda_0); $(nise_main) $(tron_cfg_mask) $(nise_gen_fmap)
 
 
 

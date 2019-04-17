@@ -358,7 +358,8 @@ class NiseConfig:
             self.DETECT_JSON_DIR = 'pre_com/det_json/'
             self.FLOW_JSON_DIR = 'pre_com/flow/'
             self.DET_EST_JSON_DIR = 'pre_com/det_est/'
-            
+            self.FPN_PKL_DIR = 'pre_com/fpn_pkl/'
+
             #  if USE_GT_PEOPLE_BOX, this will be shadowed
             self.UNI_BOX_FOR_TASK_3 = 'unifed_boxes-commi-onlydet/valid_task_1_DETbox_allBox_tfIoU_nmsThres_0.35_0.50'
             self.PRED_JSON_FOR_TASK_3 = 'pred_json-commi-onlydet/valid_task_1_DETbox_allBox_tfIoU_nmsThres_0.35_0.50'
