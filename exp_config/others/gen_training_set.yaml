@@ -26,4 +26,7 @@ DEBUG:
   USE_FLOW_RESULT: false
   USE_DET_EST_RESULT: False
   load_simple_model: False
-  load_human_det_model: True
+  load_human_det_model: False
+
+  USE_HIGH_PCKH_DET_BOX: True
+  HIGH_PCKH_THRES: 0.7
