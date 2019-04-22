@@ -4,7 +4,7 @@ import torch.multiprocessing as mp
 import pprint
 
 # local packages
-import _init_paths
+import init_paths
 from flownet_utils import tools
 from nise_lib.nise_config import nise_cfg, nise_logger, update_nise_config, set_path_from_nise_cfg, update_nise_logger, \
     nise_args

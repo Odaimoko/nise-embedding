@@ -15,6 +15,7 @@ paths = [
     'other_libs/simple_lib/',
     'other_libs/tron_lib/',
     'other_libs/hr_lib/',
+    # 'other_libs/faster_lib/',
 ]
 
 

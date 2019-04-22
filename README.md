@@ -50,6 +50,7 @@ nise-yaml 里 task 的作用
 | -3   | 只保留 det 中与 gt 匹配上的，去除 dup box |
 | -4   | 只保留 det 的 joint 中与 gt 匹配上的      |
 | -5   | 用 detectron 的模型生成 feature pyramid   |
+| 10   | train matching net                        |
 |      |                                           |
 
 

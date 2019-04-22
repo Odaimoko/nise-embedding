@@ -16,7 +16,7 @@ ALG:
 TEST:
   FLIP_TEST: True
   FROM: 0
-  TO: 2
+  TO: 250
 #  ONLY_TEST:
 #    - '14102'
 #    - '00522'
@@ -37,7 +37,7 @@ DEBUG:
   SAVE_NMS_TENSOR: True
 
 
-  USE_DETECTION_RESULT: True
+  USE_DETECTION_RESULT: False
   USE_FLOW_RESULT: False
   USE_DET_EST_RESULT: False
   load_human_det_model: True

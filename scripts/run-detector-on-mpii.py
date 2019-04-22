@@ -10,7 +10,7 @@ import pprint
 import torch.multiprocessing as mp
 
 # local packages
-import _init_paths
+import init_paths
 from nise_lib.nise_config import nise_cfg, nise_logger
 from nise_lib.nise_functions import *
 from nise_lib.nise_debugging_func import *

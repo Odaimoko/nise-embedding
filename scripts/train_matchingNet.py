@@ -22,12 +22,6 @@ if __name__ == '__main__':
     
     mp.set_start_method('spawn', force = True)
     warnings.filterwarnings('ignore')
-    maskRCNN = None
-    # ─── HUMAN DETECT ───────────────────────────────────────────────────────────────
-    human_detect_args = human_detect_parse_args()
-    maskRCNN, human_det_dataset = load_human_detect_model(human_detect_args, tron_cfg)
-    # maskRCNN = nn.DataParallel(maskRCNN)
-    
     # make_nise_dirs()
     
     if nise_cfg.TEST.MODE == 'valid':
@@ -37,10 +31,18 @@ if __name__ == '__main__':
     
     val_dataset = mNetDataset(nise_cfg, nise_cfg.PATH.GT_VAL_ANNOTATION_DIR,
                               nise_cfg.PATH.PRED_JSON_VAL_FOR_TRAINING_MNET,
-                              nise_cfg.PATH.UNI_BOX_VAL_FOR_TRAINING_MNET, False, maskRCNN)
+                              nise_cfg.PATH.UNI_BOX_VAL_FOR_TRAINING_MNET, False)
     
     train_dataset = mNetDataset(nise_cfg, nise_cfg.PATH.GT_TRAIN_ANNOTATION_DIR,
                                 nise_cfg.PATH.PRED_JSON_TRAIN_FOR_TRAINING_MNET,
-                                nise_cfg.PATH.UNI_BOX_TRAIN_FOR_TRAINING_MNET, True, maskRCNN)
-    ala=train_dataset[0]
-    print(ala)
+                                nise_cfg.PATH.UNI_BOX_TRAIN_FOR_TRAINING_MNET, True)
+    # ala = val_dataset[0]
+    # dla = val_dataset[1]
+    # bla = train_dataset[0]
+    # cla=val_dataset[2]
+    
+    for t in range(10):
+        t = val_dataset[t]
+        print(t[1])
+    
+    # print(ala)

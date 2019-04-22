@@ -9,3 +9,6 @@ torchvision
 # for poseval
 shapely
 click
+
+# for detectron
+packaging

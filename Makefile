@@ -20,6 +20,7 @@ eval_gt_debug=-g pred_json-pre-commissioning/val_gt_task3-debugging/
 eval_gt_all=-g pred_json-pre-commissioning/val_gt_task1/
 
 nise_1_nmson=--nise_config exp_config/1/t-nmsON+flip.yaml
+nise_1_nmson_train=--nise_config exp_config/1/t-train-nmsON+flip.yaml
 nise_1_nmson_faster=--nise_config exp_config/1/t-nmsON+flip-faster.yaml
 nise_1_gtbox=--nise_config exp_config/1/t-gt+flip.yaml
 nise_1_gtjoints=--nise_config exp_config/1/t-nmsON+flip-gtjoints.yaml
@@ -48,6 +49,17 @@ nise_3_matched_detbox_hi=--nise_config exp_config/3/t-3-matched_detbox-hi.yaml
 nise_3_matched_detbox_hi_fj=--nise_config exp_config/3/t-3-matched_detbox-hi-fj.yaml
 
 nise_gen_fmap=--nise_config exp_config/others/gen_fmap.yaml
+nise_gen_fmap_train=--nise_config exp_config/others/gen_fmap-train.yaml
+nise_gen_training_set=--nise_config exp_config/others/gen_training_set.yaml
+
+
+train_mNet=--nise_config exp_config/train_mNet/train.yaml
+
+# train
+train-mNet-debug:
+	 python -mpdb scripts/train_matchingNet.py  $(tron_cfg_mask) $(train_mNet)
+train-mNet:
+	 python scripts/train_matchingNet.py  $(tron_cfg_mask) $(train_mNet)
 
 
 # task2
@@ -182,8 +194,12 @@ hr-test-90.472:
 	$(cd_deep);$(cuda_all); python tools/test-pt.py --cfg experiments/pt17/hrnet-coco-w48_384x288-from-freeze-colorrgbFalse.yaml TEST.MODEL_FILE output-freeze/pt17/pose_hrnet/hrnet-coco-w48_384x288-from-freeze-colorrgbFalse/pt17-epoch-20-90.47223881413662
 
 # task1
+t1-sb-88-train:
+	$(cuda_0); $(nise_main) $(flow_cfg) $(sb_88) $(tron_cfg_mask) $(nise_1_nmson_train)
 t1-sb-88:
 	$(cuda_all); $(nise_main) $(flow_cfg) $(sb_88) $(tron_cfg_mask) $(nise_1_nmson)
+t1-sb-88-debug:
+	$(cuda_0); python -mpdb scripts/run.py $(flow_cfg) $(sb_88) $(tron_cfg_mask) $(nise_1_nmson_debug)
 t1-sb-88-gtbox:
 	$(cuda_all); $(nise_main) $(flow_cfg) $(sb_88) $(tron_cfg_mask) $(nise_1_gtbox)
 
@@ -197,8 +213,6 @@ t1-hr-90.544:
 t1-hr-90.472:
 	$(cuda_all); $(nise_main) $(flow_cfg) $(hr_90472) $(tron_cfg_mask) $(nise_1_nmson)
 
-t1-sb-88-debug:
-	$(cuda_all); $(nise_main) $(flow_cfg) $(sb_88) $(tron_cfg_mask) $(nise_1_nmson_debug)
 
 t1-hr-90.544-debug:
 	$(cuda_all); $(nise_main) $(flow_cfg) $(hrcfg) $(tron_cfg_mask) $(nise_1_nmson_debug)
@@ -219,7 +233,11 @@ t1-faster-sb-88:
 
 t1-gen_fmap:
 	$(cuda_0); $(nise_main) $(tron_cfg_mask) $(nise_gen_fmap)
+t1-gen_fmap-train:
+	$(cuda_0); $(nise_main) $(tron_cfg_mask) $(nise_gen_fmap_train)
 
+t1-gen_training_set:
+	$(cuda_0); $(nise_main) $(tron_cfg_mask) $(nise_gen_training_set)
 
 
 #commissioning
