@@ -20,13 +20,12 @@ from nise_lib.nise_functions import *
 
 
 class mNetDataset(Dataset):
-    def __init__(self, _nise_cfg, gt_anno_dir, pred_anno_dir, uni_box_dir, is_train, maskRCNN):
+    def __init__(self, _nise_cfg, gt_anno_dir, pred_anno_dir, uni_box_dir, is_train):
         self.cfg = _nise_cfg
         self.gt_anno_dir = gt_anno_dir
         self.pred_anno_dir = pred_anno_dir
         self.uni_box_dir = uni_box_dir
         self.is_train = is_train
-        self.maskRCNN = maskRCNN
         
         dataset_path = self.cfg.PATH.PRE_COMPUTED_TRAIN_DATASET if is_train \
             else self.cfg.PATH.PRE_COMPUTED_VAL_DATASET
@@ -147,7 +146,7 @@ class mNetDataset(Dataset):
         debug_print("Total num_pos vs num_neg", total_num_pos, total_num_neg, lvl = Levels.STATUS)
         return db
     
-    def gen_joints_hmap(self, fmap_size, hmap_size, joints, joint_scores):
+    def gen_joints_hmap(self, union_box_size, hmap_size, joints, joint_scores):
         '''
         All op is writen in numpy, and converted to tensor at the end
             # copy from simple-baseline
@@ -158,10 +157,8 @@ class mNetDataset(Dataset):
         :param joint_scores: (15,)
         :return:
         '''
-        # 暂时不对，这个是对应到原图，应该对应到 union box大小
+        # TODO：暂时不对，这个是对应到原图，应该对应到 union box大小
         num_joints = joints.shape[0]
-        H, W, fmap_scale, im_scale = fmap_size
-        ori_img_size = np.array([H, W]) / fmap_scale / im_scale
         
         target = np.zeros((num_joints,
                            hmap_size[1],
@@ -169,7 +166,7 @@ class mNetDataset(Dataset):
                           dtype = np.float32)  # nj x w x h ???
         target_weight = joint_scores  # not visibility since all is visible
         
-        feat_stride = ori_img_size / hmap_size
+        feat_stride = union_box_size / hmap_size
         tmp_size = self.cfg.MODEL.JOINT_MAP_SIGMA * 3
         for joint_id in range(num_joints):
             # joint coord is [x,y]
@@ -188,7 +185,7 @@ class mNetDataset(Dataset):
             x = np.arange(0, size, 1, np.float32)  # (13,)
             y = x[:, np.newaxis]  # (1,13)
             x0 = y0 = size // 2  # 6
-            # The gaussian is not normalized, we want the center value to equal 1
+            # should multiply score
             g = np.exp(- ((x - x0) ** 2 + (y - y0) ** 2) / (2 * self.cfg.MODEL.JOINT_MAP_SIGMA ** 2))
             
             # Usable gaussian range
@@ -201,11 +198,11 @@ class mNetDataset(Dataset):
             v = target_weight[joint_id]
             if v > 0.5:
                 target[joint_id][img_y[0]:img_y[1], img_x[0]:img_x[1]] = \
-                    g[g_y[0]:g_y[1], g_x[0]:g_x[1]]
-        return to_torch(target)
+                    g[g_y[0]:g_y[1], g_x[0]:g_x[1]] * v
+        return to_torch(target).cuda()
     
+    @log_time('Getting item...')
     def __getitem__(self, idx):
-        assert self.maskRCNN is not None, "maskRCNN must be instantiated."
         anno_file_names = sorted(get_type_from_dir(self.gt_anno_dir, ['.json']))
         db_rec = copy.deepcopy(self.db[idx])
         file_name = anno_file_names[db_rec['video_file']]
@@ -214,14 +211,13 @@ class mNetDataset(Dataset):
         p_box_idx = db_rec['p_box_idx']
         c_box_idx = db_rec['c_box_idx']
         is_same = db_rec['is_same']
-        
+        debug_print(file_name, prev_j, cur_j)
         with open(file_name, 'r') as f:
             gt = json.load(f)['annolist']
         p = PurePosixPath(file_name)
         # load boxes
         prev_img_file_path = os.path.join(self.cfg.PATH.POSETRACK_ROOT, gt[prev_j]['image'][0]['name'])
         cur_img_file_path = os.path.join(self.cfg.PATH.POSETRACK_ROOT, gt[cur_j]['image'][0]['name'])
-        
         uni_boxes = torch.load(os.path.join(self.uni_box_dir, p.stem + '.pkl'))
         p_box = uni_boxes[prev_j][prev_img_file_path][p_box_idx]
         c_box = uni_boxes[cur_j][cur_img_file_path][c_box_idx]
@@ -232,11 +228,15 @@ class mNetDataset(Dataset):
             max(p_box[3], c_box[3]),
         ]])
         assert (u.shape[0] == 1 and u.shape[1] == 4)
-        # get union feature map
+        # TODO get union feature map
+        u_trick = eval('torch.' + str(u))  # trick, if use u directly, the result will be zero and idk why
+        # but if print u out and use printed string to generate a new tensor, we'll have the correct result
         p_fmap_pkl = torch.load(os.path.join(self.cfg.PATH.FPN_PKL_DIR, p.stem + '-%03d' % (prev_j) + '.pkl'))
         c_fmap_pkl = torch.load(os.path.join(self.cfg.PATH.FPN_PKL_DIR, p.stem + '-%03d' % (cur_j) + '.pkl'))
-        p_fmap = get_box_fmap(self.maskRCNN, p_fmap_pkl, u)
-        c_fmap = get_box_fmap(self.maskRCNN, c_fmap_pkl, u)
+        p_fmap = get_box_fmap(p_fmap_pkl, u_trick)
+        c_fmap = get_box_fmap(c_fmap_pkl, u_trick)
+        debug_print(p_fmap.sum(), c_fmap.sum(), lvl = Levels.ERROR)
+        debug_print(get_box_fmap(p_fmap_pkl, u).sum(), get_box_fmap(c_fmap_pkl, u).sum(), lvl = Levels.ERROR)
         # load joints
         with open(os.path.join(self.pred_anno_dir, p.stem + '.json'), 'r') as f:
             pred = json.load(f)['annolist']
@@ -247,17 +247,27 @@ class mNetDataset(Dataset):
         # gen joints hmap
         fmaps, im_scale = p_fmap_pkl['fmap'], p_fmap_pkl['scale']
         highest_res_fmap = fmaps[3]
-        C, H, W = highest_res_fmap.shape
-        C, mH, mW = p_fmap.shape
-        fmap_size = [H, W, 0.25, im_scale]
+        bs, C, H, W = highest_res_fmap.shape
+        bs, C, mH, mW = p_fmap.shape
         
-        p_joints_hmap = self.gen_joints_hmap(fmap_size,
+        u_box_size = torch.tensor([
+            u[0, 3] - u[0, 1],  # H
+            u[0, 2] - u[0, 0],  # W
+        ]).numpy()
+        # convert joint pos to be relative to union box
+        p_joints[:, 0] -= u[0, 0]
+        c_joints[:, 0] -= u[0, 0]
+        p_joints[:, 1] -= u[0, 1]
+        c_joints[:, 1] -= u[0, 1]
+        
+        p_joints_hmap = self.gen_joints_hmap(u_box_size,
                                              (mH, mW),
                                              p_joints, p_joints_scores)
-        c_joints_hmap = self.gen_joints_hmap(fmap_size,
+        c_joints_hmap = self.gen_joints_hmap(u_box_size,
                                              (mH, mW),
                                              c_joints, c_joints_scores)
         # assemble
-        inputs = torch.stack(p_fmap, c_fmap, p_joints_hmap, c_joints_hmap)
+        
+        inputs = torch.cat([p_fmap.squeeze(), c_fmap.squeeze(), p_joints_hmap, c_joints_hmap])
         
         return [inputs, is_same]
