@@ -270,7 +270,8 @@ class NiseConfig:
             self.FEATURE_MAP_RESOLUTION = 96
             # copy from simple-baseline
             self.JOINT_MAP_SIGMA = 2
-    
+            self.JOINT_MAP_SCALE = 255
+
     class _DEBUG:
         def __init__(self):
             self.PRINT = True
