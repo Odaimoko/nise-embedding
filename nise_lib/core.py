@@ -17,8 +17,6 @@ from hr_lib.config import cfg as hr_cfg
 from tron_lib.core.test_for_pt import _get_blobs
 from tron_lib.core.config import cfg as tron_cfg
 
-from nise.nise_lib.nise_functions import get_anno_match
-
 
 def nise_pred_task_1_debug(gt_anno_dir, hunam_detector, joint_estimator, flow_model):
     # PREDICT ON TRAINING SET OF 2017
@@ -42,11 +40,9 @@ def nise_pred_task_1_debug(gt_anno_dir, hunam_detector, joint_estimator, flow_mo
             gt = json.load(f)['annolist']
         pred_frames = []
         detect_result_to_record = []
-        fpn_result_to_record = []
         flow_result_to_record = []
-        est_result_to_record = []
         uni_result_to_record = []
-        
+
         # with
         if nise_cfg.DEBUG.USE_DETECTION_RESULT:
             with open(det_path, 'r')as f:
@@ -54,7 +50,7 @@ def nise_pred_task_1_debug(gt_anno_dir, hunam_detector, joint_estimator, flow_mo
             assert len(detection_result_from_json) == len(gt)
         else:
             detection_result_from_json = {}
-        
+
         Q = deque(maxlen = nise_cfg.ALG._DEQUE_CAPACITY)
         for j, frame in enumerate(gt):
             # frame dict_keys(['image', 'annorect', 'imgnum', 'is_labeled', 'ignore_regions'])
@@ -73,30 +69,29 @@ def nise_pred_task_1_debug(gt_anno_dir, hunam_detector, joint_estimator, flow_mo
                 detect_box = torch.tensor(detect_box)
             else:
                 detect_box = None
-            
+
             fi = FrameItem(nise_cfg, est_cfg, img_file_path, 1, True, gt_joints)
             fi.detect_human(hunam_detector, detect_box)
             if nise_cfg.DEBUG.SAVE_FLOW_TENSOR:
                 fi.gen_flow(flow_model, None if j == 0 else Q[-1].flow_img)
             fi.unify_bbox()
             fi.est_joints(joint_estimator)
-            
+
             if nise_cfg.DEBUG.VISUALIZE:
                 fi.assign_id_task_1_2(Q)
                 threading.Thread(target = fi.visualize, args = ()).start()
-            
+
             detect_result_to_record.append({img_file_path: fi.detect_results()})
             flow_result_to_record.append({img_file_path: fi.flow_result()})
-            est_result_to_record.append({img_file_path: fi.det_est_result()})
             uni_result_to_record.append({img_file_path: fi.unfied_result()})
-            
+
             pred_frames.append(fi.to_dict())
             Q.append(fi)
-        
+
         with open(json_path, 'w') as f:
             json.dump({'annolist': pred_frames}, f, indent = 2)
             debug_print('pt eval json saved:', json_path)
-        
+
         if nise_cfg.DEBUG.SAVE_DETECTION_TENSOR:
             with open(det_path, 'w') as f:
                 json.dump(detect_result_to_record, f, indent = 2)
@@ -104,64 +99,9 @@ def nise_pred_task_1_debug(gt_anno_dir, hunam_detector, joint_estimator, flow_mo
         if nise_cfg.DEBUG.SAVE_FLOW_TENSOR:
             torch.save(flow_result_to_record, flow_path)
             debug_print('Flow saved', flow_path)
-        if nise_cfg.DEBUG.SAVE_DETECTION_S_EST:
-            torch.save(est_result_to_record, est_path)
-            debug_print(
-                'Detection\'s estimation saved', est_path
-            )
         if nise_cfg.DEBUG.SAVE_NMS_TENSOR:
             torch.save(uni_result_to_record, uni_path)
             debug_print('NMSed boxes saved: ', uni_path)
-
-
-def gen_fpn(gt_anno_dir, hunam_detector, joint_estimator, flow_model):
-    # PREDICT ON TRAINING SET OF 2017
-    anno_file_names = get_type_from_dir(gt_anno_dir, ['.json'])
-    anno_file_names = sorted(anno_file_names)
-    mkdir(nise_cfg.PATH.JSON_SAVE_DIR)
-    mkdir(nise_cfg.PATH.DETECT_JSON_DIR)
-    mkdir(nise_cfg.PATH.FPN_PKL_DIR)
-    
-    for i, file_name in enumerate(anno_file_names):
-        debug_print(i, file_name)
-        if is_skip_video(nise_cfg, i, file_name):
-            continue
-        p = PurePosixPath(file_name)
-        with open(file_name, 'r') as f:
-            gt = json.load(f)['annolist']
-        for j, frame in enumerate(gt):
-            # To save - image_scale, fmap
-            fpn_path = os.path.join(nise_cfg.PATH.FPN_PKL_DIR, p.stem + '-%03d' % (j) + '.pkl')
-            img_file_path = frame['image'][0]['name']
-            img_file_path = os.path.join(nise_cfg.PATH.POSETRACK_ROOT, img_file_path)
-            debug_print(j, img_file_path, indent = 1)
-
-            original_img = cv2.imread(img_file_path)  # with original size
-            ori_img_h, ori_img_w, _ = original_img.shape
-
-            inputs, im_scale = _get_blobs(original_img, None, tron_cfg.TEST.SCALE, tron_cfg.TEST.MAX_SIZE)
-            if tron_cfg.DEDUP_BOXES > 0 and not tron_cfg.MODEL.FASTER_RCNN:
-                # No use but serves to check whether the yaml file is loaded to cfg
-                v = inputs['rois']
-
-            inputs['data'] = [torch.from_numpy(inputs['data'])]
-            inputs['im_info'] = [torch.from_numpy(inputs['im_info'])]
-            return_dict = hunam_detector(**inputs)
-            torch.save({
-                    'fmap':return_dict['blob_conv'],
-                    'scale':im_scale,
-                }, fpn_path)
-            debug_print('fpn_result_to_record saved: ', fpn_path)
-            
-            # usage
-            # maskRCNN, human_det_dataset = load_human_detect_model(human_detect_args, tron_cfg)
-            #
-            # t = torch.load('pre_com/fpn_pkl/000342_mpii_relpath_5sec_testsub-001.pkl')
-            # fmap_boxes = get_box_fmap(maskRCNN, t, torch.tensor([
-            #     [0, 4, 254, 211, 0.5],
-            #     [10, 44, 554, 261, 0.5],
-            #     [10, 44, 554, 211, 0.5],
-            # ]))
 
 
 def nise_pred_task_2_debug(gt_anno_dir, hunam_detector, joint_estimator, flow_model):
@@ -343,6 +283,56 @@ def nise_pred_task_3_debug(gt_anno_dir):
             debug_print('json saved:', json_path)
 
 
+def gen_fpn(gt_anno_dir, hunam_detector, joint_estimator, flow_model):
+    # PREDICT ON TRAINING SET OF 2017
+    anno_file_names = get_type_from_dir(gt_anno_dir, ['.json'])
+    anno_file_names = sorted(anno_file_names)
+    mkdir(nise_cfg.PATH.JSON_SAVE_DIR)
+    mkdir(nise_cfg.PATH.DETECT_JSON_DIR)
+    mkdir(nise_cfg.PATH.FPN_PKL_DIR)
+    
+    for i, file_name in enumerate(anno_file_names):
+        debug_print(i, file_name)
+        if is_skip_video(nise_cfg, i, file_name):
+            continue
+        p = PurePosixPath(file_name)
+        with open(file_name, 'r') as f:
+            gt = json.load(f)['annolist']
+        for j, frame in enumerate(gt):
+            # To save - image_scale, fmap
+            fpn_path = os.path.join(nise_cfg.PATH.FPN_PKL_DIR, p.stem + '-%03d' % (j) + '.pkl')
+            img_file_path = frame['image'][0]['name']
+            img_file_path = os.path.join(nise_cfg.PATH.POSETRACK_ROOT, img_file_path)
+            debug_print(j, img_file_path, indent = 1)
+            
+            original_img = cv2.imread(img_file_path)  # with original size
+            ori_img_h, ori_img_w, _ = original_img.shape
+            
+            inputs, im_scale = _get_blobs(original_img, None, tron_cfg.TEST.SCALE, tron_cfg.TEST.MAX_SIZE)
+            if tron_cfg.DEDUP_BOXES > 0 and not tron_cfg.MODEL.FASTER_RCNN:
+                # No use but serves to check whether the yaml file is loaded to cfg
+                v = inputs['rois']
+            
+            inputs['data'] = [torch.from_numpy(inputs['data'])]
+            inputs['im_info'] = [torch.from_numpy(inputs['im_info'])]
+            return_dict = hunam_detector(**inputs)
+            torch.save({
+                'fmap': return_dict['blob_conv'],
+                'scale': im_scale,
+            }, fpn_path)
+            debug_print('fpn_result_to_record saved: ', fpn_path)
+            
+            # usage
+            # maskRCNN, human_det_dataset = load_human_detect_model(human_detect_args, tron_cfg)
+            #
+            # t = torch.load('pre_com/fpn_pkl/000342_mpii_relpath_5sec_testsub-001.pkl')
+            # fmap_boxes = get_box_fmap(maskRCNN, t, torch.tensor([
+            #     [0, 4, 254, 211, 0.5],
+            #     [10, 44, 554, 261, 0.5],
+            #     [10, 44, 554, 211, 0.5],
+            # ]))
+
+
 def gen_matched_box_debug(gt_anno_dir):
     # PREDICT ON TRAINING SET OF 2017
     anno_file_names = get_type_from_dir(gt_anno_dir, ['.json'])
@@ -386,7 +376,7 @@ def gen_matched_box_debug(gt_anno_dir):
             gt_annorects = removeRectsWithoutPoints(gt_annorects)
             pred_annorects = removeRectsWithoutPoints(pred_annorects)
             
-            prToGT, det_id = get_anno_match(gt_annorects, pred_annorects, nise_cfg)
+            prToGT, det_id = find_det_for_gt_and_assignID(gt_annorects, pred_annorects, nise_cfg)
             # if det_id.size > 0:            print(det_id)
             
             uni_box = uni_boxes[j][img_file_path]
@@ -531,6 +521,138 @@ def gen_matched_joints(gt_anno_dir):
             t.join()
 
 
+# ─── GENERATE TRAINING DATA FOR MATCHING NET ────────────────────────────────────
+
+def calc_movement_videos(gt_anno_dir):
+    np.set_printoptions(suppress = True)
+    
+    def get_joints_from_annorects(annorects):
+        # Different from that in nise_functions.
+        #  when a person has no joints anno, I change the operation to skip a person to init all joints to 0
+        # This serves to fit the number of track_id and don't filter any joints
+        all_joints = []
+        for i in range(len(annorects)):
+            rect = annorects[i]
+            
+            joints_3d = np.zeros((nise_cfg.DATA.num_joints, 3), dtype = np.float)
+            points = rect['annopoints']
+            # there's a person, but no annotations
+            if points is None or len(points) <= 0:  # 因为有些图并没有annotation
+                points = []
+            else:
+                points = points[0]['point']
+            for pt_info in points:
+                # analogous to coco.py  # matlab based on 1.
+                i_pt = pt_info['id'][0]
+                if 'is_visible' in pt_info.keys():  # from gt
+                    joints_3d[i_pt, 0] = pt_info['x'][0] - 1 if pt_info['x'][0] > 0 else 0
+                    joints_3d[i_pt, 1] = pt_info['y'][0] - 1 if pt_info['y'][0] > 0 else 0
+                else:  # from pred
+                    joints_3d[i_pt, 0] = pt_info['x'][0] if pt_info['x'][0] >= 0 else 0
+                    joints_3d[i_pt, 1] = pt_info['y'][0] if pt_info['y'][0] >= 0 else 0
+                
+                joints_3d[i_pt, 2] = 1
+            all_joints.append(joints_3d)
+        
+        joints = torch.tensor(all_joints).float()
+        joints = expand_vector_to_tensor(joints)
+        return joints
+    
+    def calc_velo(prev_joints, cur_joints):
+        #  num_person x 15 x 3 (x,y,visible)
+        average_velo = np.zeros([prev_joints.shape[0], cur_joints.shape[0], 3])  # joint velo and variance
+        for i in range(prev_joints.shape[0]):
+            for j in range(cur_joints.shape[0]):
+                p = prev_joints[i, :, :2]
+                c = cur_joints[j, :, :2]
+                joint_vis = prev_joints[i, :, 2] * cur_joints[j, :, 2]
+                
+                mean_p = p[prev_joints[i, :, 2] == 1].mean(0) \
+                    if len(p[prev_joints[i, :, 2] == 1]) > 0 else np.zeros(2)
+                mean_c = c[cur_joints[j, :, 2] == 1].mean(0) \
+                    if len(p[cur_joints[j, :, 2] == 1]) > 0 else np.zeros(2)
+                average_velo[i, j, 0] = np.sqrt(((mean_p - mean_c) ** 2).sum())  # movement of center
+                
+                dis_to_mean_p = np.sqrt(((p - mean_p) ** 2).sum(1))
+                dis_to_mean_c = np.sqrt(((c - mean_c) ** 2).sum(1))
+                var_p = dis_to_mean_p[prev_joints[i, :, 2] == 1].mean(0) \
+                    if len(p[prev_joints[i, :, 2] == 1]) > 0 else 0
+                var_c = dis_to_mean_c[cur_joints[j, :, 2] == 1].mean(0) \
+                    if len(p[cur_joints[j, :, 2] == 1]) > 0 else 0
+                average_velo[i, j, 1] = var_c - var_p  # change of scale
+                
+                squared_diff = (p - c) * (p - c)
+                dist = np.sqrt(squared_diff.sum(1))
+                avg_displacement = dist.mean()
+                average_velo[i, j, 2] = avg_displacement  # average movement of single joints
+        
+        return average_velo
+    
+    anno_file_names = get_type_from_dir(gt_anno_dir, ['.json'])
+    anno_file_names = sorted(anno_file_names)
+    mkdir(nise_cfg.PATH.JSON_SAVE_DIR)
+    mkdir(nise_cfg.PATH.DETECT_JSON_DIR)
+    mkdir(nise_cfg.PATH.FPN_PKL_DIR)
+    
+    mean_average_velos = []
+    
+    for i, file_name in enumerate(anno_file_names):
+        if is_skip_video(nise_cfg, i, file_name):
+            debug_print('Skip', i, file_name)
+            continue
+        debug_print(i, file_name)
+        p = PurePosixPath(file_name)
+        with open(file_name, 'r') as f:
+            gt = json.load(f)['annolist']
+        
+        average_velos = []
+        num_of_frames = 0
+        prev_anno = None  # init
+        # Do across frame association and calc movement
+        prev_labeled = False
+        for j, frame in enumerate(gt):
+            if prev_labeled:
+                time_elapsed = 1
+            else:
+                time_elapsed = 4
+            prev_labeled = frame['is_labeled'][0]  # record if this is labeled
+            if frame['is_labeled'][0]:
+                # debug_print(j, 'labeled:\t', prev_labeled)
+                anno = frame['annorect']
+                num_of_frames += 1
+                
+                if prev_anno:
+                    gt_joints = get_joints_from_annorects(anno)
+                    prev_joints = get_joints_from_annorects(prev_anno)
+                    
+                    average_velo_mat = calc_velo(prev_joints.numpy(), gt_joints.numpy()) / time_elapsed
+                    
+                    gt_id = np.array([t['track_id'][0] for t in anno])
+                    prev_id = np.array([t['track_id'][0] for t in prev_anno])
+                    
+                    dis_mat = -np.abs(
+                        np.expand_dims(prev_id, 1) - np.expand_dims(gt_id, 0)
+                    )
+                    inds = get_matching_indices(dis_mat)
+                    average_velo_vec = []
+                    for i, ind in enumerate(inds):
+                        (idxPr, idxGT) = ind
+                        average_velo_vec.append(average_velo_mat[idxGT, idxPr])
+                    if average_velo_vec:
+                        average_velos.append(np.array(average_velo_vec).mean(0))
+                prev_anno = anno
+        
+        debug_print(num_of_frames)
+        average_velos = np.stack(average_velos)
+        velo_vid = average_velos.mean(0)
+        
+        mean_average_velos.append(velo_vid)
+    mean_average_velos = np.stack(mean_average_velos)
+    for fn, mav in zip(anno_file_names, mean_average_velos):
+        debug_print(fn, mav)
+
+
+
 def init_gm(_gm, n_cfg, ):
     global locks, nise_cfg
     locks = _gm
@@ -668,11 +790,6 @@ def run_one_video_task_1(_nise_cfg, est_cfg, i: int, file_name: str, human_detec
     if nise_cfg.DEBUG.SAVE_FLOW_TENSOR:
         torch.save(flow_result_to_record, flow_path)
         debug_print('Flow saved', flow_path)
-    if nise_cfg.DEBUG.SAVE_DETECTION_S_EST:
-        torch.save(est_result_to_record, est_path)
-        debug_print(
-            'Detection\'s estimation saved', est_path
-        )
     if nise_cfg.DEBUG.SAVE_NMS_TENSOR:
         torch.save(uni_result_to_record, uni_path)
         debug_print('NMSed boxes saved: ', uni_path)
@@ -929,7 +1046,7 @@ def oracle_id_filter(_nise_cfg, est_cfg, i: int, file_name: str, human_detector,
         gt_annorects = removeRectsWithoutPoints(gt_annorects)
         pred_annorects = removeRectsWithoutPoints(pred_annorects)
         
-        prToGT, det_id = get_anno_match(gt_annorects, pred_annorects, nise_cfg)
+        prToGT, det_id = find_det_for_gt_and_assignID(gt_annorects, pred_annorects, nise_cfg)
         # if det_id.size > 0:            print(det_id)
         
         uni_box = uni_boxes[j][img_file_path]
