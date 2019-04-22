@@ -673,31 +673,13 @@ def get_box_fmap(fmap_info: dict, boxes):
     spatial_scale = [.5 ** (5 - i) for i in range(len(fmaps))]
     blobs_in = highest_res_fmap
     
-    # MULTI LEVEL
-    if isinstance(blobs_in, list):
-        # FPN case: add RoIFeatureTransform to each FPN level
-        device_id = blobs_in[0].get_device()
-        k_max = 5  # coarsest level of pyramid
-        k_min = 2  # finest level of pyramid
-        assert len(blobs_in) == k_max - k_min + 1
-        bl_out_list = []
-        for lvl in range(k_min, k_max + 1):
-            bl_in = blobs_in[k_max - lvl]  # blobs_in is in reversed order
-            sc = spatial_scale[k_max - lvl]  # in reversed order
-            if len(rois):
-                rois_cuda = torch.from_numpy(rois).cuda(device_id)
-                xform_out = RoIAlignFunction(map_res, map_res, sc, 2)(bl_in, rois_cuda)
-                bl_out_list.append(xform_out)
-        
-        boxes_fmap = torch.cat(bl_out_list, dim = 0)
-    # SINGLE LEVEL
-    else:
-        device_id = blobs_in.get_device()
-        rois_cuda = torch.from_numpy(rois).cuda(device_id)
-        debug_print(boxes, boxes.shape, lvl = Levels.CRITICAL)
-        debug_print(rois, lvl = Levels.CRITICAL)
-        boxes_fmap = RoIAlignFunction(map_res, map_res, .25, 2)(highest_res_fmap, rois_cuda)
-        # boxes_fmap = RoIPoolFunction(map_res, map_res, .25)(blobs_in, rois_cuda)
+    device_id = blobs_in.get_device()
+    rois_cuda = torch.from_numpy(rois).cuda(device_id)
+    rois_cuda = rois_cuda.int().float()
+    
+    debug_print(boxes, boxes.shape, lvl = Levels.ERROR)
+    debug_print(rois, lvl = Levels.CRITICAL)
+    boxes_fmap = RoIAlignFunction(map_res, map_res, .25, 2)(highest_res_fmap, rois_cuda)
     
     return boxes_fmap
 
