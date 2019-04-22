@@ -157,7 +157,7 @@ class mNetDataset(Dataset):
         :param joint_scores: (15,)
         :return:
         '''
-        # TODO：暂时不对，这个是对应到原图，应该对应到 union box大小
+        # 2TODO：暂时不对，这个是对应到原图，应该对应到 union box大小
         num_joints = joints.shape[0]
         
         target = np.zeros((num_joints,
@@ -167,13 +167,13 @@ class mNetDataset(Dataset):
         target_weight = joint_scores  # not visibility since all is visible
         
         feat_stride = union_box_size / hmap_size
-        tmp_size = self.cfg.MODEL.JOINT_MAP_SIGMA * 3
+        radius = self.cfg.MODEL.JOINT_MAP_SIGMA * 3
         for joint_id in range(num_joints):
             # joint coord is [x,y]
             mu_x = int(joints[joint_id][0] / feat_stride[0] + 0.5)
             mu_y = int(joints[joint_id][1] / feat_stride[1] + 0.5)
-            ul = [int(mu_x - tmp_size), int(mu_y - tmp_size)]
-            br = [int(mu_x + tmp_size + 1), int(mu_y + tmp_size + 1)]
+            ul = [int(mu_x - radius), int(mu_y - radius)]  # upper left
+            br = [int(mu_x + radius + 1), int(mu_y + radius + 1)]  # bottom right
             
             if ul[0] >= hmap_size[0] or ul[1] >= hmap_size[1] \
                     or br[0] < 0 or br[1] < 0:
@@ -181,11 +181,10 @@ class mNetDataset(Dataset):
                 target_weight[joint_id] = 0
                 continue
             
-            size = 2 * tmp_size + 1  # 13
+            size = 2 * radius + 1  # 13
             x = np.arange(0, size, 1, np.float32)  # (13,)
             y = x[:, np.newaxis]  # (1,13)
             x0 = y0 = size // 2  # 6
-            # should multiply score
             g = np.exp(- ((x - x0) ** 2 + (y - y0) ** 2) / (2 * self.cfg.MODEL.JOINT_MAP_SIGMA ** 2))
             
             # Usable gaussian range
@@ -196,9 +195,9 @@ class mNetDataset(Dataset):
             img_y = max(0, ul[1]), min(br[1], hmap_size[1])
             
             v = target_weight[joint_id]
-            if v > 0.5:
-                target[joint_id][img_y[0]:img_y[1], img_x[0]:img_x[1]] = \
-                    g[g_y[0]:g_y[1], g_x[0]:g_x[1]] * v
+            target[joint_id][img_y[0]:img_y[1], img_x[0]:img_x[1]] = \
+                g[g_y[0]:g_y[1], g_x[0]:g_x[1]] * v * self.cfg.TRAIN.JOINT_MAP_SCALE
+        
         return to_torch(target).cuda()
     
     @log_time('Getting item...')
@@ -222,21 +221,18 @@ class mNetDataset(Dataset):
         p_box = uni_boxes[prev_j][prev_img_file_path][p_box_idx]
         c_box = uni_boxes[cur_j][cur_img_file_path][c_box_idx]
         u = torch.tensor([[
-            min(p_box[0], c_box[0]),
-            min(p_box[1], c_box[1]),
-            max(p_box[2], c_box[2]),
-            max(p_box[3], c_box[3]),
+            min(p_box[0], c_box[0]).int().type(torch.float32),
+            min(p_box[1], c_box[1]).int().type(torch.float32),
+            max(p_box[2], c_box[2]).int().type(torch.float32),
+            max(p_box[3], c_box[3]).int().type(torch.float32),
         ]])
         assert (u.shape[0] == 1 and u.shape[1] == 4)
-        # TODO get union feature map
-        u_trick = eval('torch.' + str(u))  # trick, if use u directly, the result will be zero and idk why
-        # but if print u out and use printed string to generate a new tensor, we'll have the correct result
+        # get union feature map
         p_fmap_pkl = torch.load(os.path.join(self.cfg.PATH.FPN_PKL_DIR, p.stem + '-%03d' % (prev_j) + '.pkl'))
         c_fmap_pkl = torch.load(os.path.join(self.cfg.PATH.FPN_PKL_DIR, p.stem + '-%03d' % (cur_j) + '.pkl'))
-        p_fmap = get_box_fmap(p_fmap_pkl, u_trick)
-        c_fmap = get_box_fmap(c_fmap_pkl, u_trick)
+        p_fmap = get_box_fmap(p_fmap_pkl, u)
+        c_fmap = get_box_fmap(c_fmap_pkl, u)
         debug_print(p_fmap.sum(), c_fmap.sum(), lvl = Levels.ERROR)
-        debug_print(get_box_fmap(p_fmap_pkl, u).sum(), get_box_fmap(c_fmap_pkl, u).sum(), lvl = Levels.ERROR)
         # load joints
         with open(os.path.join(self.pred_anno_dir, p.stem + '.json'), 'r') as f:
             pred = json.load(f)['annolist']
@@ -245,20 +241,25 @@ class mNetDataset(Dataset):
         pred_joints, pred_joints_scores = get_joints_from_annorects(pred[cur_j]['annorect'])
         c_joints, c_joints_scores = pred_joints[c_box_idx, :, :2], pred_joints_scores[c_box_idx, :]
         # gen joints hmap
-        fmaps, im_scale = p_fmap_pkl['fmap'], p_fmap_pkl['scale']
-        highest_res_fmap = fmaps[3]
-        bs, C, H, W = highest_res_fmap.shape
         bs, C, mH, mW = p_fmap.shape
         
         u_box_size = torch.tensor([
             u[0, 3] - u[0, 1],  # H
             u[0, 2] - u[0, 0],  # W
         ]).numpy()
-        # convert joint pos to be relative to union box
-        p_joints[:, 0] -= u[0, 0]
-        c_joints[:, 0] -= u[0, 0]
-        p_joints[:, 1] -= u[0, 1]
-        c_joints[:, 1] -= u[0, 1]
+        
+        # convert joint pos to be relative to union box, some may be less than 0
+        def get_union_box_based_joints(u, joints):
+            box_size = u_box_size.tolist()
+            joints = torch.tensor(joints)
+            joints[:, 0] -= u[0, 0]
+            joints[:, 1] -= u[0, 1]
+            joints[:, 0].clamp_(0, box_size[1])
+            joints[:, 1].clamp_(0, box_size[0])
+            return joints
+        
+        p_joints = get_union_box_based_joints(u, p_joints)
+        c_joints = get_union_box_based_joints(u, c_joints)
         
         p_joints_hmap = self.gen_joints_hmap(u_box_size,
                                              (mH, mW),
@@ -267,6 +268,7 @@ class mNetDataset(Dataset):
                                              (mH, mW),
                                              c_joints, c_joints_scores)
         # assemble
+        
         
         inputs = torch.cat([p_fmap.squeeze(), c_fmap.squeeze(), p_joints_hmap, c_joints_hmap])
         
