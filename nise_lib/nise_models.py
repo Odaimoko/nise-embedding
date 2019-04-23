@@ -11,7 +11,6 @@ from pathlib import PurePosixPath
 from nise_utils.imutils import *
 from plogs.logutils import Levels
 
-from nise_config import nise_cfg
 
 
 def make_conv_layer():
@@ -41,10 +40,10 @@ class Conv3x3(nn.Module):
         return out
 
 
-class DiscriminateNet(nn.Module):
+class MatchingNet(nn.Module):
     
     def __init__(self, channels):
-        super(DiscriminateNet, self).__init__()
+        super(MatchingNet, self).__init__()
         self.conv1 = Conv3x3(channels, channels)  # out 48x48
         self.pool1 = nn.MaxPool2d(3)  # out 16x16
         self.conv2 = Conv3x3(channels, channels)  # out 8x8
@@ -64,6 +63,6 @@ class DiscriminateNet(nn.Module):
 
 if __name__ == '__main__':
     rand_mat = torch.rand(100, 542, 96, 96)
-    dnet = DiscriminateNet(542)
+    dnet = MatchingNet(542)
     o = dnet(rand_mat)
     print(o.shape)

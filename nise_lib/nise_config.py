@@ -224,15 +224,29 @@ def update_nise_logger(ploger, nise_cfg, cfg_name):
 class NiseConfig:
     class _TRAIN:
         def __init__(self):
-            # self.START_EPOCH = 0
-            # self.END_EPOCH = 40
-            # self.batch_size = 32
             # self.lr = 2.5e-4
             # self.weight_decay = .05
             # lr_gamma = 0.05
             # lr_dec_epoch = list(range(6, 40, 6))
             
             self.neg_pos_ratio = 3
+            
+            # MODEL
+            self.JOINT_MAP_SIGMA = 2
+            self.JOINT_MAP_SCALE = 255
+            self.IOU_THERS_FOR_NEGATIVE = 0
+            
+            # TRAINING PARAM
+            self.BATCH_SIZE_PER_GPU = 10
+            self.WORKERS = 0
+            self.SHUFFLE = False
+            self.LR = 0.01
+            self.LR_FACTOR = 0.1  # how much to reduce
+            
+            # TRAINING PROCESS
+            self.START_EPOCH = 0
+            self.END_EPOCH = 0
+            self.PRINT_FREQ = 1
     
     class _DATA:
         def __init__(self):
@@ -266,12 +280,10 @@ class NiseConfig:
             self.simple_model = '/home/zhangxt/disk/posetrack/simple-baseline-pytorch/output-pt17-fromfreeze/pt17/pose_resnet_152/res152-coco-384x288/pt17-epoch-20-90.04363546829477'
             self.det_model = ''
             
+            self.INPUTS_CHANNELS = 542
             self.FEATURE_MAP_CHANNELS = 256
             self.FEATURE_MAP_RESOLUTION = 96
-            # copy from simple-baseline
-            self.JOINT_MAP_SIGMA = 2
-            self.JOINT_MAP_SCALE = 255
-
+    
     class _DEBUG:
         def __init__(self):
             self.PRINT = True
@@ -373,14 +385,15 @@ class NiseConfig:
             self.UNI_BOX_FOR_TASK_3 = 'unifed_boxes-commi-onlydet/valid_task_1_DETbox_allBox_tfIoU_nmsThres_0.35_0.50'
             self.PRED_JSON_FOR_TASK_3 = 'pred_json-commi-onlydet/valid_task_1_DETbox_allBox_tfIoU_nmsThres_0.35_0.50'
             
+            self.PRE_COMPUTED_VAL_DATASET = 'pre_com/dataset_pkl/valid_dataset_for_mnet.pkl'
+            self.PRE_COMPUTED_TRAIN_DATASET = 'pre_com/dataset_pkl/train_dataset_for_mnet.pkl'
+            self.PRED_JSON_VAL_FOR_TRAINING_MNET = ''
+            self.UNI_BOX_VAL_FOR_TRAINING_MNET = ''
+            self.PRED_JSON_TRAIN_FOR_TRAINING_MNET = ''
+            self.UNI_BOX_TRAIN_FOR_TRAINING_MNET = ''
             
-            self.PRE_COMPUTED_VAL_DATASET='pre_com/dataset_pkl/valid_dataset_for_mnet.pkl'
-            self.PRE_COMPUTED_TRAIN_DATASET='pre_com/dataset_pkl/train_dataset_for_mnet.pkl'
-            self.PRED_JSON_VAL_FOR_TRAINING_MNET=''
-            self.UNI_BOX_VAL_FOR_TRAINING_MNET=''
-            self.PRED_JSON_TRAIN_FOR_TRAINING_MNET=''
-            self.UNI_BOX_TRAIN_FOR_TRAINING_MNET=''
-
+            self.MODEL_SAVE_DIR_FOR_TRAINING_MNET = 'mnet_output/'
+    
     class _TEST:
         def __init__(self):
             self.TASK = 1  # default
@@ -404,6 +417,9 @@ class NiseConfig:
             self.ONLY_TEST = []
             
             self.MAP_TP_IOU_THRES = .5
+            
+            # for training matching net
+            self.BATCH_SIZE_PER_GPU = 24
     
     def __init__(self):
         #

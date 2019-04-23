@@ -8,21 +8,39 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import copy
-import logging
-import cv2
+from sklearn.metrics import precision_recall_curve, average_precision_score, roc_auc_score, roc_curve
 import numpy as np
 import torch
 import pprint
 from torch.utils.data import Dataset
 from collections import OrderedDict
 from nise_lib.nise_functions import *
+from nise_lib.nise_config import nise_cfg, nise_logger
+from collections import OrderedDict
+
+
+class LimitedSizeDict(OrderedDict):
+    def __init__(self, *args, **kwds):
+        self.size_limit = kwds.pop("size_limit", None)
+        OrderedDict.__init__(self, *args, **kwds)
+        self._check_size_limit()
+    
+    def __setitem__(self, key, value):
+        OrderedDict.__setitem__(self, key, value)
+        self._check_size_limit()
+    
+    def _check_size_limit(self):
+        if self.size_limit is not None:
+            while len(self) > self.size_limit:
+                it = self.popitem(last = False)[0]
+                # debug_print("Popped",)
 
 
 class mNetDataset(Dataset):
     def __init__(self, _nise_cfg, gt_anno_dir, pred_anno_dir, uni_box_dir, is_train):
         self.cfg = _nise_cfg
         self.gt_anno_dir = gt_anno_dir
+        self.anno_file_names = sorted(get_type_from_dir(self.gt_anno_dir, ['.json']))
         self.pred_anno_dir = pred_anno_dir
         self.uni_box_dir = uni_box_dir
         self.is_train = is_train
@@ -35,9 +53,7 @@ class mNetDataset(Dataset):
         else:
             self.db = self._get_db()
         debug_print("Loaded %d entries." % len(self), lvl = Levels.SUCCESS)
-    
-    def evaluate(self, cfg, preds, output_dir, *args, **kwargs):
-        raise NotImplementedError
+        self.cached_pkl = LimitedSizeDict(size_limit = 30)
     
     def __len__(self, ):
         return len(self.db)
@@ -46,16 +62,14 @@ class mNetDataset(Dataset):
     def _get_db(self):
         np.set_printoptions(suppress = True)
         
-        anno_file_names = get_type_from_dir(self.gt_anno_dir, ['.json'])
-        anno_file_names = sorted(anno_file_names)
         db = []
         total_num_pos = 0
         total_num_neg = 0
-        for vid, file_name in enumerate(anno_file_names):
+        for vid, file_name in enumerate(self.anno_file_names[:5]):
             if is_skip_video(nise_cfg, vid, file_name):
-                debug_print('Skip', vid, file_name)
+                # debug_print('Skip', vid, file_name)
                 continue
-            debug_print(vid, file_name)
+            # debug_print(vid, file_name)
             with open(file_name, 'r') as f:
                 gt = json.load(f)['annolist']
             
@@ -68,11 +82,11 @@ class mNetDataset(Dataset):
             prev_j = -1
             for j, frame in enumerate(gt):
                 
-                # debug_print(cur_id, lvl = Levels.STATUS)
+                # # debug_print(cur_id, lvl = Levels.STATUS)
                 
                 if frame['is_labeled'][0]:
                     img_file_path = os.path.join(nise_cfg.PATH.POSETRACK_ROOT, frame['image'][0]['name'])
-                    # debug_print(j, img_file_path)
+                    # # debug_print(j, img_file_path)
                     gt_annorects = frame['annorect']
                     pred_annorects = pred[j]['annorect']
                     gt_annorects = removeRectsWithoutPoints(gt_annorects)
@@ -87,18 +101,27 @@ class mNetDataset(Dataset):
                             ] for i in prev_id if i != -1
                         }
                         pos_entries = []
+                        uni_boxes = torch.load(os.path.join(self.uni_box_dir, ppp.stem + '.pkl'))
+                        prev_img_file_path = os.path.join(self.cfg.PATH.POSETRACK_ROOT, gt[prev_j]['image'][0]['name'])
+                        cur_img_file_path = os.path.join(self.cfg.PATH.POSETRACK_ROOT, gt[j]['image'][0]['name'])
                         for k, v in matched.items():
                             # positive samples
                             p, c = v
                             for p_idx in p:
                                 for c_idx in c:
-                                    entry = OrderedDict({
-                                        'video_file': vid,
-                                        'prev_frame': prev_j, 'cur_frame': j,  # index of images in video seq
-                                        'p_box_idx': p_idx, 'c_box_idx': c_idx,  # index of box in annotations
-                                        'is_same': True
-                                    })
-                                    pos_entries.append(entry)
+                                    p_box = uni_boxes[prev_j][prev_img_file_path][p_idx]
+                                    c_box = uni_boxes[j][cur_img_file_path][c_idx]
+                                    p_box = expand_vector_to_tensor(p_box[:4])
+                                    c_box = expand_vector_to_tensor(c_box[:4])
+                                    iou = tf_iou(p_box.numpy(), c_box.numpy())
+                                    if iou[0, 0] > self.cfg.TRAIN.IOU_THERS_FOR_NEGATIVE:
+                                        entry = OrderedDict({
+                                            'video_file': vid,
+                                            'prev_frame': prev_j, 'cur_frame': j,  # index of images in video seq
+                                            'p_box_idx': p_idx, 'c_box_idx': c_idx,  # index of box in annotations
+                                            'is_same': True
+                                        })
+                                        pos_entries.append(entry)
                         db.extend(pos_entries)
                         
                         num_pos = len(pos_entries)
@@ -117,22 +140,34 @@ class mNetDataset(Dataset):
                                 p2, c2 = matched[k2]
                                 for p_idx in p1:
                                     for c_idx in c2:
-                                        entry = OrderedDict({
-                                            'video_file': vid,
-                                            'prev_frame': prev_j, 'cur_frame': j,  # index of images in video seq
-                                            'p_box_idx': p_idx, 'c_box_idx': c_idx,  # index of box in annotations
-                                            'is_same': False
-                                        })
-                                        neg_entries.append(entry)
+                                        p_box = uni_boxes[prev_j][prev_img_file_path][p_idx]
+                                        c_box = uni_boxes[j][cur_img_file_path][c_idx]
+                                        p_box = expand_vector_to_tensor(p_box[:4])
+                                        c_box = expand_vector_to_tensor(c_box[:4])
+                                        iou = tf_iou(p_box.numpy(), c_box.numpy())
+                                        if iou[0, 0] > self.cfg.TRAIN.IOU_THERS_FOR_NEGATIVE:
+                                            entry = OrderedDict({
+                                                'video_file': vid,
+                                                'prev_frame': prev_j, 'cur_frame': j,  # index of images in video seq
+                                                'p_box_idx': p_idx, 'c_box_idx': c_idx,  # index of box in annotations
+                                                'is_same': False
+                                            })
+                                            neg_entries.append(entry)
                                 for p_idx in p2:
                                     for c_idx in c1:
-                                        entry = OrderedDict({
-                                            'video_file': vid,
-                                            'prev_frame': prev_j, 'cur_frame': j,  # index of images in video seq
-                                            'p_box_idx': p_idx, 'c_box_idx': c_idx,  # index of box in annotations
-                                            'is_same': False
-                                        })
-                                        neg_entries.append(entry)
+                                        p_box = uni_boxes[prev_j][prev_img_file_path][p_idx]
+                                        c_box = uni_boxes[j][cur_img_file_path][c_idx]
+                                        p_box = expand_vector_to_tensor(p_box[:4])
+                                        c_box = expand_vector_to_tensor(c_box[:4])
+                                        iou = tf_iou(p_box.numpy(), c_box.numpy())
+                                        if iou[0, 0] > self.cfg.TRAIN.IOU_THERS_FOR_NEGATIVE:
+                                            entry = OrderedDict({
+                                                'video_file': vid,
+                                                'prev_frame': prev_j, 'cur_frame': j,  # index of images in video seq
+                                                'p_box_idx': p_idx, 'c_box_idx': c_idx,  # index of box in annotations
+                                                'is_same': False
+                                            })
+                                            neg_entries.append(entry)
                             skip += 1
                         
                         db.extend(neg_entries)
@@ -143,15 +178,23 @@ class mNetDataset(Dataset):
                         total_num_neg += num_neg
                     prev_j = j
                     prev_id = cur_id
-        debug_print("Total num_pos vs num_neg", total_num_pos, total_num_neg, lvl = Levels.STATUS)
+        # debug_print("Total num_pos vs num_neg", total_num_pos, total_num_neg, lvl = Levels.STATUS)
+        
+        dataset_path = self.cfg.PATH.PRE_COMPUTED_TRAIN_DATASET if self.is_train \
+            else self.cfg.PATH.PRE_COMPUTED_VAL_DATASET
+        if not os.path.exists(dataset_path):
+            # debug_print("Saving cached dataset...", dataset_path)
+            self.db = torch.save(db, dataset_path)
+            # debug_print('Done.')
         return db
     
+    # @log_time("Getting joints heatmap...")
     def gen_joints_hmap(self, union_box_size, hmap_size, joints, joint_scores):
         '''
         All op is writen in numpy, and converted to tensor at the end
             # copy from simple-baseline
 
-        :param fmap_size: H,W,fmap_scale,im_scale
+        :param union_box_size: W,H
         :param hmap_size: (h,w)
         :param joints: 15x2
         :param joint_scores: (15,)
@@ -167,7 +210,7 @@ class mNetDataset(Dataset):
         target_weight = joint_scores  # not visibility since all is visible
         
         feat_stride = union_box_size / hmap_size
-        radius = self.cfg.MODEL.JOINT_MAP_SIGMA * 3
+        radius = self.cfg.TRAIN.JOINT_MAP_SIGMA * 3
         for joint_id in range(num_joints):
             # joint coord is [x,y]
             mu_x = int(joints[joint_id][0] / feat_stride[0] + 0.5)
@@ -175,17 +218,11 @@ class mNetDataset(Dataset):
             ul = [int(mu_x - radius), int(mu_y - radius)]  # upper left
             br = [int(mu_x + radius + 1), int(mu_y + radius + 1)]  # bottom right
             
-            if ul[0] >= hmap_size[0] or ul[1] >= hmap_size[1] \
-                    or br[0] < 0 or br[1] < 0:
-                # If not, just return the image as is
-                target_weight[joint_id] = 0
-                continue
-            
             size = 2 * radius + 1  # 13
             x = np.arange(0, size, 1, np.float32)  # (13,)
             y = x[:, np.newaxis]  # (1,13)
             x0 = y0 = size // 2  # 6
-            g = np.exp(- ((x - x0) ** 2 + (y - y0) ** 2) / (2 * self.cfg.MODEL.JOINT_MAP_SIGMA ** 2))
+            g = np.exp(- ((x - x0) ** 2 + (y - y0) ** 2) / (2 * radius ** 2))
             
             # Usable gaussian range
             g_x = max(0, -ul[0]), min(br[0], hmap_size[0]) - ul[0]
@@ -196,25 +233,33 @@ class mNetDataset(Dataset):
             
             v = target_weight[joint_id]
             target[joint_id][img_y[0]:img_y[1], img_x[0]:img_x[1]] = \
-                g[g_y[0]:g_y[1], g_x[0]:g_x[1]] * v * self.cfg.TRAIN.JOINT_MAP_SCALE
-        
-        return to_torch(target).cuda()
+                g[g_y[0]:g_y[1], g_x[0]:g_x[1]] * self.cfg.TRAIN.JOINT_MAP_SCALE \
+                * v
+            # cv2.imwrite('joint_%2d.jpg' % joint_id, target[joint_id])
+        return to_torch(target)
     
     @log_time('Getting item...')
     def __getitem__(self, idx):
-        anno_file_names = sorted(get_type_from_dir(self.gt_anno_dir, ['.json']))
-        db_rec = copy.deepcopy(self.db[idx])
-        file_name = anno_file_names[db_rec['video_file']]
+        def load_pkl(pkl_file_name):
+            if not pkl_file_name in self.cached_pkl.keys():
+                self.cached_pkl[pkl_file_name] = torch.load(pkl_file_name)
+            return self.cached_pkl[pkl_file_name]
+        
+        # debug_print('Get', idx)
+        db_rec = self.db[idx]
+        file_name = self.anno_file_names[db_rec['video_file']]
         prev_j = db_rec['prev_frame']
         cur_j = db_rec['cur_frame']
         p_box_idx = db_rec['p_box_idx']
         c_box_idx = db_rec['c_box_idx']
         is_same = db_rec['is_same']
-        debug_print(file_name, prev_j, cur_j)
+        start = time.time()
         with open(file_name, 'r') as f:
             gt = json.load(f)['annolist']
+        # debug_print('load gt json', time.time() - start)
         p = PurePosixPath(file_name)
         # load boxes
+        start = time.time()
         prev_img_file_path = os.path.join(self.cfg.PATH.POSETRACK_ROOT, gt[prev_j]['image'][0]['name'])
         cur_img_file_path = os.path.join(self.cfg.PATH.POSETRACK_ROOT, gt[cur_j]['image'][0]['name'])
         uni_boxes = torch.load(os.path.join(self.uni_box_dir, p.stem + '.pkl'))
@@ -226,37 +271,46 @@ class mNetDataset(Dataset):
             max(p_box[2], c_box[2]).int().type(torch.float32),
             max(p_box[3], c_box[3]).int().type(torch.float32),
         ]])
+        # debug_print('load boxes', time.time() - start)
+        
         assert (u.shape[0] == 1 and u.shape[1] == 4)
         # get union feature map
-        p_fmap_pkl = torch.load(os.path.join(self.cfg.PATH.FPN_PKL_DIR, p.stem + '-%03d' % (prev_j) + '.pkl'))
-        c_fmap_pkl = torch.load(os.path.join(self.cfg.PATH.FPN_PKL_DIR, p.stem + '-%03d' % (cur_j) + '.pkl'))
+        start = time.time()
+        p_pkl_file_name = os.path.join(self.cfg.PATH.FPN_PKL_DIR, p.stem + '-%03d' % (prev_j) + '.pkl')
+        c_pkl_file_name = os.path.join(self.cfg.PATH.FPN_PKL_DIR, p.stem + '-%03d' % (cur_j) + '.pkl')
+        
+        p_fmap_pkl = load_pkl(p_pkl_file_name)
+        c_fmap_pkl = load_pkl(c_pkl_file_name)
+        # debug_print('load fmap', time.time() - start)
+        start = time.time()
         p_fmap = get_box_fmap(p_fmap_pkl, u)
         c_fmap = get_box_fmap(c_fmap_pkl, u)
-        debug_print(p_fmap.sum(), c_fmap.sum(), lvl = Levels.ERROR)
+        # debug_print('get fmap', time.time() - start)
         # load joints
+        start = time.time()
         with open(os.path.join(self.pred_anno_dir, p.stem + '.json'), 'r') as f:
             pred = json.load(f)['annolist']
+        # debug_print('load pred jsond', time.time() - start)
+        start = time.time()
         pred_joints, pred_joints_scores = get_joints_from_annorects(pred[prev_j]['annorect'])
         p_joints, p_joints_scores = pred_joints[p_box_idx, :, :2], pred_joints_scores[p_box_idx, :]
         pred_joints, pred_joints_scores = get_joints_from_annorects(pred[cur_j]['annorect'])
         c_joints, c_joints_scores = pred_joints[c_box_idx, :, :2], pred_joints_scores[c_box_idx, :]
         # gen joints hmap
         bs, C, mH, mW = p_fmap.shape
-        
         u_box_size = torch.tensor([
-            u[0, 3] - u[0, 1],  # H
             u[0, 2] - u[0, 0],  # W
+            u[0, 3] - u[0, 1],  # H
         ]).numpy()
         
         # convert joint pos to be relative to union box, some may be less than 0
         def get_union_box_based_joints(u, joints):
             box_size = u_box_size.tolist()
-            joints = torch.tensor(joints)
             joints[:, 0] -= u[0, 0]
             joints[:, 1] -= u[0, 1]
-            joints[:, 0].clamp_(0, box_size[1])
-            joints[:, 1].clamp_(0, box_size[0])
-            return joints
+            joints[:, 0].clamp_(0, box_size[0])
+            joints[:, 1].clamp_(0, box_size[1])
+            return joints  # no matter copy or not
         
         p_joints = get_union_box_based_joints(u, p_joints)
         c_joints = get_union_box_based_joints(u, c_joints)
@@ -267,9 +321,31 @@ class mNetDataset(Dataset):
         c_joints_hmap = self.gen_joints_hmap(u_box_size,
                                              (mH, mW),
                                              c_joints, c_joints_scores)
+        # debug_print('get joints hemap ', time.time() - start)
         # assemble
+        start = time.time()
+        inputs = torch.cat([p_fmap.squeeze(), c_fmap.squeeze(), p_joints_hmap, c_joints_hmap]).to(
+            torch.device('cuda:1'))
+        # debug_print('assemble ', time.time() - start)
         
+        return [inputs, torch.tensor([is_same]).float()]
+    
+    @log_time('Evaluating model...')
+    def eval(self, pred_scores: np.ndarray):
+        '''
         
-        inputs = torch.cat([p_fmap.squeeze(), c_fmap.squeeze(), p_joints_hmap, c_joints_hmap])
+        :param pred_scores: not ordered
+        :return:
+        '''
         
-        return [inputs, is_same]
+        gt = np.array([i['is_same'] for i in self.db])
+        assert len(gt) == len(pred_scores)
+        
+        prec, rec, pr_thres = precision_recall_curve(gt, pred_scores)
+        ap = average_precision_score(gt, pred_scores)
+        fpr, tpr, roc_thres = roc_curve(gt, pred_scores)
+        auc = roc_auc_score(gt, pred_scores)
+        return {
+            'prec': prec, 'rec': rec, "pr_thres": pr_thres, 'ap': ap,
+            'fpr': fpr, 'tpr': tpr, 'roc_thres': roc_thres, 'auc': auc
+        }

@@ -1,5 +1,6 @@
 cuda_all=export CUDA_VISIBLE_DEVICES=0,1,2,3
 cuda_0=export CUDA_VISIBLE_DEVICES=0
+cuda_1=export CUDA_VISIBLE_DEVICES=1
 mot_pypath=export PYTHONPATH=../poseval/py-motmetrics:$${PYTHONPATH}
 nise_main=python scripts/run.py
 
@@ -57,9 +58,9 @@ train_mNet=--nise_config exp_config/train_mNet/train.yaml
 
 # train
 train-mNet-debug:
-	 python -mpdb scripts/train_matchingNet.py  $(tron_cfg_mask) $(train_mNet)
+	 $(cuda_1);python -mpdb scripts/train_matchingNet.py  $(tron_cfg_mask) $(train_mNet)
 train-mNet:
-	 python scripts/train_matchingNet.py  $(tron_cfg_mask) $(train_mNet)
+	 $(cuda_all);python scripts/train_matchingNet.py  $(tron_cfg_mask) $(train_mNet)
 
 
 # task2

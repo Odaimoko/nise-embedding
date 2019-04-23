@@ -654,6 +654,7 @@ def filter_bbox_with_area(boxes, thres = nise_cfg.ALG._AREA_THRES):
     return filtered_box, valid_area_idx
 
 
+# @log_time('Getting box_fmap...')
 def get_box_fmap(fmap_info: dict, boxes):
     '''
     :param maskRCNN: Model
@@ -670,18 +671,17 @@ def get_box_fmap(fmap_info: dict, boxes):
     rois[:, 1:] = boxes_np[:, 0:4] * scale
     highest_res_fmap = fmaps[3]
     map_res = nise_cfg.MODEL.FEATURE_MAP_RESOLUTION
-    spatial_scale = [.5 ** (5 - i) for i in range(len(fmaps))]
     blobs_in = highest_res_fmap
     
     device_id = blobs_in.get_device()
     rois_cuda = torch.from_numpy(rois).cuda(device_id)
     rois_cuda = rois_cuda.int().float()
     
-    debug_print(boxes, boxes.shape, lvl = Levels.ERROR)
-    debug_print(rois, lvl = Levels.CRITICAL)
+    # debug_print(boxes, boxes.shape, lvl = Levels.ERROR)
+    # debug_print(rois, lvl = Levels.CRITICAL)
     boxes_fmap = RoIAlignFunction(map_res, map_res, .25, 2)(highest_res_fmap, rois_cuda)
     
-    return boxes_fmap
+    return boxes_fmap.cpu()
 
 
 # ─── MATCHING ───────────────────────────────────────────────────────────────────
