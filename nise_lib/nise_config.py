@@ -238,7 +238,7 @@ class NiseConfig:
             
             # TRAINING PARAM
             self.BATCH_SIZE_PER_GPU = 8
-            self.WORKERS = 0
+            self.WORKERS = 4
             self.SHUFFLE = True
             self.LR = 0.01
             self.LR_FACTOR = 0.1  # how much to reduce
@@ -421,7 +421,7 @@ class NiseConfig:
             self.MAP_TP_IOU_THRES = .5
             
             # for training matching net
-            self.BATCH_SIZE_PER_GPU = 24
+            self.BATCH_SIZE_PER_GPU = 4
     
     def __init__(self):
         #

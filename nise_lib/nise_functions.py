@@ -663,21 +663,23 @@ def get_box_fmap(fmap_info: dict, boxes):
     :return:
     '''
     from tron_lib.modeling.roi_xfrom.roi_align.functions.roi_align import RoIAlignFunction
-    
+    from tron_lib.model.roi_pooling.functions.roi_pool import RoIPoolFunction
+
     fmap, scale = fmap_info['fmap'], fmap_info['scale'][0]
     boxes_np = boxes.numpy()
-    rois = np.zeros([boxes_np.shape[0], 5])
-    rois[:, 1:] = boxes_np[:, 0:4] * scale
+    rois_np = np.zeros([boxes_np.shape[0], 5])
+    rois_np[:, 1:] = boxes_np[:, 0:4] * scale
     map_res = nise_cfg.MODEL.FEATURE_MAP_RESOLUTION
     
-    rois_cuda = torch.from_numpy(rois).cuda()
-    rois_cuda = rois_cuda.int().float()
+    rois = torch.from_numpy(rois_np)
+    rois = rois.int().float()
     
     # debug_print(boxes, boxes.shape, lvl = Levels.ERROR)
     # debug_print(rois, lvl = Levels.CRITICAL)
-    boxes_fmap = RoIAlignFunction(map_res, map_res, .25, 2)(fmap.cuda(), rois_cuda)
-    
-    return boxes_fmap.cpu()
+    # boxes_fmap = RoIAlignFunction(map_res, map_res, .25, 2)(fmap.cuda(), rois)
+    boxes_fmap = RoIPoolFunction(map_res, map_res, .25)(fmap, rois)
+
+    return boxes_fmap
 
 
 # ─── MATCHING ───────────────────────────────────────────────────────────────────

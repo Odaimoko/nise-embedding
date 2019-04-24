@@ -87,7 +87,7 @@ class mNetDataset(Dataset):
         db = []
         total_num_pos = 0
         total_num_neg = 0
-        for vid, file_name in enumerate(self.anno_file_names[:3]):
+        for vid, file_name in enumerate(self.anno_file_names[:10]):
             if is_skip_video(nise_cfg, vid, file_name):
                 # debug_print('Skip', vid, file_name)
                 continue
@@ -175,56 +175,8 @@ class mNetDataset(Dataset):
             # debug_print('Done.')
         return db
     
-    # @log_time("Getting joints heatmap...")
-    def gen_joints_hmap(self, union_box_size, hmap_size, joints, joint_scores):
-        '''
-        All op is writen in numpy, and converted to tensor at the end
-            # copy from simple-baseline
-
-        :param union_box_size: W,H
-        :param hmap_size: (h,w)
-        :param joints: 15x2
-        :param joint_scores: (15,)
-        :return:
-        '''
-        num_joints = joints.shape[0]
-        
-        target = np.zeros((num_joints,
-                           hmap_size[1],
-                           hmap_size[0]),
-                          dtype = np.float32)  # nj x w x h ???
-        target_weight = joint_scores  # not visibility since all is visible
-        
-        feat_stride = union_box_size / hmap_size
-        radius = self.cfg.TRAIN.JOINT_MAP_SIGMA * 3
-        for joint_id in range(num_joints):
-            # joint coord is [x,y]
-            mu_x = int(joints[joint_id][0] / feat_stride[0] + 0.5)
-            mu_y = int(joints[joint_id][1] / feat_stride[1] + 0.5)
-            ul = [int(mu_x - radius), int(mu_y - radius)]  # upper left
-            br = [int(mu_x + radius + 1), int(mu_y + radius + 1)]  # bottom right
-            
-            size = 2 * radius + 1  # 13
-            x = np.arange(0, size, 1, np.float32)  # (13,)
-            y = x[:, np.newaxis]  # (1,13)
-            x0 = y0 = size // 2  # 6
-            g = np.exp(- ((x - x0) ** 2 + (y - y0) ** 2) / (2 * radius ** 2))
-            
-            # Usable gaussian range
-            g_x = max(0, -ul[0]), min(br[0], hmap_size[0]) - ul[0]
-            g_y = max(0, -ul[1]), min(br[1], hmap_size[1]) - ul[1]
-            # Image range
-            img_x = max(0, ul[0]), min(br[0], hmap_size[0])
-            img_y = max(0, ul[1]), min(br[1], hmap_size[1])
-            
-            v = target_weight[joint_id]
-            target[joint_id][img_y[0]:img_y[1], img_x[0]:img_x[1]] = \
-                g[g_y[0]:g_y[1], g_x[0]:g_x[1]] * self.cfg.TRAIN.JOINT_MAP_SCALE \
-                * v
-            # cv2.imwrite('joint_%2d.jpg' % joint_id, target[joint_id])
-        return to_torch(target)
     
-    # @log_time('Getting item...')
+    @log_time('Getting item...')
     def __getitem__(self, idx):
         def load_pkl(pkl_file_name):
             if not pkl_file_name in self.cached_pkl.keys():
@@ -342,7 +294,56 @@ class mNetDataset(Dataset):
         inputs = torch.cat([p_fmap.squeeze(), c_fmap.squeeze(), p_joints_hmap, c_joints_hmap])
         
         return inputs
+
+    # @log_time("Getting joints heatmap...")
+    def gen_joints_hmap(self, union_box_size, hmap_size, joints, joint_scores):
+        '''
+        All op is writen in numpy, and converted to tensor at the end
+            # copy from simple-baseline
+
+        :param union_box_size: W,H
+        :param hmap_size: (h,w)
+        :param joints: 15x2
+        :param joint_scores: (15,)
+        :return:
+        '''
+        num_joints = joints.shape[0]
+
+        target = np.zeros((num_joints,
+                           hmap_size[1],
+                           hmap_size[0]),
+                          dtype = np.float32)  # nj x w x h ???
+        target_weight = joint_scores  # not visibility since all is visible
+
+        feat_stride = union_box_size / hmap_size
+        radius = self.cfg.TRAIN.JOINT_MAP_SIGMA * 3
+        for joint_id in range(num_joints):
+            # joint coord is [x,y]
+            mu_x = int(joints[joint_id][0] / feat_stride[0] + 0.5)
+            mu_y = int(joints[joint_id][1] / feat_stride[1] + 0.5)
+            ul = [int(mu_x - radius), int(mu_y - radius)]  # upper left
+            br = [int(mu_x + radius + 1), int(mu_y + radius + 1)]  # bottom right
     
+            size = 2 * radius + 1  # 13
+            x = np.arange(0, size, 1, np.float32)  # (13,)
+            y = x[:, np.newaxis]  # (1,13)
+            x0 = y0 = size // 2  # 6
+            g = np.exp(- ((x - x0) ** 2 + (y - y0) ** 2) / (2 * radius ** 2))
+    
+            # Usable gaussian range
+            g_x = max(0, -ul[0]), min(br[0], hmap_size[0]) - ul[0]
+            g_y = max(0, -ul[1]), min(br[1], hmap_size[1]) - ul[1]
+            # Image range
+            img_x = max(0, ul[0]), min(br[0], hmap_size[0])
+            img_y = max(0, ul[1]), min(br[1], hmap_size[1])
+    
+            v = target_weight[joint_id]
+            target[joint_id][img_y[0]:img_y[1], img_x[0]:img_x[1]] = \
+                g[g_y[0]:g_y[1], g_x[0]:g_x[1]] * self.cfg.TRAIN.JOINT_MAP_SCALE \
+                * v
+            # cv2.imwrite('joint_%2d.jpg' % joint_id, target[joint_id])
+        return to_torch(target)
+
     @log_time('Evaluating model...')
     def eval(self, gt: np.ndarray, pred_scores: np.ndarray):
         '''

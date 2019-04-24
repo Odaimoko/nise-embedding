@@ -42,7 +42,7 @@ def nise_pred_task_1_debug(gt_anno_dir, hunam_detector, joint_estimator, flow_mo
         detect_result_to_record = []
         flow_result_to_record = []
         uni_result_to_record = []
-
+        
         # with
         if nise_cfg.DEBUG.USE_DETECTION_RESULT:
             with open(det_path, 'r')as f:
@@ -50,7 +50,7 @@ def nise_pred_task_1_debug(gt_anno_dir, hunam_detector, joint_estimator, flow_mo
             assert len(detection_result_from_json) == len(gt)
         else:
             detection_result_from_json = {}
-
+        
         Q = deque(maxlen = nise_cfg.ALG._DEQUE_CAPACITY)
         for j, frame in enumerate(gt):
             # frame dict_keys(['image', 'annorect', 'imgnum', 'is_labeled', 'ignore_regions'])
@@ -69,29 +69,29 @@ def nise_pred_task_1_debug(gt_anno_dir, hunam_detector, joint_estimator, flow_mo
                 detect_box = torch.tensor(detect_box)
             else:
                 detect_box = None
-
+            
             fi = FrameItem(nise_cfg, est_cfg, img_file_path, 1, True, gt_joints)
             fi.detect_human(hunam_detector, detect_box)
             if nise_cfg.DEBUG.SAVE_FLOW_TENSOR:
                 fi.gen_flow(flow_model, None if j == 0 else Q[-1].flow_img)
             fi.unify_bbox()
             fi.est_joints(joint_estimator)
-
+            
             if nise_cfg.DEBUG.VISUALIZE:
                 fi.assign_id_task_1_2(Q)
                 threading.Thread(target = fi.visualize, args = ()).start()
-
+            
             detect_result_to_record.append({img_file_path: fi.detect_results()})
             flow_result_to_record.append({img_file_path: fi.flow_result()})
             uni_result_to_record.append({img_file_path: fi.unfied_result()})
-
+            
             pred_frames.append(fi.to_dict())
             Q.append(fi)
-
+        
         with open(json_path, 'w') as f:
             json.dump({'annolist': pred_frames}, f, indent = 2)
             debug_print('pt eval json saved:', json_path)
-
+        
         if nise_cfg.DEBUG.SAVE_DETECTION_TENSOR:
             with open(det_path, 'w') as f:
                 json.dump(detect_result_to_record, f, indent = 2)
@@ -300,7 +300,7 @@ def gen_fpn(gt_anno_dir, hunam_detector, joint_estimator, flow_model):
             gt = json.load(f)['annolist']
         for j, frame in enumerate(gt):
             # To save - image_scale, fmap
-            if  frame['is_labeled'][0]:
+            if frame['is_labeled'][0]:
                 fpn_path = os.path.join(nise_cfg.PATH.FPN_PKL_DIR, p.stem + '-%03d' % (j) + '.pkl')
                 img_file_path = frame['image'][0]['name']
                 img_file_path = os.path.join(nise_cfg.PATH.POSETRACK_ROOT, img_file_path)
@@ -314,14 +314,24 @@ def gen_fpn(gt_anno_dir, hunam_detector, joint_estimator, flow_model):
                     # No use but serves to check whether the yaml file is loaded to cfg
                     v = inputs['rois']
                 
-                inputs['data'] = [torch.from_numpy(inputs['data'])]
-                inputs['im_info'] = [torch.from_numpy(inputs['im_info'])]
-                return_dict = hunam_detector(**inputs)
+                if isinstance(hunam_detector, mynn.DataParallel):
+                    mask = list(hunam_detector.children())[0]
+                else:
+                    mask = hunam_detector
+                
+                start = time.time()
+                with torch.no_grad():
+                    hai = mask.Conv_Body(torch.from_numpy(inputs['data']))
                 torch.save({
-                    'fmap': return_dict['blob_conv'][3].cpu(),
+                    'fmap': hai[3].cpu(),
                     'scale': im_scale,
                 }, fpn_path)
-                debug_print('fpn_result_to_record saved: ', fpn_path)
+                
+                # inputs['data'] = [torch.from_numpy(inputs['data'])]
+                # inputs['im_info'] = [torch.from_numpy(inputs['im_info'])]
+                # return_dict = hunam_detector(**inputs)
+                
+                debug_print('fpn_result_to_record saved: ', fpn_path, "TIME %.3f" % (time.time() - start))
             
             # usage
             # maskRCNN, human_det_dataset = load_human_detect_model(human_detect_args, tron_cfg)
@@ -651,7 +661,6 @@ def calc_movement_videos(gt_anno_dir):
     mean_average_velos = np.stack(mean_average_velos)
     for fn, mav in zip(anno_file_names, mean_average_velos):
         debug_print(fn, mav)
-
 
 
 def init_gm(_gm, n_cfg, ):

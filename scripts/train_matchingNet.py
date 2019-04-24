@@ -92,7 +92,7 @@ def train_1_ep(config, train_loader, model, criterion, optimizer, epoch):
             debug_print(msg)
 
 
-def validate(config, val_loader, val_dataset, model, criterion, output_dir):
+def validate(config, val_dataset, model, output_dir):
     batch_time = AverageMeter()
     losses = AverageMeter()
     
@@ -137,8 +137,7 @@ def validate(config, val_loader, val_dataset, model, criterion, output_dir):
 
 if __name__ == '__main__':
     np.set_printoptions(suppress = True)
-    mp.set_start_method('spawn', force = True)
-    __spec__ = "ModuleSpec(name='builtins', loader=<class '_frozen_importlib.BuiltinImporter'>)"
+    # mp.set_start_method('spawn', force = True)
     # warnings.filterwarnings('ignore')
     # make_nise_dirs()
     
@@ -146,7 +145,6 @@ if __name__ == '__main__':
         dataset_path = nise_cfg.PATH.GT_VAL_ANNOTATION_DIR
     elif nise_cfg.TEST.MODE == 'train':
         dataset_path = nise_cfg.PATH.GT_TRAIN_ANNOTATION_DIR
-    
     val_dataset = mNetDataset(nise_cfg, nise_cfg.PATH.GT_VAL_ANNOTATION_DIR,
                               nise_cfg.PATH.PRED_JSON_VAL_FOR_TRAINING_MNET,
                               nise_cfg.PATH.UNI_BOX_VAL_FOR_TRAINING_MNET, False)
@@ -156,11 +154,11 @@ if __name__ == '__main__':
                                 nise_cfg.PATH.UNI_BOX_TRAIN_FOR_TRAINING_MNET, True)
     debug_print(pprint.pformat(nise_cfg), lvl = Levels.SKY_BLUE)
     debug_print("Init Network...")
-    model = MatchingNet(nise_cfg.MODEL.INPUTS_CHANNELS)
+    model = MatchingNet(nise_cfg.MODEL.INPUTS_CHANNELS).cuda()
     debug_print("Done")
     gpus = [int(i) for i in os.environ.get('CUDA_VISIBLE_DEVICES', default = '').split(',')]
     debug_print("Distribute Network to GPUs...", gpus)
-    model = torch.nn.DataParallel(model, device_ids = gpus).cuda()
+    model = torch.nn.DataParallel(model, device_ids = gpus)
     debug_print("Done")
     
     train_loader = torch.utils.data.DataLoader(
@@ -171,13 +169,13 @@ if __name__ == '__main__':
         pin_memory = True
     )
     
-    valid_loader = torch.utils.data.DataLoader(
-        val_dataset,
-        batch_size = nise_cfg.TEST.BATCH_SIZE_PER_GPU * len(gpus),
-        shuffle = False,
-        num_workers = nise_cfg.TRAIN.WORKERS,
-        pin_memory = False,
-    )
+    # valid_loader = torch.utils.data.DataLoader(
+    #     val_dataset,
+    #     batch_size = nise_cfg.TEST.BATCH_SIZE_PER_GPU * len(gpus),
+    #     shuffle = False,
+    #     num_workers = nise_cfg.TRAIN.WORKERS,
+    #     pin_memory = False,
+    # )
     debug_print("Done")
     model.train()
     loss_calc = torch.nn.BCEWithLogitsLoss()
@@ -197,8 +195,7 @@ if __name__ == '__main__':
     for epoch in range(nise_cfg.TRAIN.START_EPOCH, nise_cfg.TRAIN.END_EPOCH):
         train_1_ep(nise_cfg, train_loader, model, loss_calc, optimizer, epoch)
         
-        perf_indicator = validate(nise_cfg, valid_loader, val_dataset, model,
-                                  loss_calc, final_output_dir)
+        perf_indicator = validate(nise_cfg, val_dataset, model, final_output_dir)
         ap = perf_indicator['ap']
         pklname = os.path.join(final_output_dir, 'ep-{}-{}.pkl'.format(epoch + 1, ap))
         debug_print('=> saving checkpoint to {}'.format(pklname))

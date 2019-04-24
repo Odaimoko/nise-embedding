@@ -45,15 +45,16 @@ class mNetDataset(Dataset):
         self.uni_box_dir = uni_box_dir
         self.is_train = is_train
         
-        dataset_path = self.cfg.PATH.PRE_COMPUTED_TRAIN_DATASET if is_train \
+        self.dataset_path = self.cfg.PATH.PRE_COMPUTED_TRAIN_DATASET if is_train \
             else self.cfg.PATH.PRE_COMPUTED_VAL_DATASET
-        if os.path.exists(dataset_path):
-            debug_print("Loading cached dataset", dataset_path)
-            self.db = torch.load(dataset_path)
+        self.dataset_path += '.pairwise'
+        if os.path.exists(self.dataset_path):
+            debug_print("Loading cached dataset", self.dataset_path)
+            self.db = torch.load(self.dataset_path)
         else:
             self.db = self._get_db()
         debug_print("Loaded %d entries." % len(self), lvl = Levels.SUCCESS)
-        self.cached_pkl = LimitedSizeDict(size_limit = 30)
+        self.cached_pkl = LimitedSizeDict(size_limit = 10)
     
     def __len__(self, ):
         return len(self.db)
@@ -65,7 +66,7 @@ class mNetDataset(Dataset):
         db = []
         total_num_pos = 0
         total_num_neg = 0
-        for vid, file_name in enumerate(self.anno_file_names[:5]):
+        for vid, file_name in enumerate(self.anno_file_names[:10]):
             if is_skip_video(nise_cfg, vid, file_name):
                 # debug_print('Skip', vid, file_name)
                 continue
@@ -130,7 +131,7 @@ class mNetDataset(Dataset):
                         
                         # use certain rules to sample negative entries
                         skip = 1
-                        while len(matched) > 1 and len(neg_entries) < num_neg and skip <= len(matched) - 1:
+                        while len(matched) > 1 and skip <= len(matched) - 1:
                             key_list = list(matched.keys())
                             for k1 in range(len(key_list[:-skip])):
                                 k2 = k1 + skip
@@ -180,11 +181,9 @@ class mNetDataset(Dataset):
                     prev_id = cur_id
         # debug_print("Total num_pos vs num_neg", total_num_pos, total_num_neg, lvl = Levels.STATUS)
         
-        dataset_path = self.cfg.PATH.PRE_COMPUTED_TRAIN_DATASET if self.is_train \
-            else self.cfg.PATH.PRE_COMPUTED_VAL_DATASET
-        if not os.path.exists(dataset_path):
-            # debug_print("Saving cached dataset...", dataset_path)
-            self.db = torch.save(db, dataset_path)
+        if not os.path.exists(self.dataset_path):
+            # debug_print("Saving cached dataset...", self.dataset_path)
+            self.db = torch.save(db, self.dataset_path)
             # debug_print('Done.')
         return db
     
@@ -324,8 +323,7 @@ class mNetDataset(Dataset):
         # debug_print('get joints hemap ', time.time() - start)
         # assemble
         start = time.time()
-        inputs = torch.cat([p_fmap.squeeze(), c_fmap.squeeze(), p_joints_hmap, c_joints_hmap]).to(
-            torch.device('cuda:1'))
+        inputs = torch.cat([p_fmap.squeeze(), c_fmap.squeeze(), p_joints_hmap, c_joints_hmap])
         # debug_print('assemble ', time.time() - start)
         
         return [inputs, torch.tensor([is_same]).float()]
