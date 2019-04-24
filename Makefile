@@ -58,7 +58,7 @@ train_mNet=--nise_config exp_config/train_mNet/train.yaml
 
 # train
 train-mNet-debug:
-	 $(cuda_1);python -mpdb scripts/train_matchingNet.py  $(tron_cfg_mask) $(train_mNet)
+	 $(cuda_all);python -mpdb scripts/train_matchingNet.py  $(tron_cfg_mask) $(train_mNet)
 train-mNet:
 	 $(cuda_all);python scripts/train_matchingNet.py  $(tron_cfg_mask) $(train_mNet)
 

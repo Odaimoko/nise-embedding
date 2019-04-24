@@ -237,12 +237,14 @@ class NiseConfig:
             self.IOU_THERS_FOR_NEGATIVE = 0
             
             # TRAINING PARAM
-            self.BATCH_SIZE_PER_GPU = 10
+            self.BATCH_SIZE_PER_GPU = 8
             self.WORKERS = 0
-            self.SHUFFLE = False
+            self.SHUFFLE = True
             self.LR = 0.01
             self.LR_FACTOR = 0.1  # how much to reduce
-            
+            self.POS_SAMPLES_PER_IMAGE = 4
+            self.NEG_SAMPLES_PER_IMAGE = self.POS_SAMPLES_PER_IMAGE
+
             # TRAINING PROCESS
             self.START_EPOCH = 0
             self.END_EPOCH = 0

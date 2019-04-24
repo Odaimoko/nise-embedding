@@ -19,6 +19,7 @@ from nise_lib.dataloader.mNetDataset import mNetDataset
 from nise_lib.nise_models import MatchingNet
 from mem_util.gpu_mem_track import MemTracker
 import inspect
+from pdb import set_trace
 
 gpuTracker = MemTracker(inspect.currentframe())
 t = gpuTracker.track
@@ -51,14 +52,16 @@ def train_1_ep(config, train_loader, model, criterion, optimizer, epoch):
     model.train()
     end = time.time()
     for i, (inputs, target) in enumerate(train_loader):
-        t()
         torch.cuda.empty_cache()
-        
-        # input torch.Size([bs, 542, 96, 96])
+        target = target.view([-1])
+        debug_print('Before target', target.numel())
+        bs, img_bs, C, H, W = inputs.shape
+        inputs = inputs.view([-1, C, H, W])
+        inputs = inputs[target != -1]
+        target = target[target != -1].view([-1, 1])  # to match output
+        debug_print("AFter target", target.numel())
         data_time.update(time.time() - end)
-        
         output = model(inputs)
-        t()
         target = target.cuda(non_blocking = True)
         
         # target_weight?
@@ -67,9 +70,9 @@ def train_1_ep(config, train_loader, model, criterion, optimizer, epoch):
         # compute gradient and do update step
         optimizer.zero_grad()
         loss.backward()
-        t()
+        
         optimizer.step()
-        t()
+        
         # measure accuracy and record loss
         losses.update(loss.item(), inputs.size(0))
         
@@ -83,7 +86,7 @@ def train_1_ep(config, train_loader, model, criterion, optimizer, epoch):
                   'Speed {speed:.1f} samples/s\t' \
                   'Data {data_time.val:.3f}s ({data_time.avg:.3f}s)\t' \
                   'Loss {loss.val:.5f} ({loss.avg:.5f})\t'.format(
-                epoch, i, len(train_loader), batch_time = batch_time,
+                epoch, i + 1, len(train_loader), batch_time = batch_time,
                 speed = inputs.size(0) / batch_time.val,
                 data_time = data_time, loss = losses)
             debug_print(msg)
@@ -95,25 +98,19 @@ def validate(config, val_loader, val_dataset, model, criterion, output_dir):
     
     # switch to evaluate mode
     model.eval()
-    num_samples = len(val_dataset)
-    all_scores = np.zeros((num_samples, 1), dtype = np.float32)
+    all_scores = []
+    labels = []
+    # all_scores = np.zeros((num_samples), dtype = np.float32)
+    # labels = np.zeros((num_samples), dtype = np.float32)
     idx = 0
     sig = torch.nn.Sigmoid()
     with torch.no_grad():
         end = time.time()
-        for i, (inputs, target) in enumerate(val_loader):
-            t()
-            torch.cuda.empty_cache()
-            t()
-            output = model(inputs)  # torch.Size([bs, 16/17, 96, 96])
-            t()
+        for i, (inputs, target) in enumerate(val_dataset):
+            target = target.view([-1])
+            
+            output = model(inputs)
             target = target.cuda(non_blocking = True)
-            loss = criterion(output, target)
-            
-            
-            num_images = inputs.size(0)
-            # measure accuracy and record loss
-            losses.update(loss.item(), num_images)
             
             # measure elapsed time
             batch_time.update(time.time() - end)
@@ -121,25 +118,27 @@ def validate(config, val_loader, val_dataset, model, criterion, output_dir):
             
             score = sig(output)
             
-            all_scores[idx:idx + num_images, :] = score.cpu().numpy()
-            idx += num_images
+            all_scores.append(score.view(-1).cpu().numpy())
+            labels.append(target.view(-1).cpu().numpy())
             
             if i % config.TRAIN.PRINT_FREQ == 0:
                 msg = 'Test: [{0}/{1}]\t' \
                       'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t' \
                       'Loss {loss.val:.4f} ({loss.avg:.4f})\t'.format(
-                    i, len(val_loader), batch_time = batch_time,
+                    i + 1, len(val_dataset), batch_time = batch_time,
                     loss = losses)
                 debug_print(msg)
-        
-        perf_indicator = val_dataset.eval(all_scores)
+        all_scores = np.concatenate(all_scores)
+        labels = np.concatenate(labels)
+        perf_indicator = val_dataset.eval(labels, all_scores)
     
     return perf_indicator
 
 
 if __name__ == '__main__':
-    
+    np.set_printoptions(suppress = True)
     mp.set_start_method('spawn', force = True)
+    __spec__ = "ModuleSpec(name='builtins', loader=<class '_frozen_importlib.BuiltinImporter'>)"
     # warnings.filterwarnings('ignore')
     # make_nise_dirs()
     
@@ -155,6 +154,7 @@ if __name__ == '__main__':
     train_dataset = mNetDataset(nise_cfg, nise_cfg.PATH.GT_TRAIN_ANNOTATION_DIR,
                                 nise_cfg.PATH.PRED_JSON_TRAIN_FOR_TRAINING_MNET,
                                 nise_cfg.PATH.UNI_BOX_TRAIN_FOR_TRAINING_MNET, True)
+    debug_print(pprint.pformat(nise_cfg), lvl = Levels.SKY_BLUE)
     debug_print("Init Network...")
     model = MatchingNet(nise_cfg.MODEL.INPUTS_CHANNELS)
     debug_print("Done")
@@ -168,7 +168,7 @@ if __name__ == '__main__':
         batch_size = nise_cfg.TRAIN.BATCH_SIZE_PER_GPU * len(gpus),
         shuffle = nise_cfg.TRAIN.SHUFFLE,
         num_workers = nise_cfg.TRAIN.WORKERS,
-        pin_memory = False
+        pin_memory = True
     )
     
     valid_loader = torch.utils.data.DataLoader(
@@ -187,23 +187,24 @@ if __name__ == '__main__':
     )
     final_output_dir = nise_cfg.PATH.MODEL_SAVE_DIR_FOR_TRAINING_MNET
     debug_print("BEGIN TO TRAIN.", lvl = Levels.SUCCESS)
-    t()
+    
     # for i in train_dataset:
     #     print(i[0].shape,i[1].shape)
     
     # for i, (inputs, target) in enumerate(train_loader):
-    #     print(inputs.shape,target.shape)
-    
+    #     print(inputs.shape, target.shape)
+    #
     for epoch in range(nise_cfg.TRAIN.START_EPOCH, nise_cfg.TRAIN.END_EPOCH):
         train_1_ep(nise_cfg, train_loader, model, loss_calc, optimizer, epoch)
-        t()
+        
         perf_indicator = validate(nise_cfg, valid_loader, val_dataset, model,
                                   loss_calc, final_output_dir)
         ap = perf_indicator['ap']
-        debug_print('=> saving checkpoint to {}'.format(final_output_dir))
+        pklname = os.path.join(final_output_dir, 'ep-{}-{}.pkl'.format(epoch + 1, ap))
+        debug_print('=> saving checkpoint to {}'.format(pklname))
         torch.save({
             'epoch': epoch + 1,
             'state_dict': model.state_dict(),
             'perf': perf_indicator,
             'optimizer': optimizer.state_dict(),
-        }, os.path.join(final_output_dir, 'ep-{}-{}.pkl'.format(epoch + 1, ap)))
+        }, pklname)

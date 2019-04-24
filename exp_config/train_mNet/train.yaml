@@ -1,7 +1,7 @@
 TRAIN:
   START_EPOCH: 0
 
-  END_EPOCH: 20
+  END_EPOCH: 40
 
 TEST:
   FLIP_TEST: True
