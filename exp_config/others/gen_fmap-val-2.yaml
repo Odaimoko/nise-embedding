@@ -1,13 +1,13 @@
 
 TEST:
-  FROM: 0
-  TO: 1
+  FROM: 35
+  TO: 50
 #  ONLY_TEST:
 #    - 3742_m
 #    - 17839_mpii_relpath_5sec_testsub
 #    -  20880_mpii_relpath_5sec_testsub
   TASK: -5
-  MODE: train
+  MODE: valid
 DEBUG:
   VISUALIZE: False
   VIS_JOINTS_FULL: False

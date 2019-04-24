@@ -300,27 +300,28 @@ def gen_fpn(gt_anno_dir, hunam_detector, joint_estimator, flow_model):
             gt = json.load(f)['annolist']
         for j, frame in enumerate(gt):
             # To save - image_scale, fmap
-            fpn_path = os.path.join(nise_cfg.PATH.FPN_PKL_DIR, p.stem + '-%03d' % (j) + '.pkl')
-            img_file_path = frame['image'][0]['name']
-            img_file_path = os.path.join(nise_cfg.PATH.POSETRACK_ROOT, img_file_path)
-            debug_print(j, img_file_path, indent = 1)
-            
-            original_img = cv2.imread(img_file_path)  # with original size
-            ori_img_h, ori_img_w, _ = original_img.shape
-            
-            inputs, im_scale = _get_blobs(original_img, None, tron_cfg.TEST.SCALE, tron_cfg.TEST.MAX_SIZE)
-            if tron_cfg.DEDUP_BOXES > 0 and not tron_cfg.MODEL.FASTER_RCNN:
-                # No use but serves to check whether the yaml file is loaded to cfg
-                v = inputs['rois']
-            
-            inputs['data'] = [torch.from_numpy(inputs['data'])]
-            inputs['im_info'] = [torch.from_numpy(inputs['im_info'])]
-            return_dict = hunam_detector(**inputs)
-            torch.save({
-                'fmap': return_dict['blob_conv'],
-                'scale': im_scale,
-            }, fpn_path)
-            debug_print('fpn_result_to_record saved: ', fpn_path)
+            if  frame['is_labeled'][0]:
+                fpn_path = os.path.join(nise_cfg.PATH.FPN_PKL_DIR, p.stem + '-%03d' % (j) + '.pkl')
+                img_file_path = frame['image'][0]['name']
+                img_file_path = os.path.join(nise_cfg.PATH.POSETRACK_ROOT, img_file_path)
+                debug_print(j, img_file_path, indent = 1)
+                
+                original_img = cv2.imread(img_file_path)  # with original size
+                ori_img_h, ori_img_w, _ = original_img.shape
+                
+                inputs, im_scale = _get_blobs(original_img, None, tron_cfg.TEST.SCALE, tron_cfg.TEST.MAX_SIZE)
+                if tron_cfg.DEDUP_BOXES > 0 and not tron_cfg.MODEL.FASTER_RCNN:
+                    # No use but serves to check whether the yaml file is loaded to cfg
+                    v = inputs['rois']
+                
+                inputs['data'] = [torch.from_numpy(inputs['data'])]
+                inputs['im_info'] = [torch.from_numpy(inputs['im_info'])]
+                return_dict = hunam_detector(**inputs)
+                torch.save({
+                    'fmap': return_dict['blob_conv'][3].cpu(),
+                    'scale': im_scale,
+                }, fpn_path)
+                debug_print('fpn_result_to_record saved: ', fpn_path)
             
             # usage
             # maskRCNN, human_det_dataset = load_human_detect_model(human_detect_args, tron_cfg)

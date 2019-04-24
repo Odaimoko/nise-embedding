@@ -1,11 +1,10 @@
-
 TEST:
-  FROM: 0
-  TO: 1
-#  ONLY_TEST:
-#    - 3742_m
-#    - 17839_mpii_relpath_5sec_testsub
-#    -  20880_mpii_relpath_5sec_testsub
+  FROM: 220
+  TO: 250
+  #  ONLY_TEST:
+  #    - 3742_m
+  #    - 17839_mpii_relpath_5sec_testsub
+  #    -  20880_mpii_relpath_5sec_testsub
   TASK: -5
   MODE: train
 DEBUG:
@@ -19,7 +18,7 @@ DEBUG:
 
   SAVE_DETECTION_TENSOR: False
   SAVE_FLOW_TENSOR: False
-  
+
   SAVE_NMS_TENSOR: false
   NO_NMS: False
   USE_DETECTION_RESULT: false
