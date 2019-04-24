@@ -34,7 +34,6 @@ if __name__ == '__main__':
     if nise_cfg.DEBUG.load_human_det_model:
         human_detect_args = human_detect_parse_args()
         maskRCNN, human_det_dataset = load_human_detect_model(human_detect_args, tron_cfg)
-        # maskRCNN = nn.DataParallel(maskRCNN)
     
     # ─── FROM FLOWNET 2.0 ───────────────────────────────────────────────────────────
     if nise_cfg.DEBUG.load_flow_model:

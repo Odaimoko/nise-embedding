@@ -676,10 +676,10 @@ def get_box_fmap(fmap_info: dict, boxes):
     
     # debug_print(boxes, boxes.shape, lvl = Levels.ERROR)
     # debug_print(rois, lvl = Levels.CRITICAL)
-    # boxes_fmap = RoIAlignFunction(map_res, map_res, .25, 2)(fmap.cuda(), rois)
-    boxes_fmap = RoIPoolFunction(map_res, map_res, .25)(fmap, rois)
+    boxes_fmap = RoIAlignFunction(map_res, map_res, .25, 2)(fmap.cuda(), rois.cuda())
+    # boxes_fmap = RoIPoolFunction(map_res, map_res, .25)(fmap, rois)
 
-    return boxes_fmap
+    return boxes_fmap.cpu()
 
 
 # ─── MATCHING ───────────────────────────────────────────────────────────────────

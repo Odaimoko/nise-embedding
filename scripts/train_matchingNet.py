@@ -15,7 +15,9 @@ import init_paths
 from nise_lib.nise_config import nise_cfg, nise_logger
 from nise_lib.nise_functions import *
 from nise_lib.core import *
-from nise_lib.dataloader.mNetDataset import mNetDataset
+from nise_lib.dataset.mNetDataset import mNetDataset
+from nise_lib.dataset.mNetDataset_by_single_pair import mNetDataset as pair_dataset
+
 from nise_lib.nise_models import MatchingNet
 from mem_util.gpu_mem_track import MemTracker
 import inspect
@@ -135,28 +137,74 @@ def validate(config, val_dataset, model, output_dir):
     return perf_indicator
 
 
+def val_using_loader(config, val_loader, val_dataset, model, out_dir):
+    batch_time = AverageMeter()
+    losses = AverageMeter()
+    
+    # switch to evaluate mode
+    model.eval()
+    num_samples = len(val_dataset)
+    all_scores = np.zeros((num_samples, 1), dtype = np.float32)
+    idx = 0
+    sig = torch.nn.Sigmoid()
+    with torch.no_grad():
+        end = time.time()
+        for i, (inputs, target) in enumerate(val_loader):
+            
+            torch.cuda.empty_cache()
+            
+            output = model(inputs)  # torch.Size([bs, 16/17, 96, 96])
+            
+            num_images = inputs.size(0)
+            
+            # measure elapsed time
+            batch_time.update(time.time() - end)
+            end = time.time()
+            
+            score = sig(output)
+            
+            all_scores[idx:idx + num_images, :] = score.cpu().numpy()
+            idx += num_images
+            
+            if i % config.TRAIN.PRINT_FREQ == 0:
+                msg = 'Test: [{0}/{1}]\t' \
+                      'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t' \
+                      'Loss {loss.val:.4f} ({loss.avg:.4f})\t'.format(
+                    i, len(val_loader), batch_time = batch_time,
+                    loss = losses)
+                debug_print(msg)
+        perf_indicator = val_dataset.eval(all_scores)
+    
+    return perf_indicator
+
+
 if __name__ == '__main__':
     np.set_printoptions(suppress = True)
     # mp.set_start_method('spawn', force = True)
     # warnings.filterwarnings('ignore')
     # make_nise_dirs()
+    maskRCNN = None
+    if nise_cfg.DEBUG.load_human_det_model:
+        human_detect_args = human_detect_parse_args()
+        maskRCNN, human_det_dataset = load_human_detect_model(human_detect_args, tron_cfg)
+        # maskRCNN = nn.DataParallel(maskRCNN)
     
-    if nise_cfg.TEST.MODE == 'valid':
-        dataset_path = nise_cfg.PATH.GT_VAL_ANNOTATION_DIR
-    elif nise_cfg.TEST.MODE == 'train':
-        dataset_path = nise_cfg.PATH.GT_TRAIN_ANNOTATION_DIR
-    val_dataset = mNetDataset(nise_cfg, nise_cfg.PATH.GT_VAL_ANNOTATION_DIR,
-                              nise_cfg.PATH.PRED_JSON_VAL_FOR_TRAINING_MNET,
-                              nise_cfg.PATH.UNI_BOX_VAL_FOR_TRAINING_MNET, False)
+    # val_dataset = mNetDataset(nise_cfg, nise_cfg.PATH.GT_VAL_ANNOTATION_DIR,
+    #                           nise_cfg.PATH.PRED_JSON_VAL_FOR_TRAINING_MNET,
+    #                           nise_cfg.PATH.UNI_BOX_VAL_FOR_TRAINING_MNET, False, maskRCNN)
     
+    val_pair = pair_dataset(nise_cfg, nise_cfg.PATH.GT_VAL_ANNOTATION_DIR,
+                            nise_cfg.PATH.PRED_JSON_VAL_FOR_TRAINING_MNET,
+                            nise_cfg.PATH.UNI_BOX_VAL_FOR_TRAINING_MNET, False)
     train_dataset = mNetDataset(nise_cfg, nise_cfg.PATH.GT_TRAIN_ANNOTATION_DIR,
                                 nise_cfg.PATH.PRED_JSON_TRAIN_FOR_TRAINING_MNET,
-                                nise_cfg.PATH.UNI_BOX_TRAIN_FOR_TRAINING_MNET, True)
+                                nise_cfg.PATH.UNI_BOX_TRAIN_FOR_TRAINING_MNET, True, maskRCNN)
+    
     debug_print(pprint.pformat(nise_cfg), lvl = Levels.SKY_BLUE)
     debug_print("Init Network...")
     model = MatchingNet(nise_cfg.MODEL.INPUTS_CHANNELS).cuda()
     debug_print("Done")
-    gpus = [int(i) for i in os.environ.get('CUDA_VISIBLE_DEVICES', default = '').split(',')]
+    gpus = [int(i) for i in os.environ.get('CUDA_VISIBLE_DEVICES', default = '0,1,2,3').split(',')]
     debug_print("Distribute Network to GPUs...", gpus)
     model = torch.nn.DataParallel(model, device_ids = gpus)
     debug_print("Done")
@@ -167,6 +215,14 @@ if __name__ == '__main__':
         shuffle = nise_cfg.TRAIN.SHUFFLE,
         num_workers = nise_cfg.TRAIN.WORKERS,
         pin_memory = True
+    )
+    
+    valid_loader = torch.utils.data.DataLoader(
+        val_pair,
+        batch_size = nise_cfg.TEST.BATCH_SIZE_PER_GPU * len(gpus),
+        shuffle = False,
+        num_workers = nise_cfg.TRAIN.WORKERS,
+        pin_memory = False,
     )
     
     # valid_loader = torch.utils.data.DataLoader(
@@ -195,8 +251,11 @@ if __name__ == '__main__':
     for epoch in range(nise_cfg.TRAIN.START_EPOCH, nise_cfg.TRAIN.END_EPOCH):
         train_1_ep(nise_cfg, train_loader, model, loss_calc, optimizer, epoch)
         
-        perf_indicator = validate(nise_cfg, val_dataset, model, final_output_dir)
-        ap = perf_indicator['ap']
+        # perf_indicator = validate(nise_cfg, val_pair, model, final_output_dir)
+        # perf_indicator = val_using_loader(nise_cfg, valid_loader, val_pair, model, final_output_dir)
+        # ap = perf_indicator['ap']
+        perf_indicator = None
+        ap = 0
         pklname = os.path.join(final_output_dir, 'ep-{}-{}.pkl'.format(epoch + 1, ap))
         debug_print('=> saving checkpoint to {}'.format(pklname))
         torch.save({

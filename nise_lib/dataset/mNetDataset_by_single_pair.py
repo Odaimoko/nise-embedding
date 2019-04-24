@@ -54,7 +54,7 @@ class mNetDataset(Dataset):
         else:
             self.db = self._get_db()
         debug_print("Loaded %d entries." % len(self), lvl = Levels.SUCCESS)
-        self.cached_pkl = LimitedSizeDict(size_limit = 10)
+        self.cached_pkl = LimitedSizeDict(size_limit = 20)
     
     def __len__(self, ):
         return len(self.db)
@@ -66,7 +66,7 @@ class mNetDataset(Dataset):
         db = []
         total_num_pos = 0
         total_num_neg = 0
-        for vid, file_name in enumerate(self.anno_file_names[:10]):
+        for vid, file_name in enumerate(self.anno_file_names[:3]):
             if is_skip_video(nise_cfg, vid, file_name):
                 # debug_print('Skip', vid, file_name)
                 continue
@@ -237,7 +237,7 @@ class mNetDataset(Dataset):
             # cv2.imwrite('joint_%2d.jpg' % joint_id, target[joint_id])
         return to_torch(target)
     
-    @log_time('Getting item...')
+    # @log_time('Getting item...')
     def __getitem__(self, idx):
         def load_pkl(pkl_file_name):
             if not pkl_file_name in self.cached_pkl.keys():

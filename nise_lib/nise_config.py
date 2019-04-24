@@ -421,7 +421,7 @@ class NiseConfig:
             self.MAP_TP_IOU_THRES = .5
             
             # for training matching net
-            self.BATCH_SIZE_PER_GPU = 4
+            self.BATCH_SIZE_PER_GPU = 24
     
     def __init__(self):
         #

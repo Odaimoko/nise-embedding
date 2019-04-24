@@ -17,7 +17,9 @@ from collections import OrderedDict
 from nise_lib.nise_functions import *
 from nise_lib.nise_config import nise_cfg, nise_logger
 from collections import OrderedDict
-from threading import Lock
+
+from tron_lib.core.test_for_pt import _get_blobs
+from tron_lib.core.config import cfg as tron_cfg
 
 
 class LimitedSizeDict(OrderedDict):
@@ -38,16 +40,24 @@ class LimitedSizeDict(OrderedDict):
 
 
 class mNetDataset(Dataset):
-    def __init__(self, _nise_cfg, gt_anno_dir, pred_anno_dir, uni_box_dir, is_train):
+    def __init__(self, _nise_cfg, gt_anno_dir, pred_anno_dir, uni_box_dir, is_train, maskRCNN):
         self.cfg = _nise_cfg
         self.gt_anno_dir = gt_anno_dir
         self.anno_file_names = sorted(get_type_from_dir(self.gt_anno_dir, ['.json']))
         self.pred_anno_dir = pred_anno_dir
         self.uni_box_dir = uni_box_dir
         self.is_train = is_train
-        
+        if maskRCNN is not None:
+            if isinstance(maskRCNN, mynn.DataParallel):
+                maskRCNN = list(maskRCNN.children())[0]
+            else:
+                maskRCNN = maskRCNN
+            self.conv_body = maskRCNN.Conv_Body
+        else:
+            self.conv_body = None
         dataset_path = self.cfg.PATH.PRE_COMPUTED_TRAIN_DATASET if is_train \
             else self.cfg.PATH.PRE_COMPUTED_VAL_DATASET
+        
         if os.path.exists(dataset_path):
             debug_print("Loading cached dataset", dataset_path)
             self.db = torch.load(dataset_path)
@@ -56,7 +66,7 @@ class mNetDataset(Dataset):
         # self.db = self._get_db()
         
         debug_print("Loaded %d entries." % len(self), lvl = Levels.SUCCESS)
-        self.cached_pkl = LimitedSizeDict(size_limit = 15)
+        self.cached_pkl = LimitedSizeDict(size_limit = 20)
     
     def __len__(self, ):
         return len(self.db)
@@ -175,13 +185,39 @@ class mNetDataset(Dataset):
             # debug_print('Done.')
         return db
     
-    
-    @log_time('Getting item...')
+    # @log_time('Getting item...')
     def __getitem__(self, idx):
-        def load_pkl(pkl_file_name):
-            if not pkl_file_name in self.cached_pkl.keys():
-                self.cached_pkl[pkl_file_name] = torch.load(pkl_file_name)
-            return self.cached_pkl[pkl_file_name]
+        def load_pkl(img_idx):
+            if self.conv_body:
+                prev_img_file_path = os.path.join(self.cfg.PATH.POSETRACK_ROOT, pred[img_idx]['image'][0]['name'])
+                fmap = gen_fmap_by_maskRCNN(prev_img_file_path)
+            else:
+                p_pkl_file_name = os.path.join(self.cfg.PATH.FPN_PKL_DIR, p.stem + '-%03d' % (img_idx) + '.pkl')
+                fmap = torch.load(p_pkl_file_name)
+            key = file_name + str(img_idx)
+            if not (key in self.cached_pkl.keys()):
+                self.cached_pkl[key] = fmap
+            return self.cached_pkl[key]
+        
+        # @log_time("GEN fmap by mask")
+        def gen_fmap_by_maskRCNN(img_file_path):
+            
+            original_img = cv2.imread(img_file_path)  # with original size
+            ori_img_h, ori_img_w, _ = original_img.shape
+            
+            inputs, im_scale = _get_blobs(original_img, None, tron_cfg.TEST.SCALE, tron_cfg.TEST.MAX_SIZE)
+            
+            if tron_cfg.DEDUP_BOXES > 0 and not tron_cfg.MODEL.FASTER_RCNN:
+                # No use but serves to check whether the yaml file is loaded to cfg
+                v = inputs['rois']
+            
+            with torch.no_grad():
+                hai = self.conv_body(torch.from_numpy(inputs['data']).cuda())
+            
+            return {
+                'fmap': hai[3].cpu(),
+                'scale': im_scale
+            }
         
         # debug_print('Get', idx)
         db_rec = copy.deepcopy(self.db[idx])
@@ -202,11 +238,9 @@ class mNetDataset(Dataset):
         c_pred_joints, c_pred_joints_scores = get_joints_from_annorects(pred[cur_j]['annorect'])
         
         start = time.time()
-        p_pkl_file_name = os.path.join(self.cfg.PATH.FPN_PKL_DIR, p.stem + '-%03d' % (prev_j) + '.pkl')
-        c_pkl_file_name = os.path.join(self.cfg.PATH.FPN_PKL_DIR, p.stem + '-%03d' % (cur_j) + '.pkl')
         
-        p_fmap_pkl = load_pkl(p_pkl_file_name)
-        c_fmap_pkl = load_pkl(c_pkl_file_name)
+        p_fmap_pkl = load_pkl(prev_j)
+        c_fmap_pkl = load_pkl(cur_j)
         # debug_print('load fmap files', time.time() - start)
         
         if self.is_train:
@@ -294,7 +328,7 @@ class mNetDataset(Dataset):
         inputs = torch.cat([p_fmap.squeeze(), c_fmap.squeeze(), p_joints_hmap, c_joints_hmap])
         
         return inputs
-
+    
     # @log_time("Getting joints heatmap...")
     def gen_joints_hmap(self, union_box_size, hmap_size, joints, joint_scores):
         '''
@@ -308,13 +342,13 @@ class mNetDataset(Dataset):
         :return:
         '''
         num_joints = joints.shape[0]
-
+        
         target = np.zeros((num_joints,
                            hmap_size[1],
                            hmap_size[0]),
                           dtype = np.float32)  # nj x w x h ???
         target_weight = joint_scores  # not visibility since all is visible
-
+        
         feat_stride = union_box_size / hmap_size
         radius = self.cfg.TRAIN.JOINT_MAP_SIGMA * 3
         for joint_id in range(num_joints):
@@ -323,27 +357,27 @@ class mNetDataset(Dataset):
             mu_y = int(joints[joint_id][1] / feat_stride[1] + 0.5)
             ul = [int(mu_x - radius), int(mu_y - radius)]  # upper left
             br = [int(mu_x + radius + 1), int(mu_y + radius + 1)]  # bottom right
-    
+            
             size = 2 * radius + 1  # 13
             x = np.arange(0, size, 1, np.float32)  # (13,)
             y = x[:, np.newaxis]  # (1,13)
             x0 = y0 = size // 2  # 6
             g = np.exp(- ((x - x0) ** 2 + (y - y0) ** 2) / (2 * radius ** 2))
-    
+            
             # Usable gaussian range
             g_x = max(0, -ul[0]), min(br[0], hmap_size[0]) - ul[0]
             g_y = max(0, -ul[1]), min(br[1], hmap_size[1]) - ul[1]
             # Image range
             img_x = max(0, ul[0]), min(br[0], hmap_size[0])
             img_y = max(0, ul[1]), min(br[1], hmap_size[1])
-    
+            
             v = target_weight[joint_id]
             target[joint_id][img_y[0]:img_y[1], img_x[0]:img_x[1]] = \
                 g[g_y[0]:g_y[1], g_x[0]:g_x[1]] * self.cfg.TRAIN.JOINT_MAP_SCALE \
                 * v
             # cv2.imwrite('joint_%2d.jpg' % joint_id, target[joint_id])
         return to_torch(target)
-
+    
     @log_time('Evaluating model...')
     def eval(self, gt: np.ndarray, pred_scores: np.ndarray):
         '''

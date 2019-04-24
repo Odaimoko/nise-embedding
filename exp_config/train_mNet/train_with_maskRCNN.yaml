@@ -1,0 +1,29 @@
+TRAIN:
+  START_EPOCH: 0
+
+  END_EPOCH: 40
+
+TEST:
+  FLIP_TEST: True
+  FROM: 0
+  TO: 250
+#  ONLY_TEST:
+#    - '14102'
+#    - '00522'
+  TASK: 10
+  MODE: train
+DEBUG:
+  VISUALIZE: False
+  VIS_JOINTS_FULL: False
+  VIS_HUMAN_THRES: 0.0
+  VIS_SINGLE_NO_JOINTS: False
+  VIS_EST_SINGLE: False
+  VIS_BOX: False
+
+  load_human_det_model: True
+PATH:
+
+  PRED_JSON_VAL_FOR_TRAINING_MNET: 'pred_json-commi-onlydet/valid_task_1_DETbox_allBox_tfIoU_nmsThres_0.35_0.50'
+  UNI_BOX_VAL_FOR_TRAINING_MNET: 'unifed_boxes-commi-onlydet/valid_task_1_DETbox_allBox_tfIoU_nmsThres_0.35_0.50'
+  PRED_JSON_TRAIN_FOR_TRAINING_MNET: 'pred_json-single-est/train_task_1_mask_DETbox_allBox_Flip_estJoints_tfIoU_nmsThres_0.35_0.50'
+  UNI_BOX_TRAIN_FOR_TRAINING_MNET: 'unifed_boxes-single-est/train_task_1_mask_DETbox_allBox_Flip_estJoints_tfIoU_nmsThres_0.35_0.50'
