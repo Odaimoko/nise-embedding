@@ -24,7 +24,6 @@ from nise_utils.imutils import *
 from plogs.logutils import Levels
 
 
-
 # DEBUGGING
 
 
@@ -664,23 +663,19 @@ def get_box_fmap(fmap_info: dict, boxes):
     :return:
     '''
     from tron_lib.modeling.roi_xfrom.roi_align.functions.roi_align import RoIAlignFunction
-    from tron_lib.model.roi_pooling.functions.roi_pool import RoIPoolFunction
     
-    fmaps, scale = fmap_info['fmap'], fmap_info['scale'][0]
+    fmap, scale = fmap_info['fmap'], fmap_info['scale'][0]
     boxes_np = boxes.numpy()
     rois = np.zeros([boxes_np.shape[0], 5])
     rois[:, 1:] = boxes_np[:, 0:4] * scale
-    highest_res_fmap = fmaps[3]
     map_res = nise_cfg.MODEL.FEATURE_MAP_RESOLUTION
-    blobs_in = highest_res_fmap
     
-    device_id = blobs_in.get_device()
-    rois_cuda = torch.from_numpy(rois).cuda(device_id)
+    rois_cuda = torch.from_numpy(rois).cuda()
     rois_cuda = rois_cuda.int().float()
     
     # debug_print(boxes, boxes.shape, lvl = Levels.ERROR)
     # debug_print(rois, lvl = Levels.CRITICAL)
-    boxes_fmap = RoIAlignFunction(map_res, map_res, .25, 2)(highest_res_fmap, rois_cuda)
+    boxes_fmap = RoIAlignFunction(map_res, map_res, .25, 2)(fmap.cuda(), rois_cuda)
     
     return boxes_fmap.cpu()
 
