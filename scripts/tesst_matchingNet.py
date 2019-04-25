@@ -10,6 +10,7 @@ import pprint
 import torch.multiprocessing as mp
 import warnings
 from torch import optim
+from collections import OrderedDict
 # local packages
 import init_paths
 from nise_lib.nise_config import nise_cfg, nise_logger
@@ -190,7 +191,7 @@ def val_using_loader(config, val_loader, val_dataset, model):
             
             torch.cuda.empty_cache()
             
-            output = model(inputs)  # torch.Size([bs, 16/17, 96, 96])
+            output = model(inputs.cuda(1))  # torch.Size([bs, 16/17, 96, 96])
             
             num_images = inputs.size(0)
             
@@ -216,8 +217,9 @@ def val_using_loader(config, val_loader, val_dataset, model):
     return perf_indicator
 
 
-if __name__ == '__main__':
 
+if __name__ == '__main__':
+    
     np.set_printoptions(suppress = True)
     mp.set_start_method('spawn', force = True)
     
@@ -226,53 +228,56 @@ if __name__ == '__main__':
     model = MatchingNet(nise_cfg.MODEL.INPUTS_CHANNELS)
     model = torch.nn.DataParallel(model, device_ids = [0, 1, 2, 3]).cuda()
     
-    
-
     maskRCNN = None
     if nise_cfg.DEBUG.load_human_det_model:
         human_detect_args = human_detect_parse_args()
         maskRCNN, human_det_dataset = load_human_detect_model(human_detect_args, tron_cfg)
     
-    train_dataset = mNetDataset(nise_cfg, nise_cfg.PATH.GT_TRAIN_ANNOTATION_DIR,
-                                nise_cfg.PATH.PRED_JSON_TRAIN_FOR_TRAINING_MNET,
-                                nise_cfg.PATH.UNI_BOX_TRAIN_FOR_TRAINING_MNET, True, maskRCNN)
-    
-    train_loader = my_dataloader.DataLoader(
-        train_dataset,
-        batch_size = 32,
-        shuffle = True,
-        num_workers = 6,
-        pin_memory = True
-    )
+    # train_dataset = mNetDataset(nise_cfg, nise_cfg.PATH.GT_TRAIN_ANNOTATION_DIR,
+    #                             nise_cfg.PATH.PRED_JSON_TRAIN_FOR_TRAINING_MNET,
+    #                             nise_cfg.PATH.UNI_BOX_TRAIN_FOR_TRAINING_MNET, True, maskRCNN)
+    #
+    # train_loader = my_dataloader.DataLoader(
+    #     train_dataset,
+    #     batch_size = 32,
+    #     shuffle = True,
+    #     num_workers = 6,
+    #     pin_memory = True
+    # )
     
     # for i, (inputs, target) in enumerate(train_loader):
     #     print(inputs.shape, target.shape)
-
-    model.train()
+    
     loss_calc = torch.nn.BCEWithLogitsLoss()
     optimizer = optim.Adam(
         model.parameters(),
         lr = nise_cfg.TRAIN.LR
     )
-    for epoch in range(nise_cfg.TRAIN.START_EPOCH, nise_cfg.TRAIN.END_EPOCH):
-        train_1_ep(nise_cfg, train_loader, model, loss_calc, optimizer, epoch)
-
+    
+    meta_info = torch.load('mnet_output/ep-6-0.pkl')
+    model.load_state_dict(meta_info['state_dict'])
+    optimizer.load_state_dict(meta_info['optimizer'])
+    
+    val_pair = pair_dataset(nise_cfg, nise_cfg.PATH.GT_VAL_ANNOTATION_DIR,
+                            nise_cfg.PATH.PRED_JSON_VAL_FOR_TRAINING_MNET,
+                            nise_cfg.PATH.UNI_BOX_VAL_FOR_TRAINING_MNET, False)
+    valid_loader = my_dataloader.DataLoader(
+        val_pair,
+        batch_size = 24 * len(gpus),
+        shuffle = False,
+        num_workers = 8,
+        pin_memory = False,
+    )
+    p2 = val_using_loader(nise_cfg, valid_loader, val_pair, model)
+    
+    # for epoch in range(nise_cfg.TRAIN.START_EPOCH, nise_cfg.TRAIN.END_EPOCH):
+    #     train_1_ep(nise_cfg, train_loader, model, loss_calc, optimizer, epoch)
+    
     # val_dataset = mNetDataset(nise_cfg, nise_cfg.PATH.GT_VAL_ANNOTATION_DIR,
     #                           nise_cfg.PATH.PRED_JSON_VAL_FOR_TRAINING_MNET,
     #                           nise_cfg.PATH.UNI_BOX_VAL_FOR_TRAINING_MNET, False, None)
     #
     # # p1 = validate(nise_cfg, val_dataset)
-    # val_pair = pair_dataset(nise_cfg, nise_cfg.PATH.GT_VAL_ANNOTATION_DIR,
-    #                         nise_cfg.PATH.PRED_JSON_VAL_FOR_TRAINING_MNET,
-    #                         nise_cfg.PATH.UNI_BOX_VAL_FOR_TRAINING_MNET, False)
-    # valid_loader = torch.utils.data.DataLoader(
-    #     val_pair,
-    #     batch_size = nise_cfg.TEST.BATCH_SIZE_PER_GPU * len(gpus),
-    #     shuffle = False,
-    #     num_workers = nise_cfg.TRAIN.WORKERS,
-    #     pin_memory = False,
-    # )
-    
     # threads = []
     # threads.append(threading.Thread(target = val_using_loader, args = (nise_cfg, valid_loader, val_pair, model)))
     # threads.append(threading.Thread(target = validate, args = (nise_cfg, val_dataset)))
@@ -280,5 +285,4 @@ if __name__ == '__main__':
     #     t.start()
     # for t in threads:
     #     t.join()
-    # p2 = val_using_loader(nise_cfg, valid_loader, val_pair, model)
     # perf_indicator = validate_model(nise_cfg, val_dataset, model, None)

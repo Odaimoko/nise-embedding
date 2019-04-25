@@ -244,7 +244,7 @@ class NiseConfig:
             self.LR_FACTOR = 0.1  # how much to reduce
             self.POS_SAMPLES_PER_IMAGE = 4
             self.NEG_SAMPLES_PER_IMAGE = self.POS_SAMPLES_PER_IMAGE
-
+            
             # TRAINING PROCESS
             self.START_EPOCH = 0
             self.END_EPOCH = 0
@@ -281,6 +281,8 @@ class NiseConfig:
             self.simple_cfg = '../simple-baseline-pytorch/experiments/pt17/res152-coco-384x288.yaml'
             self.simple_model = '/home/zhangxt/disk/posetrack/simple-baseline-pytorch/output-pt17-fromfreeze/pt17/pose_resnet_152/res152-coco-384x288/pt17-epoch-20-90.04363546829477'
             self.det_model = ''
+            
+            self.mNet_model = ''
             
             self.INPUTS_CHANNELS = 542
             self.FEATURE_MAP_CHANNELS = 256

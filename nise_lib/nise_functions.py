@@ -655,7 +655,7 @@ def filter_bbox_with_area(boxes, thres = nise_cfg.ALG._AREA_THRES):
 
 
 # @log_time('Getting box_fmap...')
-def get_box_fmap(fmap_info: dict, boxes):
+def get_box_fmap(fmap_info: dict, boxes,method='pool'):
     '''
     :param maskRCNN: Model
     :param fmap_info: list of 4 fmaps
@@ -676,8 +676,10 @@ def get_box_fmap(fmap_info: dict, boxes):
     
     # debug_print(boxes, boxes.shape, lvl = Levels.ERROR)
     # debug_print(rois, lvl = Levels.CRITICAL)
-    boxes_fmap = RoIAlignFunction(map_res, map_res, .25, 2)(fmap.cuda(), rois.cuda())
-    # boxes_fmap = RoIPoolFunction(map_res, map_res, .25)(fmap, rois)
+    if method=='pool':
+        boxes_fmap = RoIPoolFunction(map_res, map_res, .25)(fmap, rois)
+    else:
+        boxes_fmap = RoIAlignFunction(map_res, map_res, .25, 2)(fmap.cuda(), rois.cuda())
 
     return boxes_fmap.cpu()
 

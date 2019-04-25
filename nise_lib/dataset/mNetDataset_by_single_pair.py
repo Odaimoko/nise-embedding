@@ -17,6 +17,8 @@ from collections import OrderedDict
 from nise_lib.nise_functions import *
 from nise_lib.nise_config import nise_cfg, nise_logger
 from collections import OrderedDict
+from tron_lib.core.test_for_pt import _get_blobs
+from tron_lib.core.config import cfg as tron_cfg
 
 
 class LimitedSizeDict(OrderedDict):
@@ -37,13 +39,22 @@ class LimitedSizeDict(OrderedDict):
 
 
 class mNetDataset(Dataset):
-    def __init__(self, _nise_cfg, gt_anno_dir, pred_anno_dir, uni_box_dir, is_train):
+    def __init__(self, _nise_cfg, gt_anno_dir, pred_anno_dir, uni_box_dir, is_train, maskRCNN = None):
         self.cfg = _nise_cfg
         self.gt_anno_dir = gt_anno_dir
         self.anno_file_names = sorted(get_type_from_dir(self.gt_anno_dir, ['.json']))
         self.pred_anno_dir = pred_anno_dir
         self.uni_box_dir = uni_box_dir
         self.is_train = is_train
+        
+        if maskRCNN is not None:
+            if isinstance(maskRCNN, mynn.DataParallel):
+                maskRCNN = list(maskRCNN.children())[0]
+            else:
+                maskRCNN = maskRCNN
+            self.conv_body = maskRCNN.Conv_Body
+        else:
+            self.conv_body = None
         
         self.dataset_path = self.cfg.PATH.PRE_COMPUTED_TRAIN_DATASET if is_train \
             else self.cfg.PATH.PRE_COMPUTED_VAL_DATASET
@@ -53,8 +64,14 @@ class mNetDataset(Dataset):
             self.db = torch.load(self.dataset_path)
         else:
             self.db = self._get_db()
+        
         debug_print("Loaded %d entries." % len(self), lvl = Levels.SUCCESS)
-        self.cached_pkl = LimitedSizeDict(size_limit = 20)
+        self.dict_size = 20
+        self.cached_pkl = LimitedSizeDict(size_limit = self.dict_size)
+        self.cache_hit = 0
+        self.cache_unhit = 0
+        self.cached_boxes = LimitedSizeDict(size_limit = self.dict_size)
+        self.cached_pred = LimitedSizeDict(size_limit = self.dict_size)
     
     def __len__(self, ):
         return len(self.db)
@@ -187,6 +204,109 @@ class mNetDataset(Dataset):
             # debug_print('Done.')
         return db
     
+    # @log_time('Getting item...')
+    def __getitem__(self, idx):
+        
+        def load_from_cache(fn, d: LimitedSizeDict):
+            if not fn in d.keys():
+                self.cache_unhit += 1
+                # debug_print("Not hit cache", self.cache_unhit)
+                if 'json' in fn:
+                    with open(fn, 'r') as f:
+                        d[fn] = json.load(f)['annolist']
+                else:
+                    d[fn] = torch.load(fn)
+            else:
+                self.cache_hit += 1
+                # debug_print("hit cache", self.cache_hit)
+            return d[fn]
+        
+        # debug_print('Get', idx)
+        db_rec = self.db[idx]
+        file_name = self.anno_file_names[db_rec['video_file']]
+        prev_j = db_rec['prev_frame']
+        cur_j = db_rec['cur_frame']
+        p_box_idx = db_rec['p_box_idx']
+        c_box_idx = db_rec['c_box_idx']
+        is_same = db_rec['is_same']
+        start = time.time()
+        p = PurePosixPath(file_name)
+        pred_json_file_name = os.path.join(self.pred_anno_dir, p.stem + '.json')
+        pred = load_from_cache(pred_json_file_name, self.cached_pred)
+        # debug_print('load pred json', time.time() - start)
+        
+        # load boxes
+        start = time.time()
+        prev_img_file_path = pred[prev_j]['image'][0]['name']
+        cur_img_file_path = pred[cur_j]['image'][0]['name']
+        box_file_name = os.path.join(self.uni_box_dir, p.stem + '.pkl')
+        uni_boxes = load_from_cache(box_file_name, self.cached_boxes)
+        
+        p_box = uni_boxes[prev_j][prev_img_file_path][p_box_idx]
+        c_box = uni_boxes[cur_j][cur_img_file_path][c_box_idx]
+        u = torch.tensor([[
+            min(p_box[0], c_box[0]).int().type(torch.float32),
+            min(p_box[1], c_box[1]).int().type(torch.float32),
+            max(p_box[2], c_box[2]).int().type(torch.float32),
+            max(p_box[3], c_box[3]).int().type(torch.float32),
+        ]])
+        assert (u.shape[0] == 1 and u.shape[1] == 4)
+        # debug_print('load boxes', time.time() - start, lvl = Levels.ERROR)
+        
+        
+        # get union feature map
+        start = time.time()
+        p_pkl_file_name = os.path.join(self.cfg.PATH.FPN_PKL_DIR, p.stem + '-%03d' % (prev_j) + '.pkl')
+        c_pkl_file_name = os.path.join(self.cfg.PATH.FPN_PKL_DIR, p.stem + '-%03d' % (cur_j) + '.pkl')
+        
+        p_fmap_pkl = load_from_cache(p_pkl_file_name, self.cached_pkl)
+        c_fmap_pkl = load_from_cache(c_pkl_file_name, self.cached_pkl)
+        # debug_print('load fmap', time.time() - start, lvl = Levels.ERROR)
+        
+        start = time.time()
+        p_fmap = get_box_fmap(p_fmap_pkl, u, 'align')
+        c_fmap = get_box_fmap(c_fmap_pkl, u, 'align')
+        # debug_print('get fmap', time.time() - start, lvl = Levels.ERROR)
+        # load joints
+        
+        start = time.time()
+        pred_joints, pred_joints_scores = get_joints_from_annorects(pred[prev_j]['annorect'])
+        p_joints, p_joints_scores = pred_joints[p_box_idx, :, :2], pred_joints_scores[p_box_idx, :]
+        pred_joints, pred_joints_scores = get_joints_from_annorects(pred[cur_j]['annorect'])
+        c_joints, c_joints_scores = pred_joints[c_box_idx, :, :2], pred_joints_scores[c_box_idx, :]
+        # gen joints hmap
+        bs, C, mH, mW = p_fmap.shape
+        u_box_size = torch.tensor([
+            u[0, 2] - u[0, 0],  # W
+            u[0, 3] - u[0, 1],  # H
+        ]).numpy()
+        
+        # convert joint pos to be relative to union box, some may be less than 0
+        def get_union_box_based_joints(u, joints):
+            box_size = u_box_size.tolist()
+            joints[:, 0] -= u[0, 0]
+            joints[:, 1] -= u[0, 1]
+            joints[:, 0].clamp_(0, box_size[0])
+            joints[:, 1].clamp_(0, box_size[1])
+            return joints  # no matter copy or not
+        
+        p_joints = get_union_box_based_joints(u, p_joints)
+        c_joints = get_union_box_based_joints(u, c_joints)
+        
+        p_joints_hmap = self.gen_joints_hmap(u_box_size,
+                                             (mH, mW),
+                                             p_joints, p_joints_scores)
+        c_joints_hmap = self.gen_joints_hmap(u_box_size,
+                                             (mH, mW),
+                                             c_joints, c_joints_scores)
+        # debug_print('get joints hemap ', time.time() - start, lvl = Levels.ERROR)
+        # assemble
+        start = time.time()
+        inputs = torch.cat([p_fmap.squeeze(), c_fmap.squeeze(), p_joints_hmap, c_joints_hmap])
+        # debug_print('assemble ', time.time() - start, lvl = Levels.ERROR)
+        
+        return [inputs, torch.tensor([is_same]).float()]
+    
     # @log_time("Getting joints heatmap...")
     def gen_joints_hmap(self, union_box_size, hmap_size, joints, joint_scores):
         '''
@@ -236,97 +356,6 @@ class mNetDataset(Dataset):
                 * v
             # cv2.imwrite('joint_%2d.jpg' % joint_id, target[joint_id])
         return to_torch(target)
-    
-    # @log_time('Getting item...')
-    def __getitem__(self, idx):
-        def load_pkl(pkl_file_name):
-            if not pkl_file_name in self.cached_pkl.keys():
-                self.cached_pkl[pkl_file_name] = torch.load(pkl_file_name)
-            return self.cached_pkl[pkl_file_name]
-        
-        # debug_print('Get', idx)
-        db_rec = self.db[idx]
-        file_name = self.anno_file_names[db_rec['video_file']]
-        prev_j = db_rec['prev_frame']
-        cur_j = db_rec['cur_frame']
-        p_box_idx = db_rec['p_box_idx']
-        c_box_idx = db_rec['c_box_idx']
-        is_same = db_rec['is_same']
-        start = time.time()
-        with open(file_name, 'r') as f:
-            gt = json.load(f)['annolist']
-        # debug_print('load gt json', time.time() - start)
-        p = PurePosixPath(file_name)
-        # load boxes
-        start = time.time()
-        prev_img_file_path = os.path.join(self.cfg.PATH.POSETRACK_ROOT, gt[prev_j]['image'][0]['name'])
-        cur_img_file_path = os.path.join(self.cfg.PATH.POSETRACK_ROOT, gt[cur_j]['image'][0]['name'])
-        uni_boxes = torch.load(os.path.join(self.uni_box_dir, p.stem + '.pkl'))
-        p_box = uni_boxes[prev_j][prev_img_file_path][p_box_idx]
-        c_box = uni_boxes[cur_j][cur_img_file_path][c_box_idx]
-        u = torch.tensor([[
-            min(p_box[0], c_box[0]).int().type(torch.float32),
-            min(p_box[1], c_box[1]).int().type(torch.float32),
-            max(p_box[2], c_box[2]).int().type(torch.float32),
-            max(p_box[3], c_box[3]).int().type(torch.float32),
-        ]])
-        # debug_print('load boxes', time.time() - start)
-        
-        assert (u.shape[0] == 1 and u.shape[1] == 4)
-        # get union feature map
-        start = time.time()
-        p_pkl_file_name = os.path.join(self.cfg.PATH.FPN_PKL_DIR, p.stem + '-%03d' % (prev_j) + '.pkl')
-        c_pkl_file_name = os.path.join(self.cfg.PATH.FPN_PKL_DIR, p.stem + '-%03d' % (cur_j) + '.pkl')
-        
-        p_fmap_pkl = load_pkl(p_pkl_file_name)
-        c_fmap_pkl = load_pkl(c_pkl_file_name)
-        # debug_print('load fmap', time.time() - start)
-        start = time.time()
-        p_fmap = get_box_fmap(p_fmap_pkl, u)
-        c_fmap = get_box_fmap(c_fmap_pkl, u)
-        # debug_print('get fmap', time.time() - start)
-        # load joints
-        start = time.time()
-        with open(os.path.join(self.pred_anno_dir, p.stem + '.json'), 'r') as f:
-            pred = json.load(f)['annolist']
-        # debug_print('load pred jsond', time.time() - start)
-        start = time.time()
-        pred_joints, pred_joints_scores = get_joints_from_annorects(pred[prev_j]['annorect'])
-        p_joints, p_joints_scores = pred_joints[p_box_idx, :, :2], pred_joints_scores[p_box_idx, :]
-        pred_joints, pred_joints_scores = get_joints_from_annorects(pred[cur_j]['annorect'])
-        c_joints, c_joints_scores = pred_joints[c_box_idx, :, :2], pred_joints_scores[c_box_idx, :]
-        # gen joints hmap
-        bs, C, mH, mW = p_fmap.shape
-        u_box_size = torch.tensor([
-            u[0, 2] - u[0, 0],  # W
-            u[0, 3] - u[0, 1],  # H
-        ]).numpy()
-        
-        # convert joint pos to be relative to union box, some may be less than 0
-        def get_union_box_based_joints(u, joints):
-            box_size = u_box_size.tolist()
-            joints[:, 0] -= u[0, 0]
-            joints[:, 1] -= u[0, 1]
-            joints[:, 0].clamp_(0, box_size[0])
-            joints[:, 1].clamp_(0, box_size[1])
-            return joints  # no matter copy or not
-        
-        p_joints = get_union_box_based_joints(u, p_joints)
-        c_joints = get_union_box_based_joints(u, c_joints)
-        
-        p_joints_hmap = self.gen_joints_hmap(u_box_size,
-                                             (mH, mW),
-                                             p_joints, p_joints_scores)
-        c_joints_hmap = self.gen_joints_hmap(u_box_size,
-                                             (mH, mW),
-                                             c_joints, c_joints_scores)
-        # debug_print('get joints hemap ', time.time() - start)
-        # assemble
-        start = time.time()
-        inputs = torch.cat([p_fmap.squeeze(), c_fmap.squeeze(), p_joints_hmap, c_joints_hmap])
-        # debug_print('assemble ', time.time() - start)
-        
-        return [inputs, torch.tensor([is_same]).float()]
     
     @log_time('Evaluating model...')
     def eval(self, pred_scores: np.ndarray):

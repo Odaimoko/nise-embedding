@@ -57,7 +57,6 @@ class mNetDataset(Dataset):
             self.conv_body = None
         dataset_path = self.cfg.PATH.PRE_COMPUTED_TRAIN_DATASET if is_train \
             else self.cfg.PATH.PRE_COMPUTED_VAL_DATASET
-        
         if os.path.exists(dataset_path):
             debug_print("Loading cached dataset", dataset_path)
             self.db = torch.load(dataset_path)

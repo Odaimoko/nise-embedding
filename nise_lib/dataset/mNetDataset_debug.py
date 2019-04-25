@@ -267,7 +267,7 @@ class mNetDataset(Dataset):
         start = time.time()
         p_fmap_pkl = load_pkl(prev_j)
         c_fmap_pkl = load_pkl(cur_j)
-        debug_print('load fmap files', time.time() - start)
+        # debug_print('load fmap files', time.time() - start)
         
         if self.is_train:
             # sample from pos
@@ -321,12 +321,15 @@ class mNetDataset(Dataset):
         labels = -torch.ones(num_total_samples)
         labels[:num_pos_to_sample] = 1
         labels[num_pos_to_sample:num_neg_to_sample + num_pos_to_sample] = 0
-        debug_print('ASSEMBLE ASSEMBLE', time.time() - start)
+        # debug_print('ASSEMBLE ASSEMBLE', time.time() - start)
         return all_inputs, labels
     
-    @log_time('Get Batch fmaps')
+    # @log_time('Get Batch fmaps')
     def _get_batch_fmaps(self, p_fmap_pkl, c_fmap_pkl, u):
+        print(u)
+        print("DIE")
         p_fmaps = get_box_fmap(p_fmap_pkl, u)
+        print("DIE2")
         c_fmaps = get_box_fmap(c_fmap_pkl, u)
         return p_fmaps, c_fmaps
     

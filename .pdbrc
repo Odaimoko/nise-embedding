@@ -12,6 +12,7 @@ sys.path.append('.')
 #b scripts/tesst_matchingNet.py:98
 b nise_lib/dataset/mNetDataset_debug.py:266
 b nise_lib/dataset/mNetDataset_debug.py:321
+b scripts/mNetModelLoad.py:31
 #b scripts/train_matchingNet.py:55
 c
 

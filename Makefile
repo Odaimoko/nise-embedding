@@ -55,12 +55,15 @@ nise_gen_training_set=--nise_config exp_config/others/gen_training_set.yaml
 
 
 train_mNet=--nise_config exp_config/train_mNet/train.yaml
+train_mNet_mr=--nise_config exp_config/train_mNet/train_with_maskRCNN.yaml
 
 # train
 train-mNet-debug:
 	 $(cuda_all);python -mpdb scripts/train_matchingNet.py  $(tron_cfg_mask) $(train_mNet)
 train-mNet:
 	 $(cuda_all);python scripts/train_matchingNet.py  $(tron_cfg_mask) $(train_mNet)
+train-mNet-mr:
+	 $(cuda_all);python scripts/train_matchingNet.py  $(tron_cfg_mask) $(train_mNet_mr)
 
 
 # task2
