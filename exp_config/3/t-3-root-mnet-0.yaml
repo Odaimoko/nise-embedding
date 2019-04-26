@@ -8,8 +8,8 @@ ALG:
   MATCHING_ALG: 0
 TEST:
   FLIP_TEST: True
-  FROM: 32
-  TO: 35
+  FROM: 0
+  TO: 10
 #  ONLY_TEST:
 #    - '03742'
 #    - 14102_mpii
@@ -33,7 +33,7 @@ DEBUG:
   load_simple_model: False
   load_human_det_model: True
 PATH:
-  mNet_MODEL_FILE: 'ep-6-0.pkl'
+  mNet_MODEL_FILE: 'ep-22-0.pkl'
   _JOINTS_DIR: 'images_joint-track-mnet/'
   _IMAGES_OUT_DIR: 'images_out-track-mnet/'
   _JSON_SAVE_DIR: 'pred_json-track-mnet/'

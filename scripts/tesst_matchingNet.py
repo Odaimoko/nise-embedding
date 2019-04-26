@@ -217,7 +217,6 @@ def val_using_loader(config, val_loader, val_dataset, model):
     return perf_indicator
 
 
-
 if __name__ == '__main__':
     
     np.set_printoptions(suppress = True)
@@ -253,8 +252,8 @@ if __name__ == '__main__':
         model.parameters(),
         lr = nise_cfg.TRAIN.LR
     )
-    
-    meta_info = torch.load('mnet_output/ep-6-0.pkl')
+    model_path = 'mnet_output/ep-22-0.pkl'
+    meta_info = torch.load(model_path)
     model.load_state_dict(meta_info['state_dict'])
     optimizer.load_state_dict(meta_info['optimizer'])
     
@@ -269,7 +268,8 @@ if __name__ == '__main__':
         pin_memory = False,
     )
     p2 = val_using_loader(nise_cfg, valid_loader, val_pair, model)
-    
+    print(p2)
+    torch.save(p2, 'mNet_eval_result.pkl')
     # for epoch in range(nise_cfg.TRAIN.START_EPOCH, nise_cfg.TRAIN.END_EPOCH):
     #     train_1_ep(nise_cfg, train_loader, model, loss_calc, optimizer, epoch)
     

@@ -21,11 +21,12 @@ from tron_lib.core.config import cfg as tron_cfg
 from simple_lib.core.config import config as simple_cfg
 
 if __name__ == '__main__':
+    np.set_printoptions(precision = 2)
+    np.set_printoptions(suppress = True)
     
     mp.set_start_method('spawn', force = True)
     warnings.filterwarnings('ignore')
-    
-    flow_model = None
+    debug_print(pprint.pformat(nise_cfg), lvl = Levels.WARNING)
     maskRCNN = None
     joint_est_model = None
     human_det_dataset = None
@@ -34,19 +35,16 @@ if __name__ == '__main__':
     if nise_cfg.DEBUG.load_human_det_model:
         human_detect_args = human_detect_parse_args()
         maskRCNN, human_det_dataset = load_human_detect_model(human_detect_args, tron_cfg)
-    
+        FrameItem.maskRCNN = maskRCNN
     make_nise_dirs()
     
     if nise_cfg.TEST.MODE == 'valid':
         dataset_path = nise_cfg.PATH.GT_VAL_ANNOTATION_DIR
     elif nise_cfg.TEST.MODE == 'train':
         dataset_path = nise_cfg.PATH.GT_TRAIN_ANNOTATION_DIR
-        
-    # 用于生成 box
-    gen_fpn(dataset_path, maskRCNN, joint_est_model, flow_model)
-    # gen_training_data_for_matchingNet(dataset_path)
-    # gen_matched_box_debug(dataset_path)
-    # gen_matched_joints(dataset_path)
-    # nise_pred_task_1_debug(dataset_path, maskRCNN, joint_est_model, flow_model)
-    # nise_pred_task_2_debug(dataset_path, maskRCNN, joint_est_model, flow_model)
-    # nise_flow_debug(dataset_path, maskRCNN, joint_est_model, flow_model)  # 用于利用生成好的 box
+    
+    model_file_path = os.path.join(nise_cfg.PATH.MODEL_SAVE_DIR_FOR_TRAINING_MNET, nise_cfg.PATH.mNet_MODEL_FILE)
+    model = load_mNet_model(model_file_path)  # DataParallel
+    
+    task_3_with_mNet(dataset_path, mNet = model)
+    # nise_flow_debug(dataset_path, maskRCNN, joint_est_model, None, mNet = model)  # 用于利用生成好的 box

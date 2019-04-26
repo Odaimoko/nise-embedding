@@ -3,6 +3,7 @@ cuda_0=export CUDA_VISIBLE_DEVICES=0
 cuda_1=export CUDA_VISIBLE_DEVICES=1
 mot_pypath=export PYTHONPATH=../poseval/py-motmetrics:$${PYTHONPATH}
 nise_main=python scripts/run.py
+nise_main_mnet=python scripts/run-mnet.py
 
 # cd
 cd_deep=cd ../deep-pt
@@ -70,8 +71,25 @@ train-mNet-mr:
 t2-sb88:
 	$(cuda_all); $(nise_main) $(flow_cfg) $(sb_88) $(tron_cfg_mask) $(nise_2_root)
 
+# MNET tracking
+nise_3_root_mnet=--nise_config exp_config/3/t-3-root-mnet.yaml
 
-#tracking
+t3-sb88-mnet:
+	$(nise_main_mnet)  $(tron_cfg_mask) --task1pred pred_json-single-est/79.0-sb88-valid_task_1_mask_DETbox_allBox_Flip_estJoints_tfIoU_nmsThres_0.35_0.50 $(nise_3_root_mnet)
+
+
+
+eval-t3-sb88-mnet-fbj: # f
+	$(mot_pypath); python ../poseval/py/evaluate.py $(eval_gt_all) -p  pred_json-track-mnet/valid_task_-2_mask_DETbox_allBox_Flip_estJoints_tfIoU_nmsThres_0.35_0.50_IoUMetric_mkrs_box_0.80_joint_0.50_matchID/ --evalPoseEstimation --evalPoseTracking
+
+
+eval-t3-sb88-mnet-debug-fbj: # f
+	$(mot_pypath); python ../poseval/py/evaluate.py $(eval_gt_debug) -p  pred_json-track-mnet/valid_task_-2_mask_DETbox_allBox_Flip_estJoints_tfIoU_nmsThres_0.35_0.50_IoUMetric_mkrs_box_0.80_joint_0.50_matchID/ --evalPoseEstimation --evalPoseTracking
+
+
+
+
+# BOX tracking
 t3-hr904-nms-.35-.5-boxjoint-.8-.5:
 	$(nise_main) --task1pred pred_json-single-est/81.9-hr904-valid_task_1_mask_DETbox_allBox_Flip_estJoints_tfIoU_nmsThres_0.35_0.50 $(nise_3_root)
 

@@ -8,8 +8,8 @@ ALG:
   MATCHING_ALG: 0
 TEST:
   FLIP_TEST: True
-  FROM: 32
-  TO: 35
+  FROM: 10
+  TO: 20
 #  ONLY_TEST:
 #    - '03742'
 #    - 14102_mpii

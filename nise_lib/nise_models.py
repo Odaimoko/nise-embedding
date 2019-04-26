@@ -12,7 +12,6 @@ from nise_utils.imutils import *
 from plogs.logutils import Levels
 
 
-
 def make_conv_layer():
     pass
 
@@ -51,6 +50,7 @@ class MatchingNet(nn.Module):
         self.conv4 = Conv3x3(channels, channels)  # out 2x2
         self.linear = nn.Linear(in_features = channels * 4, out_features = 1)
     
+    # @log_time("Forwarding...")
     def forward(self, x):
         out = self.pool1(self.conv1(x))
         out = self.conv2(out)

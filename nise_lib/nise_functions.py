@@ -17,14 +17,17 @@ import colorama
 from simple_lib.core.config import config as simple_cfg
 from simple_lib.core.config import update_config
 from simple_models.pose_resnet import get_pose_net as get_simple_pose_net
-
+from tron_lib.core.test_for_pt import _get_blobs
 from nise_lib.nise_config import mkrs
 from nise_lib.nise_debugging_func import *
 from nise_utils.imutils import *
 from plogs.logutils import Levels
-
+from nise_lib.nise_models import MatchingNet
+from mem_util.gpu_mem_track import MemTracker
+import inspect
 
 # DEBUGGING
+gpuMemTrack = MemTracker(inspect.currentframe()).track
 
 
 def debug_print(*args, indent = 0, lvl = Levels.INFO):
@@ -633,6 +636,28 @@ def tf_iou(boxes1: np.ndarray, boxes2: np.ndarray):
     return intersect / union
 
 
+def unioned_box(box1, box2):
+    '''
+    input size should be (4/5,) 
+    :param box1: 
+    :param box2: 
+    :return: The minimum box contains both
+    '''
+    assert (box1 >= 0).sum() == (box2 >= 0).sum() and (box2 >= 0).sum() == 4
+    u = [
+        min(box1[0], box2[0]),
+        min(box1[1], box2[1]),
+        max(box1[2], box2[2]),
+        max(box1[3], box2[3]),
+    ]
+    if isinstance(box1, np.ndarray):
+        u = np.array(u)
+    else:
+        assert isinstance(box1, torch.Tensor)
+        u = torch.tensor(u)
+    return u
+
+
 def filter_bbox_with_scores(boxes, thres = nise_cfg.ALG._HUMAN_THRES):
     if boxes.numel() == 0:
         return boxes, torch.tensor([])
@@ -640,6 +665,7 @@ def filter_bbox_with_scores(boxes, thres = nise_cfg.ALG._HUMAN_THRES):
     valid_scores_idx = torch.nonzero(scores >= thres).squeeze_().long()  # in case it's 6 x **1** x 5
     filtered_box = boxes[valid_scores_idx, :]
     filtered_box = expand_vector_to_tensor(filtered_box)
+    valid_scores_idx = expand_vector_to_tensor(valid_scores_idx,1)
     return filtered_box, valid_scores_idx
 
 
@@ -655,16 +681,14 @@ def filter_bbox_with_area(boxes, thres = nise_cfg.ALG._AREA_THRES):
 
 
 # @log_time('Getting box_fmap...')
-def get_box_fmap(fmap_info: dict, boxes,method='pool'):
+def get_box_fmap(fmap_info: dict, boxes, method = 'pool'):
     '''
-    :param maskRCNN: Model
-    :param fmap_info: list of 4 fmaps
     :param boxes: torch tensor, bs x 5
     :return:
     '''
     from tron_lib.modeling.roi_xfrom.roi_align.functions.roi_align import RoIAlignFunction
     from tron_lib.model.roi_pooling.functions.roi_pool import RoIPoolFunction
-
+    
     fmap, scale = fmap_info['fmap'], fmap_info['scale'][0]
     boxes_np = boxes.numpy()
     rois_np = np.zeros([boxes_np.shape[0], 5])
@@ -676,15 +700,44 @@ def get_box_fmap(fmap_info: dict, boxes,method='pool'):
     
     # debug_print(boxes, boxes.shape, lvl = Levels.ERROR)
     # debug_print(rois, lvl = Levels.CRITICAL)
-    if method=='pool':
+    if method == 'pool':
         boxes_fmap = RoIPoolFunction(map_res, map_res, .25)(fmap, rois)
     else:
         boxes_fmap = RoIAlignFunction(map_res, map_res, .25, 2)(fmap.cuda(), rois.cuda())
-
+    
     return boxes_fmap.cpu()
 
 
+def gen_img_fmap(tron_cfg, original_img, maskRCNN):
+    inputs, im_scale = _get_blobs(original_img, None, tron_cfg.TEST.SCALE, tron_cfg.TEST.MAX_SIZE)
+    if tron_cfg.DEDUP_BOXES > 0 and not tron_cfg.MODEL.FASTER_RCNN:
+        # No use but serves to check whether the yaml file is loaded to cfg
+        v = inputs['rois']
+    
+    if isinstance(maskRCNN, mynn.DataParallel):
+        mask = list(maskRCNN.children())[0]
+    else:
+        mask = maskRCNN
+    
+    with torch.no_grad():
+        hai = mask.Conv_Body(torch.from_numpy(inputs['data']).cuda())
+    return {
+        'fmap': hai[3].cpu(),
+        'scale': im_scale,
+    }
+
+
 # ─── MATCHING ───────────────────────────────────────────────────────────────────
+
+def load_mNet_model(model_file):
+    model = MatchingNet(nise_cfg.MODEL.INPUTS_CHANNELS)
+    gpus = [int(i) for i in os.environ.get('CUDA_VISIBLE_DEVICES', default = '0').split(',')]
+    debug_print(gpus)
+    model = torch.nn.DataParallel(model, device_ids = gpus).cuda()
+    meta_info = torch.load(model_file)
+    model.load_state_dict(meta_info['state_dict'])
+    return model
+
 
 def get_joints_oks_mtx(j1, j2):
     '''

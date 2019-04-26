@@ -282,7 +282,6 @@ class NiseConfig:
             self.simple_model = '/home/zhangxt/disk/posetrack/simple-baseline-pytorch/output-pt17-fromfreeze/pt17/pose_resnet_152/res152-coco-384x288/pt17-epoch-20-90.04363546829477'
             self.det_model = ''
             
-            self.mNet_model = ''
             
             self.INPUTS_CHANNELS = 542
             self.FEATURE_MAP_CHANNELS = 256
@@ -355,7 +354,7 @@ class NiseConfig:
             self.MATCHING_FLOW = 2
             
             self.MATCHING_METRIC = 0
-            self.MATCHING_ALG = 1
+            self.MATCHING_ALG = 0
             # padding image s.t. w/h to be multiple of 64
             self.FLOW_MULTIPLE = 2 ** 6
             self.FLOW_PADDING_END = 0
@@ -397,6 +396,8 @@ class NiseConfig:
             self.UNI_BOX_TRAIN_FOR_TRAINING_MNET = ''
             
             self.MODEL_SAVE_DIR_FOR_TRAINING_MNET = 'mnet_output/'
+            self.mNet_MODEL_FILE = ''
+
     
     class _TEST:
         def __init__(self):
