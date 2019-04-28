@@ -69,9 +69,15 @@ class MatchingNet(nn.Module):
         self.gpuMemTracker = MemTracker(inspect.currentframe())
     
     # @log_time("Forwarding...")
-    def forward(self, fmaps, scales, all_samples, joints_heatmap, idx):
-        # self.gpuMemTracker.track()
-        bs, num_samples, _, H, W = fmaps.shape
+    def forward(self, inputs, scales, all_samples, joints_heatmap, idx):
+        bs, _, C, H, W = inputs.shape
+        inputs = inputs.view([-1, C, H, W]).cuda()
+        with torch.no_grad():
+            fmaps = self.conv_body(inputs)
+        _, C, H, W = fmaps.shape
+        fmaps = fmaps.view([bs, -1, C, H, W])
+
+        bs, num_samples, _, _, _ = fmaps.shape
         inputs = []
         for b in range(bs):
             p_fmap = fmaps[b, :1]  # make it batch

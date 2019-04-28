@@ -59,20 +59,11 @@ def train_1_ep(config, train_loader, model, criterion, optimizer, epoch):
         all_samples = meta_info['all_samples']
         
         idx = all_samples.sum(2) > 0  # bs x 8
-        bs, _, C, H, W = inputs.shape
-        inputs = inputs.view([-1, C, H, W]).cuda()
-        with torch.no_grad():
-            fmaps = model.module.conv_body(inputs)
-        # torch.cuda.empty_cache()
-        _, C, H, W = fmaps.shape
-        fmaps = fmaps.view([bs, -1, C, H, W])
-        
         # debug_print('Before target', target.numel())
         target = target[idx]
         # debug_print("AFter target", target.numel())
         data_time.update(time.time() - end)
-        output = model(fmaps, scales, all_samples, joints_heatmap, idx)  # (bsx2) x CHW
-        del fmaps
+        output = model(inputs, scales, all_samples, joints_heatmap, idx)  # (bsx2) x CHW
         target = target.cuda(non_blocking = True).view([-1, 1])
         # target_weight?
         loss = criterion(output, target)
@@ -232,7 +223,6 @@ if __name__ == '__main__':
     #     num_workers = nise_cfg.TRAIN.WORKERS,
     #     pin_memory = False,
     # )
-    debug_print("Done")
     model.train()
     loss_calc = torch.nn.BCEWithLogitsLoss()
     optimizer = optim.Adam(
@@ -247,7 +237,7 @@ if __name__ == '__main__':
     
     for epoch in range(nise_cfg.TRAIN.START_EPOCH, nise_cfg.TRAIN.END_EPOCH):
         train_1_ep(nise_cfg, train_loader, model, loss_calc, optimizer, epoch)
-
+        
         # perf_indicator = validate(nise_cfg, val_pair, model, final_output_dir)
         # perf_indicator = val_using_loader(nise_cfg, valid_loader, val_pair, model, final_output_dir)
         # ap = perf_indicator['ap']
