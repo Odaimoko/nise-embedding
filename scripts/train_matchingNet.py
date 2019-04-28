@@ -53,26 +53,33 @@ def train_1_ep(config, train_loader, model, criterion, optimizer, epoch):
     losses = AverageMeter()
     model.train()
     end = time.time()
-    for i, (inputs, target) in enumerate(train_loader):
-        torch.cuda.empty_cache()
-        target = target.view([-1])
-        debug_print('Before target', target.numel())
-        bs, img_bs, C, H, W = inputs.shape
-        inputs = inputs.view([-1, C, H, W])
-        inputs = inputs[target != -1]
-        target = target[target != -1].view([-1, 1])  # to match output
-        debug_print("AFter target", target.numel())
-        data_time.update(time.time() - end)
-        output = model(inputs)
-        target = target.cuda(non_blocking = True)
+    
+    for i, (inputs, scales, joints_heatmap, target, meta_info) in enumerate(train_loader):
+        # if i < 63: continue
+        all_samples = meta_info['all_samples']
         
+        idx = all_samples.sum(2) > 0  # bs x 8
+        bs, _, C, H, W = inputs.shape
+        inputs = inputs.view([-1, C, H, W]).cuda()
+        with torch.no_grad():
+            fmaps = model.module.conv_body(inputs)
+        # torch.cuda.empty_cache()
+        _, C, H, W = fmaps.shape
+        fmaps = fmaps.view([bs, -1, C, H, W])
+        
+        # debug_print('Before target', target.numel())
+        target = target[idx]
+        # debug_print("AFter target", target.numel())
+        data_time.update(time.time() - end)
+        output = model(fmaps, scales, all_samples, joints_heatmap, idx)  # (bsx2) x CHW
+        del fmaps
+        target = target.cuda(non_blocking = True).view([-1, 1])
         # target_weight?
         loss = criterion(output, target)
         
         # compute gradient and do update step
         optimizer.zero_grad()
         loss.backward()
-        
         optimizer.step()
         
         # measure accuracy and record loss
@@ -183,30 +190,31 @@ if __name__ == '__main__':
     # mp.set_start_method('spawn', force = True)
     # warnings.filterwarnings('ignore')
     # make_nise_dirs()
-    maskRCNN = None
-    if nise_cfg.DEBUG.load_human_det_model:
-        human_detect_args = human_detect_parse_args()
-        maskRCNN, human_det_dataset = load_human_detect_model(human_detect_args, tron_cfg)
-        # maskRCNN = nn.DataParallel(maskRCNN)
+    
+    debug_print(pprint.pformat(nise_cfg), lvl = Levels.SKY_BLUE)
+    gpus = os.environ.get('CUDA_VISIBLE_DEVICES', default = '0').split(',')
+    gpus = list(range(len(gpus)))
     
     # val_dataset = mNetDataset(nise_cfg, nise_cfg.PATH.GT_VAL_ANNOTATION_DIR,
     #                           nise_cfg.PATH.PRED_JSON_VAL_FOR_TRAINING_MNET,
     #                           nise_cfg.PATH.UNI_BOX_VAL_FOR_TRAINING_MNET, False, maskRCNN)
     
-    val_pair = pair_dataset(nise_cfg, nise_cfg.PATH.GT_VAL_ANNOTATION_DIR,
-                            nise_cfg.PATH.PRED_JSON_VAL_FOR_TRAINING_MNET,
-                            nise_cfg.PATH.UNI_BOX_VAL_FOR_TRAINING_MNET, False)
+    # val_pair = pair_dataset(nise_cfg, nise_cfg.PATH.GT_VAL_ANNOTATION_DIR,
+    #                         nise_cfg.PATH.PRED_JSON_VAL_FOR_TRAINING_MNET,
+    #                         nise_cfg.PATH.UNI_BOX_VAL_FOR_TRAINING_MNET, False)
     train_dataset = mNetDataset(nise_cfg, nise_cfg.PATH.GT_TRAIN_ANNOTATION_DIR,
                                 nise_cfg.PATH.PRED_JSON_TRAIN_FOR_TRAINING_MNET,
-                                nise_cfg.PATH.UNI_BOX_TRAIN_FOR_TRAINING_MNET, True, maskRCNN)
+                                nise_cfg.PATH.UNI_BOX_TRAIN_FOR_TRAINING_MNET, True)
     
-    debug_print(pprint.pformat(nise_cfg), lvl = Levels.SKY_BLUE)
     debug_print("Init Network...")
-    model = MatchingNet(nise_cfg.MODEL.INPUTS_CHANNELS).cuda()
+    maskRCNN = None
+    if nise_cfg.DEBUG.load_human_det_model:
+        human_detect_args = human_detect_parse_args()
+        maskRCNN, human_det_dataset = load_human_detect_model(human_detect_args, tron_cfg)
+    model = MatchingNet(nise_cfg.MODEL.INPUTS_CHANNELS, maskRCNN)
     debug_print("Done")
-    gpus = [int(i) for i in os.environ.get('CUDA_VISIBLE_DEVICES', default = '0,1,2,3').split(',')]
     debug_print("Distribute Network to GPUs...", gpus)
-    model = torch.nn.DataParallel(model, device_ids = gpus)
+    model = torch.nn.DataParallel(model, device_ids = gpus).cuda()
     debug_print("Done")
     
     train_loader = torch.utils.data.DataLoader(
@@ -215,14 +223,6 @@ if __name__ == '__main__':
         shuffle = nise_cfg.TRAIN.SHUFFLE,
         num_workers = nise_cfg.TRAIN.WORKERS,
         pin_memory = True
-    )
-    
-    valid_loader = torch.utils.data.DataLoader(
-        val_pair,
-        batch_size = nise_cfg.TEST.BATCH_SIZE_PER_GPU * len(gpus),
-        shuffle = False,
-        num_workers = nise_cfg.TRAIN.WORKERS,
-        pin_memory = False,
     )
     
     # valid_loader = torch.utils.data.DataLoader(
@@ -236,7 +236,7 @@ if __name__ == '__main__':
     model.train()
     loss_calc = torch.nn.BCEWithLogitsLoss()
     optimizer = optim.Adam(
-        model.parameters(),
+        filter(lambda p: p.requires_grad, model.parameters()),
         lr = nise_cfg.TRAIN.LR
     )
     final_output_dir = nise_cfg.PATH.MODEL_SAVE_DIR_FOR_TRAINING_MNET
@@ -245,12 +245,9 @@ if __name__ == '__main__':
     # for i in train_dataset:
     #     print(i[0].shape,i[1].shape)
     
-    # for i, (inputs, target) in enumerate(train_loader):
-    #     print(inputs.shape, target.shape)
-    #
     for epoch in range(nise_cfg.TRAIN.START_EPOCH, nise_cfg.TRAIN.END_EPOCH):
         train_1_ep(nise_cfg, train_loader, model, loss_calc, optimizer, epoch)
-        
+
         # perf_indicator = validate(nise_cfg, val_pair, model, final_output_dir)
         # perf_indicator = val_using_loader(nise_cfg, valid_loader, val_pair, model, final_output_dir)
         # ap = perf_indicator['ap']

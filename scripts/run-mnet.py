@@ -19,6 +19,7 @@ from nise_lib.nise_debugging_func import *
 from nise_lib.core import *
 from tron_lib.core.config import cfg as tron_cfg
 from simple_lib.core.config import config as simple_cfg
+from nise_lib.nise_models import load_mNet_model
 
 if __name__ == '__main__':
     np.set_printoptions(precision = 2)
@@ -44,7 +45,7 @@ if __name__ == '__main__':
         dataset_path = nise_cfg.PATH.GT_TRAIN_ANNOTATION_DIR
     
     model_file_path = os.path.join(nise_cfg.PATH.MODEL_SAVE_DIR_FOR_TRAINING_MNET, nise_cfg.PATH.mNet_MODEL_FILE)
-    model = load_mNet_model(model_file_path)  # DataParallel
+    model = load_mNet_model(model_file_path,maskRCNN)  # DataParallel
     
     task_3_with_mNet(dataset_path, mNet = model)
     # nise_flow_debug(dataset_path, maskRCNN, joint_est_model, None, mNet = model)  # 用于利用生成好的 box

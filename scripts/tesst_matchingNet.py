@@ -23,6 +23,10 @@ from mem_util.gpu_mem_track import MemTracker
 import inspect
 from nise_lib.data import dataloader as my_dataloader
 
+from nise_lib import nise_functions
+
+print('MAIN', nise_functions)
+
 
 class AverageMeter(object):
     """Computes and stores the average and current value"""
@@ -218,60 +222,86 @@ def val_using_loader(config, val_loader, val_dataset, model):
 
 
 if __name__ == '__main__':
-    
     np.set_printoptions(suppress = True)
-    mp.set_start_method('spawn', force = True)
+    # mp.set_start_method('spawn', force = True)
     
-    gpus = [0, 1, 2, 3]
+    gpus = os.environ.get('CUDA_VISIBLE_DEVICES', default = '0').split(',')
     
-    model = MatchingNet(nise_cfg.MODEL.INPUTS_CHANNELS)
-    model = torch.nn.DataParallel(model, device_ids = [0, 1, 2, 3]).cuda()
-    
-    maskRCNN = None
-    if nise_cfg.DEBUG.load_human_det_model:
-        human_detect_args = human_detect_parse_args()
-        maskRCNN, human_det_dataset = load_human_detect_model(human_detect_args, tron_cfg)
-    
+    # maskRCNN = None
+    # if nise_cfg.DEBUG.load_human_det_model:
+    #     human_detect_args = human_detect_parse_args()
+    #     maskRCNN, human_det_dataset = load_human_detect_model(human_detect_args, tron_cfg)
+    # model = MatchingNet(nise_cfg.MODEL.INPUTS_CHANNELS, maskRCNN)
+    # model = torch.nn.DataParallel(model).cuda()
+    #
     # train_dataset = mNetDataset(nise_cfg, nise_cfg.PATH.GT_TRAIN_ANNOTATION_DIR,
     #                             nise_cfg.PATH.PRED_JSON_TRAIN_FOR_TRAINING_MNET,
-    #                             nise_cfg.PATH.UNI_BOX_TRAIN_FOR_TRAINING_MNET, True, maskRCNN)
+    #                             nise_cfg.PATH.UNI_BOX_TRAIN_FOR_TRAINING_MNET, True, None)
     #
-    # train_loader = my_dataloader.DataLoader(
+    # train_loader = torch.utils.data.DataLoader(
     #     train_dataset,
-    #     batch_size = 32,
+    #     batch_size = 2 * len(gpus),
     #     shuffle = True,
-    #     num_workers = 6,
+    #     num_workers = 2,
     #     pin_memory = True
     # )
+    # for inputs, scales, joints_heatmap, labels, meta_info in train_loader:
+    #     all_samples = meta_info['all_samples']
+    #     num_total_samples = meta_info['num_total_samples']
+    #     db_entry = meta_info['db_entry']
+    #     print(inputs.shape)  # bs x 2,3,562,1000
+    #
+    #     bs, _, C, H, W = inputs.shape
+    #     inputs = inputs.view([-1, C, H, W]).cuda()
+    #     with torch.no_grad():
+    #         fmaps = model.module.conv_body(inputs)
+    #     torch.cuda.empty_cache()
+    #     _, C, H, W = fmaps.shape
+    #     fmaps = fmaps.view([bs, -1, C, H, W])
+    #     idx = all_samples.sum(2) > 0  # bs x 8
+    #     valid_samples = all_samples[idx]
+    #     valid_joints_heatmap = joints_heatmap[idx]
+    #     valid_labels = labels[idx]
+    #     out = model(fmaps, scales, all_samples, joints_heatmap, idx)  # (bsx2) x CHW
+    #     # print(scales.shape)  # bs,2
+    #     # pprint.pprint(all_samples)  # bs, 8 ,6
+    #     # pprint.pprint(num_total_samples)  # tensor([ 8,  8,  8,  8])
+    #     # pprint.pprint(db_entry)
+    #     print(labels)
+    #     print(idx)
+    #     print(out.shape, idx.sum())
+    #     print()
     
     # for i, (inputs, target) in enumerate(train_loader):
     #     print(inputs.shape, target.shape)
     
-    loss_calc = torch.nn.BCEWithLogitsLoss()
-    optimizer = optim.Adam(
-        model.parameters(),
-        lr = nise_cfg.TRAIN.LR
-    )
-    model_path = 'mnet_output/ep-22-0.pkl'
-    meta_info = torch.load(model_path)
-    model.load_state_dict(meta_info['state_dict'])
-    optimizer.load_state_dict(meta_info['optimizer'])
-    
+    # loss_calc = torch.nn.BCEWithLogitsLoss()
+    # optimizer = optim.Adam(
+    #     model.parameters(),
+    #     lr = nise_cfg.TRAIN.LR
+    # )
+    # model_path = 'mnet_output/ep-22-0.pkl'
+    # meta_info = torch.load(model_path)
+    # model.load_state_dict(meta_info['state_dict'])
+    # optimizer.load_state_dict(meta_info['optimizer'])
+    #
     val_pair = pair_dataset(nise_cfg, nise_cfg.PATH.GT_VAL_ANNOTATION_DIR,
                             nise_cfg.PATH.PRED_JSON_VAL_FOR_TRAINING_MNET,
                             nise_cfg.PATH.UNI_BOX_VAL_FOR_TRAINING_MNET, False)
-    valid_loader = my_dataloader.DataLoader(
-        val_pair,
-        batch_size = 24 * len(gpus),
-        shuffle = False,
-        num_workers = 8,
-        pin_memory = False,
-    )
-    p2 = val_using_loader(nise_cfg, valid_loader, val_pair, model)
-    print(p2)
-    torch.save(p2, 'mNet_eval_result.pkl')
-    # for epoch in range(nise_cfg.TRAIN.START_EPOCH, nise_cfg.TRAIN.END_EPOCH):
-    #     train_1_ep(nise_cfg, train_loader, model, loss_calc, optimizer, epoch)
+    # valid_loader = my_dataloader.DataLoader(
+    #     val_pair,
+    #     batch_size = 24 * len(gpus),
+    #     shuffle = False,
+    #     num_workers = 8,
+    #     pin_memory = False,
+    # )
+    # val_pair.vis_one_pair(1659)
+    with Pool() as po:
+        debug_print('Pool created.')
+        po.map(val_pair.vis_one_pair, [i for i in range(len(val_pair))])
+    # p2 = val_using_loader(nise_cfg, valid_loader, val_pair, model)
+    # print(p2)
+    # torch.save(p2, 'mNet_eval_result.pkl')
     
     # val_dataset = mNetDataset(nise_cfg, nise_cfg.PATH.GT_VAL_ANNOTATION_DIR,
     #                           nise_cfg.PATH.PRED_JSON_VAL_FOR_TRAINING_MNET,

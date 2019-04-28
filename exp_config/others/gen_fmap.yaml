@@ -1,7 +1,7 @@
 
 TEST:
   FROM: 0
-  TO: 50
+  TO: 250
 #  ONLY_TEST:
 #    - 3742_m
 #    - 17839_mpii_relpath_5sec_testsub
@@ -26,4 +26,4 @@ DEBUG:
   USE_FLOW_RESULT: false
   USE_DET_EST_RESULT: False
   load_simple_model: False
-  load_human_det_model: True
+  load_human_det_model: False

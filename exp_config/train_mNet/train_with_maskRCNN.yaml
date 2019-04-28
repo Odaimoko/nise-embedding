@@ -1,6 +1,5 @@
 TRAIN:
   START_EPOCH: 0
-
   END_EPOCH: 40
 
 TEST:

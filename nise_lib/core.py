@@ -304,12 +304,15 @@ def gen_fpn(gt_anno_dir, maskRCNN, joint_estimator, flow_model):
             gt = json.load(f)['annolist']
         for j, frame in enumerate(gt):
             # To save - image_scale, fmap
-            if True:  # frame['is_labeled'][0]:
+            if frame['is_labeled'][0]:
                 fpn_path = os.path.join(nise_cfg.PATH.FPN_PKL_DIR, p.stem + '-%03d' % (j) + '.pkl')
                 img_file_path = frame['image'][0]['name']
                 img_file_path = os.path.join(nise_cfg.PATH.POSETRACK_ROOT, img_file_path)
-                debug_print(j, img_file_path, indent = 1)
+                # debug_print(j, img_file_path, indent = 1)
                 original_img = cv2.imread(img_file_path)  # with original size
+                h, w, c = original_img.shape
+                debug_print(h, w, h / w)
+                break
                 fmap = gen_img_fmap(tron_cfg, original_img, maskRCNN)
                 torch.save(fmap, fpn_path)
                 debug_print('fpn_result_to_record saved: ', fpn_path)

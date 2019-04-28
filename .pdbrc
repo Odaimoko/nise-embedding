@@ -3,19 +3,15 @@ sys.path.append('nise_lib')
 sys.path.append('other_libs/tron_lib')
 sys.path.append('other_libs')
 sys.path.append('.')
-#b scripts/train_matchingNet.py:45
 #b other_libs/tron_lib/modeling/model_builder.py:588
-#b tron_lib/core/test_for_pt.py:116
 #b scripts/test-fmap-load.py:34
 #b nise_lib/nise_functions.py:673
-#b nise_lib/dataset/mNetDataset.py:243
-b scripts/tesst_matchingNet.py:272
-#b nise_lib/dataset/mNetDataset_debug.py:266
+#b scripts/tesst_matchingNet.py:262
 #b nise_lib/dataset/mNetDataset_debug.py:321
 #b scripts/mNetModelLoad.py:31
-#b  scripts/train_matchingNet.py:55
-b  nise_lib/frameitem.py:662
+#b  nise_lib/frameitem.py:662
 #b nise_lib/core.py:576
-#b scripts/run-mnet.py:48
+#b  scripts/train_matchingNet.py:67
+#b nise_lib/nise_models.py:84
 c
 

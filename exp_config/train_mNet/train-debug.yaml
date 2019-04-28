@@ -20,9 +20,10 @@ DEBUG:
   VIS_EST_SINGLE: False
   VIS_BOX: False
 
-  load_human_det_model: False
+  load_human_det_model: True
 PATH:
   PRE_COMPUTED_TRAIN_DATASET: 'pre_com/dataset_pkl_less/train_dataset_for_mnet.pkl'
+  PRE_COMPUTED_VAL_DATASET: 'pre_com/dataset_pkl_less/valid_dataset_for_mnet.pkl'
 
   PRED_JSON_VAL_FOR_TRAINING_MNET: 'pred_json-commi-onlydet/valid_task_1_DETbox_allBox_tfIoU_nmsThres_0.35_0.50'
   UNI_BOX_VAL_FOR_TRAINING_MNET: 'unifed_boxes-commi-onlydet/valid_task_1_DETbox_allBox_tfIoU_nmsThres_0.35_0.50'

@@ -6,6 +6,8 @@ easydict
 pycocotools
 torch==0.4.0
 torchvision
+imgaug
+
 # for poseval
 shapely
 click

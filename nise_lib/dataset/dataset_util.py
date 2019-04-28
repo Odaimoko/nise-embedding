@@ -61,6 +61,20 @@ def gen_joints_hmap(union_box_size, hmap_size, joints, joint_scores):
     return to_torch(target)
 
 
+def get_union_box_based_joints(u, joints):
+    u_box_size = torch.tensor([
+        u[2] - u[0],  # W
+        u[3] - u[1],  # H
+    ]).numpy()
+    box_size = u_box_size.tolist()
+    joints = joints.clone()
+    joints[:, 0] -= u[0]
+    joints[:, 1] -= u[1]
+    joints[:, 0].clamp_(0, box_size[0])
+    joints[:, 1].clamp_(0, box_size[1])
+    return joints
+
+
 def get_one_sample(p_fmap_pkl, c_fmap_pkl, u, p_box_idx, c_box_idx,
                    p_pred_joints, p_pred_joints_scores, c_pred_joints, c_pred_joints_scores):
     start = time.time()
@@ -74,23 +88,15 @@ def get_one_sample(p_fmap_pkl, c_fmap_pkl, u, p_box_idx, c_box_idx,
     start = time.time()
     # gen joints hmap
     bs, C, mH, mW = p_fmap.shape
+    
     u_box_size = torch.tensor([
         u[0, 2] - u[0, 0],  # W
         u[0, 3] - u[0, 1],  # H
     ]).numpy()
-    
     # convert joint pos to be relative to union box, some may be less than 0
-    def get_union_box_based_joints(u, joints):
-        box_size = u_box_size.tolist()
-        joints = joints.clone()
-        joints[:, 0] -= u[0, 0]
-        joints[:, 1] -= u[0, 1]
-        joints[:, 0].clamp_(0, box_size[0])
-        joints[:, 1].clamp_(0, box_size[1])
-        return joints
     
-    p_joints = get_union_box_based_joints(u, p_joints)
-    c_joints = get_union_box_based_joints(u, c_joints)
+    p_joints = get_union_box_based_joints(u.squeeze(), p_joints)
+    c_joints = get_union_box_based_joints(u.squeeze(), c_joints)
     
     p_joints_hmap = gen_joints_hmap(u_box_size,
                                     (mH, mW),

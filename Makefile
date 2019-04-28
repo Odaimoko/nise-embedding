@@ -73,10 +73,12 @@ t2-sb88:
 
 # MNET tracking
 nise_3_root_mnet=--nise_config exp_config/3/t-3-root-mnet.yaml
+nise_3_root_mnet_greedy=--nise_config exp_config/3/t-3-root-mnet-greedy.yaml
 
 t3-sb88-mnet:
 	$(nise_main_mnet)  $(tron_cfg_mask) --task1pred pred_json-single-est/79.0-sb88-valid_task_1_mask_DETbox_allBox_Flip_estJoints_tfIoU_nmsThres_0.35_0.50 $(nise_3_root_mnet)
-
+t3-sb88-mnet-greedy:
+	$(nise_main_mnet)  $(tron_cfg_mask) --task1pred pred_json-single-est/79.0-sb88-valid_task_1_mask_DETbox_allBox_Flip_estJoints_tfIoU_nmsThres_0.35_0.50 $(nise_3_root_mnet_greedy)
 
 
 eval-t3-sb88-mnet-fbj: # f
@@ -86,7 +88,13 @@ eval-t3-sb88-mnet-fbj: # f
 eval-t3-sb88-mnet-debug-fbj: # f
 	$(mot_pypath); python ../poseval/py/evaluate.py $(eval_gt_debug) -p  pred_json-track-mnet/valid_task_-2_mask_DETbox_allBox_Flip_estJoints_tfIoU_nmsThres_0.35_0.50_IoUMetric_mkrs_box_0.80_joint_0.50_matchID/ --evalPoseEstimation --evalPoseTracking
 
+nise_3_greedy=--nise_config exp_config/3/t-3-root-greedy.yaml
+t3-sb88-greedy:
+	$(nise_main)  $(tron_cfg_mask) --task1pred pred_json-single-est/79.0-sb88-valid_task_1_mask_DETbox_allBox_Flip_estJoints_tfIoU_nmsThres_0.35_0.50 $(nise_3_greedy)
 
+
+eval-t3-sb88-greedy-debug: # f
+	$(mot_pypath); python ../poseval/py/evaluate.py $(eval_gt_debug) -p  pred_json-track/valid_task_-2_mask_DETbox_allBox_Flip_estJoints_tfIoU_nmsThres_0.35_0.50_IoUMetric_greedy_box_0.80_joint_0.50_matchID/ --evalPoseEstimation --evalPoseTracking
 
 
 # BOX tracking
