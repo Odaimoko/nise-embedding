@@ -237,7 +237,7 @@ class NiseConfig:
             self.IOU_THERS_FOR_NEGATIVE = 0
             
             # TRAINING PARAM
-            self.BATCH_SIZE_PER_GPU = 8
+            self.BATCH_SIZE_PER_GPU = 2
             self.WORKERS = 4
             self.SHUFFLE = True
             self.LR = 0.01
@@ -249,6 +249,13 @@ class NiseConfig:
             self.START_EPOCH = 0
             self.END_EPOCH = 0
             self.PRINT_FREQ = 1
+            
+            # ─── DATA AUGMENTATION SETTING ──────────────────────────────────────────────────
+            
+            self.scale_factor = (0.7, 1.35)
+            self.contrast_range = 5
+            self.motion_blur_size = [30, 40]
+            self.motion_blur_angle_range = (60, 120)
     
     class _DATA:
         def __init__(self):
@@ -263,13 +270,6 @@ class NiseConfig:
                              (9, 10), (11, 12), (13, 14), (15, 16)]
             self.bbox_extend_factor = (0.075, 0.075)  # x, y
             
-            # ─── DATA AUGMENTATION SETTING ──────────────────────────────────────────────────
-            
-            self.scale_factor = (0.7, 1.35)
-            self.rot_factor = 45
-            
-            self.pixel_means = np.array([122.7717, 115.9465, 102.9801])  # RGB
-            
             #  should ask author
             self.flow_input_size = (1024, 576)
             # should initialize from simple_cfg
@@ -281,7 +281,6 @@ class NiseConfig:
             self.simple_cfg = '../simple-baseline-pytorch/experiments/pt17/res152-coco-384x288.yaml'
             self.simple_model = '/home/zhangxt/disk/posetrack/simple-baseline-pytorch/output-pt17-fromfreeze/pt17/pose_resnet_152/res152-coco-384x288/pt17-epoch-20-90.04363546829477'
             self.det_model = ''
-            
             
             self.INPUTS_CHANNELS = 542
             self.FEATURE_MAP_CHANNELS = 256
@@ -390,6 +389,7 @@ class NiseConfig:
             
             self.PRE_COMPUTED_VAL_DATASET = 'pre_com/dataset_pkl/valid_dataset_for_mnet.pkl'
             self.PRE_COMPUTED_TRAIN_DATASET = 'pre_com/dataset_pkl/train_dataset_for_mnet.pkl'
+            self.SAVED_PRED_JSON_TRAIN_DATASET = 'pre_com/dataset_pkl/pred_json_all.pkl'
             self.PRED_JSON_VAL_FOR_TRAINING_MNET = ''
             self.UNI_BOX_VAL_FOR_TRAINING_MNET = ''
             self.PRED_JSON_TRAIN_FOR_TRAINING_MNET = ''
@@ -397,7 +397,6 @@ class NiseConfig:
             
             self.MODEL_SAVE_DIR_FOR_TRAINING_MNET = 'mnet_output/'
             self.mNet_MODEL_FILE = ''
-
     
     class _TEST:
         def __init__(self):
@@ -425,6 +424,9 @@ class NiseConfig:
             
             # for training matching net
             self.BATCH_SIZE_PER_GPU = 24
+            
+            # for tracking visualization
+            self.POSITIVE_PAIR_THRES = .5
     
     def __init__(self):
         #

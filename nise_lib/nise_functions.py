@@ -22,12 +22,11 @@ from nise_lib.nise_config import mkrs
 from nise_lib.nise_debugging_func import *
 from nise_utils.imutils import *
 from plogs.logutils import Levels
-from nise_lib.nise_models import MatchingNet
 from mem_util.gpu_mem_track import MemTracker
 import inspect
 
 # DEBUGGING
-gpuMemTrack = MemTracker(inspect.currentframe()).track
+gpuMemTracker = MemTracker(inspect.currentframe())
 
 
 def debug_print(*args, indent = 0, lvl = Levels.INFO):
@@ -505,6 +504,63 @@ def imcrop(img, bbox):
     return img[y1:y2, x1:x2, :]
 
 
+from PIL import Image
+def rectify_img_size(img: np.ndarray, ratio = 9 / 16):
+    h, w, c = img.shape
+    img_ratio = h / w
+    new_h, new_w = h, w
+    if img_ratio > ratio:
+        new_w = int(h / ratio)
+    elif img_ratio < ratio:
+        new_h = int(w * ratio)
+    else:
+        return img
+    if np.abs(img_ratio - ratio) <= .02:
+        return np.array(cv2.resize(img, (new_w, new_h)))
+    else:
+        new_img = np.zeros([new_h, new_w, c])
+        new_img[:h, :w, :c] = img
+        return new_img
+
+
+# 改变亮度
+def random_brightness(image, max_delta = 63, seed = None):
+    img = np.array(image)
+    delta = np.random.uniform(-max_delta, max_delta)
+    return np.uint8(img + delta)
+
+
+# 改变对比度
+def random_contrast(image: np.ndarray, bound):
+    factor = np.random.uniform(-bound, bound)
+    mean = image.mean(axis = 2)
+    img = np.zeros(image.shape, np.float32)
+    for i in range(0, 3):
+        img[:, :, i] = (image[:, :, i] - mean) * factor + mean
+    return img
+
+
+import imgaug as ia
+from random import randint
+
+
+def flip_coin():
+    return randint(0, 1)
+
+
+def aug_img(img):
+    if flip_coin():
+        motion_blur_size = np.random.uniform(nise_cfg.TRAIN.motion_blur_size[0], nise_cfg.TRAIN.motion_blur_size[1])
+        motion_blur_angle = np.random.uniform(nise_cfg.TRAIN.motion_blur_angle_range[0],
+                                              nise_cfg.TRAIN.motion_blur_angle_range[1])
+        blur_dir = np.random.uniform(-.5, .5)
+        mb = ia.augmenters.blur.MotionBlur(int(motion_blur_size), int(motion_blur_angle), blur_dir, 0)
+        img = mb.augment_image(img)
+    if flip_coin():
+        img = random_contrast(img, nise_cfg.TRAIN.contrast_range)
+    return img
+
+
 # ─── BOX UTILS ──────────────────────────────────────────────────────────────────
 
 
@@ -665,7 +721,7 @@ def filter_bbox_with_scores(boxes, thres = nise_cfg.ALG._HUMAN_THRES):
     valid_scores_idx = torch.nonzero(scores >= thres).squeeze_().long()  # in case it's 6 x **1** x 5
     filtered_box = boxes[valid_scores_idx, :]
     filtered_box = expand_vector_to_tensor(filtered_box)
-    valid_scores_idx = expand_vector_to_tensor(valid_scores_idx,1)
+    valid_scores_idx = expand_vector_to_tensor(valid_scores_idx, 1)
     return filtered_box, valid_scores_idx
 
 
@@ -722,21 +778,12 @@ def gen_img_fmap(tron_cfg, original_img, maskRCNN):
     with torch.no_grad():
         hai = mask.Conv_Body(torch.from_numpy(inputs['data']).cuda())
     return {
-        'fmap': hai[3].cpu(),
+        'fmap': hai.cpu(),
         'scale': im_scale,
     }
 
 
 # ─── MATCHING ───────────────────────────────────────────────────────────────────
-
-def load_mNet_model(model_file):
-    model = MatchingNet(nise_cfg.MODEL.INPUTS_CHANNELS)
-    gpus = [int(i) for i in os.environ.get('CUDA_VISIBLE_DEVICES', default = '0').split(',')]
-    debug_print(gpus)
-    model = torch.nn.DataParallel(model, device_ids = gpus).cuda()
-    meta_info = torch.load(model_file)
-    model.load_state_dict(meta_info['state_dict'])
-    return model
 
 
 def get_joints_oks_mtx(j1, j2):
@@ -835,6 +882,20 @@ def make_nise_dirs():
     mkdir(nise_cfg.PATH.UNIFIED_JSON_DIR)
 
 
+def get_type_from_dir(dirpath, type_list):
+    files = []
+    for f in os.listdir(dirpath):
+        if pathlib.PurePosixPath(f).suffix.lower() in type_list:
+            files.append(os.path.join(dirpath, f))
+    return files
+
+
+def json_load(filename):
+    with open(filename, 'r') as f:
+        p = json.load(f)
+    return p
+
+
 def expand_vector_to_tensor(tensor, target_dim = 2):
     if tensor.numel() == 0:
         # size is 0
@@ -842,14 +903,6 @@ def expand_vector_to_tensor(tensor, target_dim = 2):
     while len(tensor.shape) < target_dim:  # vector
         tensor = tensor.unsqueeze(0)
     return tensor
-
-
-def get_type_from_dir(dirpath, type_list):
-    files = []
-    for f in os.listdir(dirpath):
-        if pathlib.PurePosixPath(f).suffix.lower() in type_list:
-            files.append(os.path.join(dirpath, f))
-    return files
 
 
 def get_joints_from_annorects(annorects):
