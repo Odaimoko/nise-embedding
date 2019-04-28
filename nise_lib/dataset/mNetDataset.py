@@ -15,11 +15,11 @@ import pprint
 from torch.utils.data import Dataset
 from collections import OrderedDict
 from nise_lib.nise_functions import *
-from nise_lib.nise_config import nise_cfg, nise_logger
 from collections import OrderedDict
 from nise_lib.dataset.dataset_util import *
 from tron_lib.core.test_for_pt import _get_blobs
 from tron_lib.core.config import cfg as tron_cfg
+from nise_utils.simple_vis import *
 
 
 class LimitedSizeDict(OrderedDict):
@@ -105,7 +105,7 @@ class mNetDataset(Dataset):
         total_num_pos = 0
         total_num_neg = 0
         for vid, file_name in enumerate(self.anno_file_names[:self.num_files_to_load]):
-            if is_skip_video(nise_cfg, vid, file_name):
+            if is_skip_video(self.cfg, vid, file_name):
                 # debug_print('Skip', vid, file_name)
                 continue
             debug_print(vid, file_name)
@@ -122,14 +122,14 @@ class mNetDataset(Dataset):
                 # debug_print(cur_id, lvl = Levels.STATUS)
                 
                 if frame['is_labeled'][0]:
-                    img_file_path = os.path.join(nise_cfg.PATH.POSETRACK_ROOT, frame['image'][0]['name'])
+                    img_file_path = os.path.join(self.cfg.PATH.POSETRACK_ROOT, frame['image'][0]['name'])
                     # debug_print(j, img_file_path)
                     gt_annorects = frame['annorect']
                     pred_annorects = pred[j]['annorect']
                     gt_annorects = removeRectsWithoutPoints(gt_annorects)
                     pred_annorects = removeRectsWithoutPoints(pred_annorects)
                     
-                    cur_id = find_gt_for_det_and_assignID(gt_annorects, pred_annorects, nise_cfg)
+                    cur_id = find_gt_for_det_and_assignID(gt_annorects, pred_annorects, self.cfg)
                     
                     if prev_j != -1:
                         
@@ -210,33 +210,50 @@ class mNetDataset(Dataset):
         img_file_paths = [prev_img_file_path, cur_img_file_path]
         inp = []
         scales = []
+        flip_lr = flip_coin()  # flip both or not
+        contrast=flip_coin()
+        imgs = []
         for img_file_path in img_file_paths:
             start = time.time()
             original_img = cv2.imread(img_file_path)  # with original size
-            original_img = aug_img(original_img)
-            original_img=rectify_img_size(original_img)
+            ori_h, ori_w, c = original_img.shape
+            if flip_lr:  # to flip image left and right
+                original_img = cv2.flip(original_img, 1)
+            if random() < self.cfg.TRAIN.motion_blur_prob:
+                motion_blur_size = np.random.uniform(self.cfg.TRAIN.motion_blur_size[0],
+                                                     self.cfg.TRAIN.motion_blur_size[1])
+                motion_blur_angle = np.random.uniform(self.cfg.TRAIN.motion_blur_angle_range[0],
+                                                      self.cfg.TRAIN.motion_blur_angle_range[1])
+                blur_dir = np.random.uniform(-.5, .5)
+                mb = ia.augmenters.blur.MotionBlur(int(motion_blur_size), int(motion_blur_angle), blur_dir, 0)
+                original_img = mb.augment_image(original_img)
+            if contrast:
+                original_img = random_contrast(original_img, self.cfg.TRAIN.contrast_range)
+            
+            original_img = rectify_img_size(original_img)
+            imgs.append(original_img)
             inputs, im_scale = _get_blobs(original_img, None, tron_cfg.TEST.SCALE, tron_cfg.TEST.MAX_SIZE)
             inp.append(torch.from_numpy(inputs['data']))
             scales.append(im_scale[0])
         
         if self.is_train:
             # sample from pos
-            if len(pos) >= nise_cfg.TRAIN.POS_SAMPLES_PER_IMAGE:  # have enough pos
-                num_neg_to_sample = min(nise_cfg.TRAIN.NEG_SAMPLES_PER_IMAGE, len(neg))
+            if len(pos) >= self.cfg.TRAIN.POS_SAMPLES_PER_IMAGE:  # have enough pos
+                num_neg_to_sample = min(self.cfg.TRAIN.NEG_SAMPLES_PER_IMAGE, len(neg))
                 # if neg not enough, fill training data with pos
-                difference = nise_cfg.TRAIN.NEG_SAMPLES_PER_IMAGE - num_neg_to_sample
-                num_pos_to_sample = min(nise_cfg.TRAIN.POS_SAMPLES_PER_IMAGE + difference, len(pos))
+                difference = self.cfg.TRAIN.NEG_SAMPLES_PER_IMAGE - num_neg_to_sample
+                num_pos_to_sample = min(self.cfg.TRAIN.POS_SAMPLES_PER_IMAGE + difference, len(pos))
             else:
                 num_pos_to_sample = len(pos)
                 # have enough neg to sample, and try to fill the training data
-                difference = nise_cfg.TRAIN.POS_SAMPLES_PER_IMAGE - num_pos_to_sample
-                num_neg_to_sample = min(nise_cfg.TRAIN.NEG_SAMPLES_PER_IMAGE + difference, len(neg))
+                difference = self.cfg.TRAIN.POS_SAMPLES_PER_IMAGE - num_pos_to_sample
+                num_neg_to_sample = min(self.cfg.TRAIN.NEG_SAMPLES_PER_IMAGE + difference, len(neg))
             
             pos_rand_idx = torch.randperm(len(pos))
             pos_samples = [pos[i] for i in pos_rand_idx[:num_pos_to_sample]]
             neg_rand_idx = torch.randperm(len(neg))
             neg_samples = [neg[i] for i in neg_rand_idx[:num_neg_to_sample]]
-            num_total_samples = nise_cfg.TRAIN.POS_SAMPLES_PER_IMAGE + nise_cfg.TRAIN.NEG_SAMPLES_PER_IMAGE
+            num_total_samples = self.cfg.TRAIN.POS_SAMPLES_PER_IMAGE + self.cfg.TRAIN.NEG_SAMPLES_PER_IMAGE
         else:
             num_pos_to_sample = len(pos)
             num_neg_to_sample = len(neg)
@@ -254,35 +271,46 @@ class mNetDataset(Dataset):
         c_pred_joints, c_pred_joints_scores = get_joints_from_annorects(pred[cur_j]['annorect'])
         _, num_joints, _ = p_pred_joints.shape
         joints_heatmap = -torch.ones(
-            [num_total_samples, num_joints * 2, nise_cfg.MODEL.FEATURE_MAP_RESOLUTION,
-             nise_cfg.MODEL.FEATURE_MAP_RESOLUTION])
+            [num_total_samples, num_joints * 2, self.cfg.MODEL.FEATURE_MAP_RESOLUTION,
+             self.cfg.MODEL.FEATURE_MAP_RESOLUTION])
+        labels = -torch.ones(num_total_samples)
+        labels[:num_pos_to_sample] = 1
+        labels[num_pos_to_sample:num_neg_to_sample + num_pos_to_sample] = 0
         for i, s in enumerate(all_samples):
             p_box_idx = all_samples_tensor[i, 0].int()
             c_box_idx = all_samples_tensor[i, 1].int()
             p_joints, p_joints_scores = p_pred_joints[p_box_idx, :, :2], p_pred_joints_scores[p_box_idx, :]
             c_joints, c_joints_scores = c_pred_joints[c_box_idx, :, :2], c_pred_joints_scores[c_box_idx, :]
             u = all_samples_tensor[i, 2:]
+            if flip_lr:
+                u = flip_boxes_lr(u, ori_w)
+                p_joints = flip_joints_coord_lr(p_joints, ori_w)
+                c_joints = flip_joints_coord_lr(c_joints, ori_w)
+            if flip_coin():
+                u = random_scale_box(u, self.cfg.TRAIN.box_scale_factor, [ori_h, ori_w])
             u_box_size = torch.tensor([
                 u[2] - u[0],  # W
                 u[3] - u[1],  # H
             ]).numpy()
+            
             p_joints = get_union_box_based_joints(u, p_joints)
             c_joints = get_union_box_based_joints(u, c_joints)
+            if self.cfg.TRAIN.VIS_PAIR == True:
+                self.vis_one_pair([
+                    prev_img_file_path, cur_img_file_path
+                ], imgs, u, labels[i], [p_joints, c_joints], [p_box_idx, c_box_idx])
             
             p_joints_hmap = gen_joints_hmap(u_box_size,
-                                            (nise_cfg.MODEL.FEATURE_MAP_RESOLUTION,
-                                             nise_cfg.MODEL.FEATURE_MAP_RESOLUTION),
+                                            (self.cfg.MODEL.FEATURE_MAP_RESOLUTION,
+                                             self.cfg.MODEL.FEATURE_MAP_RESOLUTION),
                                             p_joints, p_joints_scores)
             c_joints_hmap = gen_joints_hmap(u_box_size,
-                                            (nise_cfg.MODEL.FEATURE_MAP_RESOLUTION,
-                                             nise_cfg.MODEL.FEATURE_MAP_RESOLUTION),
+                                            (self.cfg.MODEL.FEATURE_MAP_RESOLUTION,
+                                             self.cfg.MODEL.FEATURE_MAP_RESOLUTION),
                                             c_joints, c_joints_scores)
             joints_heatmap[i, :num_joints] = p_joints_hmap
             joints_heatmap[i, num_joints:] = c_joints_hmap
         
-        labels = -torch.ones(num_total_samples)
-        labels[:num_pos_to_sample] = 1
-        labels[num_pos_to_sample:num_neg_to_sample + num_pos_to_sample] = 0
         # debug_print(db_rec)
         return torch.cat(inp), torch.tensor(scales), joints_heatmap, labels, {
             'all_samples': all_samples_tensor,
@@ -290,22 +318,33 @@ class mNetDataset(Dataset):
             'db_entry': db_rec
         }
     
-    @log_time('Evaluating model...')
+    @log_time('vis one pair')
+    def vis_one_pair(self, im_file_paths, imgs, union_box, is_same, joints_in_box, box_idx):
+        is_same = bool(is_same)
+        p = PurePosixPath(im_file_paths[0])
+        c = PurePosixPath(im_file_paths[1])
+        p_idx, c_idx = box_idx
+        d = os.path.join(self.cfg.PATH.MODEL_SAVE_DIR_FOR_TRAINING_MNET, 'imgs-train', p.parts[-2].split('_')[0])
+        mkdir(d)
+        file_name = '%s-%03d-%03d-%03d-%03d' % (
+            str((is_same)), int(p.stem), int(c.stem), p_idx, c_idx)
+        file_name = os.path.join(d, file_name + ".jpg")
+        debug_print("VIS", file_name)
+        cropped = [imcrop(img, union_box.numpy().astype(np.uint)) for img in imgs]
+        
+        two_people_with_joints = get_batch_image_with_joints(
+            torch.stack([im_to_torch(img) for img in cropped]),
+            torch.stack(joints_in_box), torch.ones([2, 15]), padding = 10
+        )
+        
+        h, w, c = two_people_with_joints.shape
+        image_to_save = np.ones([
+            h + 30, w, c
+        ]) * 255  # all white
+        image_to_save[:h, :, :] = two_people_with_joints
+        cv2.putText(image_to_save, str((is_same)), (0, h + 25), cv2.FONT_HERSHEY_COMPLEX, 1, (0, 0, 0), 1)
+        cv2.imwrite(file_name, image_to_save)
+    
+    # @log_time('Evaluating model...')
     def eval(self, gt: np.ndarray, pred_scores: np.ndarray):
-        '''
-        :param gt: vector, (num_gt,)
-        :param pred_scores: not ordered
-        :return:
-        '''
-        
-        # gt = np.array([i['is_same'] for i in self.db])
-        assert len(gt) == len(pred_scores)
-        
-        prec, rec, pr_thres = precision_recall_curve(gt, pred_scores)
-        ap = average_precision_score(gt, pred_scores)
-        fpr, tpr, roc_thres = roc_curve(gt, pred_scores)
-        auc = roc_auc_score(gt, pred_scores)
-        return {
-            'prec': prec, 'rec': rec, "pr_thres": pr_thres, 'ap': ap,
-            'fpr': fpr, 'tpr': tpr, 'roc_thres': roc_thres, 'auc': auc
-        }
+        return eval_classification(gt, pred_scores)

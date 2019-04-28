@@ -18,7 +18,7 @@ from nise_lib.core import *
 from nise_lib.dataset.mNetDataset import mNetDataset
 from nise_lib.dataset.mNetDataset_by_single_pair import mNetDataset as pair_dataset
 
-from nise_lib.nise_models import MatchingNet
+from nise_lib.nise_models import *
 from mem_util.gpu_mem_track import MemTracker
 import inspect
 from pdb import set_trace
@@ -50,22 +50,23 @@ class AverageMeter(object):
 def train_1_ep(config, train_loader, model, criterion, optimizer, epoch):
     batch_time = AverageMeter()
     data_time = AverageMeter()
+    acc = AverageMeter()
     losses = AverageMeter()
     model.train()
     end = time.time()
+    sig = torch.nn.Sigmoid()
     
     for i, (inputs, scales, joints_heatmap, target, meta_info) in enumerate(train_loader):
         # if i < 63: continue
         all_samples = meta_info['all_samples']
         
         idx = all_samples.sum(2) > 0  # bs x 8
+        data_time.update(time.time() - end)
+        output = model(inputs, scales, all_samples, joints_heatmap, idx)  # (bsx2) x CHW
         # debug_print('Before target', target.numel())
         target = target[idx]
         # debug_print("AFter target", target.numel())
-        data_time.update(time.time() - end)
-        output = model(inputs, scales, all_samples, joints_heatmap, idx)  # (bsx2) x CHW
         target = target.cuda(non_blocking = True).view([-1, 1])
-        # target_weight?
         loss = criterion(output, target)
         
         # compute gradient and do update step
@@ -76,6 +77,12 @@ def train_1_ep(config, train_loader, model, criterion, optimizer, epoch):
         # measure accuracy and record loss
         losses.update(loss.item(), inputs.size(0))
         
+        score = sig(output)
+        
+        avg_acc = accuracy(target.detach().cpu().numpy(), score.detach().cpu().numpy(),
+                           nise_cfg.TEST.POSITIVE_PAIR_THRES)
+        
+        acc.update(avg_acc, len(target))
         # measure elapsed time
         batch_time.update(time.time() - end)
         end = time.time()
@@ -85,58 +92,18 @@ def train_1_ep(config, train_loader, model, criterion, optimizer, epoch):
                   'Time {batch_time.val:.3f}s ({batch_time.avg:.3f}s)\t' \
                   'Speed {speed:.1f} samples/s\t' \
                   'Data {data_time.val:.3f}s ({data_time.avg:.3f}s)\t' \
-                  'Loss {loss.val:.5f} ({loss.avg:.5f})\t'.format(
-                epoch, i + 1, len(train_loader), batch_time = batch_time,
+                  'Loss {loss.val:.5f} ({loss.avg:.5f})\t' \
+                  'Accuracy {acc.val:.3f} ({acc.avg:.3f})'.format(
+                epoch, i, len(train_loader), batch_time = batch_time,
                 speed = inputs.size(0) / batch_time.val,
-                data_time = data_time, loss = losses)
+                data_time = data_time, loss = losses, acc = acc)
             debug_print(msg)
 
-
-def validate(config, val_dataset, model, output_dir):
+@log_time("Validating...")
+def val_using_loader(config, val_loader, criterion, val_dataset, model):
     batch_time = AverageMeter()
-    losses = AverageMeter()
-    
-    # switch to evaluate mode
-    model.eval()
-    all_scores = []
-    labels = []
-    # all_scores = np.zeros((num_samples), dtype = np.float32)
-    # labels = np.zeros((num_samples), dtype = np.float32)
-    idx = 0
-    sig = torch.nn.Sigmoid()
-    with torch.no_grad():
-        end = time.time()
-        for i, (inputs, target) in enumerate(val_dataset):
-            target = target.view([-1])
-            
-            output = model(inputs)
-            target = target.cuda(non_blocking = True)
-            
-            # measure elapsed time
-            batch_time.update(time.time() - end)
-            end = time.time()
-            
-            score = sig(output)
-            
-            all_scores.append(score.view(-1).cpu().numpy())
-            labels.append(target.view(-1).cpu().numpy())
-            
-            if i % config.TRAIN.PRINT_FREQ == 0:
-                msg = 'Test: [{0}/{1}]\t' \
-                      'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t' \
-                      'Loss {loss.val:.4f} ({loss.avg:.4f})\t'.format(
-                    i + 1, len(val_dataset), batch_time = batch_time,
-                    loss = losses)
-                debug_print(msg)
-        all_scores = np.concatenate(all_scores)
-        labels = np.concatenate(labels)
-        perf_indicator = val_dataset.eval(labels, all_scores)
-    
-    return perf_indicator
-
-
-def val_using_loader(config, val_loader, val_dataset, model, out_dir):
-    batch_time = AverageMeter()
+    data_time = AverageMeter()
+    acc = AverageMeter()
     losses = AverageMeter()
     
     # switch to evaluate mode
@@ -147,19 +114,27 @@ def val_using_loader(config, val_loader, val_dataset, model, out_dir):
     sig = torch.nn.Sigmoid()
     with torch.no_grad():
         end = time.time()
-        for i, (inputs, target) in enumerate(val_loader):
+        for i, (inputs, scales, joints_heatmap, target, sample_info) in enumerate(val_loader):
+            data_time.update(time.time() - end)
             
-            torch.cuda.empty_cache()
-            
-            output = model(inputs)  # torch.Size([bs, 16/17, 96, 96])
+            output = model(inputs, scales, sample_info, joints_heatmap,
+                           sample_info.sum(2) > 0)  # (bsx2) x CHW
+            target = target.cuda(non_blocking = True).view([-1, 1])
+            loss = criterion(output, target)
             
             num_images = inputs.size(0)
             
+            losses.update(loss.item(), inputs.size(0))
+            
+            score = sig(output)
+            
+            avg_acc = accuracy(target.detach().cpu().numpy(), score.detach().cpu().numpy(),
+                               nise_cfg.TEST.POSITIVE_PAIR_THRES)
+            
+            acc.update(avg_acc, len(target))
             # measure elapsed time
             batch_time.update(time.time() - end)
             end = time.time()
-            
-            score = sig(output)
             
             all_scores[idx:idx + num_images, :] = score.cpu().numpy()
             idx += num_images
@@ -167,10 +142,13 @@ def val_using_loader(config, val_loader, val_dataset, model, out_dir):
             if i % config.TRAIN.PRINT_FREQ == 0:
                 msg = 'Test: [{0}/{1}]\t' \
                       'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t' \
-                      'Loss {loss.val:.4f} ({loss.avg:.4f})\t'.format(
-                    i, len(val_loader), batch_time = batch_time,
-                    loss = losses)
+                      'Data {data_time.val:.3f}s ({data_time.avg:.3f}s)\t' \
+                      'Loss {loss.val:.4f} ({loss.avg:.4f})\t' \
+                      'Accuracy {acc.val:.3f} ({acc.avg:.3f})'.format(
+                    i, len(val_loader), batch_time = batch_time, data_time = data_time,
+                    loss = losses, acc = acc)
                 debug_print(msg)
+        
         perf_indicator = val_dataset.eval(all_scores)
     
     return perf_indicator
@@ -186,27 +164,44 @@ if __name__ == '__main__':
     gpus = os.environ.get('CUDA_VISIBLE_DEVICES', default = '0').split(',')
     gpus = list(range(len(gpus)))
     
-    # val_dataset = mNetDataset(nise_cfg, nise_cfg.PATH.GT_VAL_ANNOTATION_DIR,
-    #                           nise_cfg.PATH.PRED_JSON_VAL_FOR_TRAINING_MNET,
-    #                           nise_cfg.PATH.UNI_BOX_VAL_FOR_TRAINING_MNET, False, maskRCNN)
-    
-    # val_pair = pair_dataset(nise_cfg, nise_cfg.PATH.GT_VAL_ANNOTATION_DIR,
-    #                         nise_cfg.PATH.PRED_JSON_VAL_FOR_TRAINING_MNET,
-    #                         nise_cfg.PATH.UNI_BOX_VAL_FOR_TRAINING_MNET, False)
-    train_dataset = mNetDataset(nise_cfg, nise_cfg.PATH.GT_TRAIN_ANNOTATION_DIR,
-                                nise_cfg.PATH.PRED_JSON_TRAIN_FOR_TRAINING_MNET,
-                                nise_cfg.PATH.UNI_BOX_TRAIN_FOR_TRAINING_MNET, True)
-    
     debug_print("Init Network...")
     maskRCNN = None
     if nise_cfg.DEBUG.load_human_det_model:
         human_detect_args = human_detect_parse_args()
         maskRCNN, human_det_dataset = load_human_detect_model(human_detect_args, tron_cfg)
-    model = MatchingNet(nise_cfg.MODEL.INPUTS_CHANNELS, maskRCNN)
-    debug_print("Done")
-    debug_print("Distribute Network to GPUs...", gpus)
-    model = torch.nn.DataParallel(model, device_ids = gpus).cuda()
-    debug_print("Done")
+    
+    meta_info = None
+    if nise_cfg.PATH.mNet_MODEL_FILE:
+        debug_print("Load model from ", nise_cfg.PATH.mNet_MODEL_FILE)
+        model, meta_info = load_mNet_model(nise_cfg.PATH.mNet_MODEL_FILE, maskRCNN)
+    else:
+        model = MatchingNet(nise_cfg.MODEL.INPUTS_CHANNELS, maskRCNN)
+        debug_print("Done")
+        debug_print("Distribute Network to GPUs...", gpus)
+        model = torch.nn.DataParallel(model, device_ids = gpus).cuda()
+        debug_print("Done")
+    
+    optimizer = optim.Adam(
+        filter(lambda p: p.requires_grad, model.parameters()),
+        lr = nise_cfg.TRAIN.LR
+    )
+    
+    if meta_info:
+        optimizer.load_state_dict(meta_info['optimizer'])
+        nise_cfg.TRAIN.START_EPOCH = meta_info['epoch']
+    
+    loss_calc = torch.nn.BCEWithLogitsLoss()
+    
+    # val_dataset = mNetDataset(nise_cfg, nise_cfg.PATH.GT_VAL_ANNOTATION_DIR,
+    #                           nise_cfg.PATH.PRED_JSON_VAL_FOR_TRAINING_MNET,
+    #                           nise_cfg.PATH.UNI_BOX_VAL_FOR_TRAINING_MNET, False, maskRCNN)
+    
+    val_pair = pair_dataset(nise_cfg, nise_cfg.PATH.GT_VAL_ANNOTATION_DIR,
+                            nise_cfg.PATH.PRED_JSON_VAL_FOR_TRAINING_MNET,
+                            nise_cfg.PATH.UNI_BOX_VAL_FOR_TRAINING_MNET, False)
+    train_dataset = mNetDataset(nise_cfg, nise_cfg.PATH.GT_TRAIN_ANNOTATION_DIR,
+                                nise_cfg.PATH.PRED_JSON_TRAIN_FOR_TRAINING_MNET,
+                                nise_cfg.PATH.UNI_BOX_TRAIN_FOR_TRAINING_MNET, True)
     
     train_loader = torch.utils.data.DataLoader(
         train_dataset,
@@ -216,19 +211,14 @@ if __name__ == '__main__':
         pin_memory = True
     )
     
-    # valid_loader = torch.utils.data.DataLoader(
-    #     val_dataset,
-    #     batch_size = nise_cfg.TEST.BATCH_SIZE_PER_GPU * len(gpus),
-    #     shuffle = False,
-    #     num_workers = nise_cfg.TRAIN.WORKERS,
-    #     pin_memory = False,
-    # )
-    model.train()
-    loss_calc = torch.nn.BCEWithLogitsLoss()
-    optimizer = optim.Adam(
-        filter(lambda p: p.requires_grad, model.parameters()),
-        lr = nise_cfg.TRAIN.LR
+    valid_loader = torch.utils.data.DataLoader(
+        val_pair,
+        batch_size = nise_cfg.TEST.BATCH_SIZE_PER_GPU * len(gpus),
+        shuffle = False,
+        num_workers = nise_cfg.TRAIN.WORKERS,
+        pin_memory = False,
     )
+    model.train()
     final_output_dir = nise_cfg.PATH.MODEL_SAVE_DIR_FOR_TRAINING_MNET
     debug_print("BEGIN TO TRAIN.", lvl = Levels.SUCCESS)
     
@@ -239,7 +229,7 @@ if __name__ == '__main__':
         train_1_ep(nise_cfg, train_loader, model, loss_calc, optimizer, epoch)
         
         # perf_indicator = validate(nise_cfg, val_pair, model, final_output_dir)
-        # perf_indicator = val_using_loader(nise_cfg, valid_loader, val_pair, model, final_output_dir)
+        # perf_indicator = val_using_loader(nise_cfg, valid_loader, loss_calc, val_pair, model)
         # ap = perf_indicator['ap']
         perf_indicator = None
         ap = 0

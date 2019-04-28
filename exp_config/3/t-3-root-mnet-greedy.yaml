@@ -12,7 +12,7 @@ TEST:
   TO: 1
   ONLY_TEST:
     - '03742'
-    - 14102_mpii
+#    - 14102_mpii
 #    -  20880_mpii_relpath_5sec_testsub
 #    -  '24165'
 

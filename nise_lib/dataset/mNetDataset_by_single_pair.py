@@ -223,8 +223,7 @@ class mNetDataset(Dataset):
     # @log_time('Getting item...')
     def __getitem__(self, idx):
         
-        im_file_paths, u, is_same, joints_in_box, joint_scores = self.get_entry_info(idx)
-        prev_img_file_path, cur_img_file_path = im_file_paths
+        img_file_paths, u, is_same, joints_in_box, joint_scores = self.get_entry_info(idx)
         p_joints, c_joints = joints_in_box
         p_joints_scores, c_joints_scores = joint_scores
         # debug_print('Get', idx)
@@ -235,46 +234,37 @@ class mNetDataset(Dataset):
         cur_j = db_rec['cur_frame']
         p = PurePosixPath(file_name)
         
-        assert (u.shape[0] == 1 and u.shape[1] == 4)
-        # debug_print('load boxes', time.time() - start, lvl = Levels.ERROR)
+        inp = []
+        scales = []
+        for img_file_path in img_file_paths:
+            original_img = cv2.imread(img_file_path)  # with original size
+            original_img = rectify_img_size(original_img)
+            inputs, im_scale = _get_blobs(original_img, None, tron_cfg.TEST.SCALE, tron_cfg.TEST.MAX_SIZE)
+            inp.append(torch.from_numpy(inputs['data']))
+            scales.append(im_scale[0])
         
         # get union feature map
         start = time.time()
-        p_pkl_file_name = os.path.join(self.cfg.PATH.FPN_PKL_DIR, p.stem + '-%03d' % (prev_j) + '.pkl')
-        c_pkl_file_name = os.path.join(self.cfg.PATH.FPN_PKL_DIR, p.stem + '-%03d' % (cur_j) + '.pkl')
-        
-        p_fmap_pkl = self.load_from_cache(p_pkl_file_name, self.cached_pkl)
-        c_fmap_pkl = self.load_from_cache(c_pkl_file_name, self.cached_pkl)
-        # debug_print('load fmap', time.time() - start, lvl = Levels.ERROR)
-        
-        start = time.time()
-        u = expand_vector_to_tensor(u)
-        p_fmap = get_box_fmap(p_fmap_pkl, u, 'align')
-        c_fmap = get_box_fmap(c_fmap_pkl, u, 'align')
-        # debug_print('get fmap', time.time() - start, lvl = Levels.ERROR)
-        # load joints
-        
-        start = time.time()
         # gen joints hmap
-        bs, C, mH, mW = p_fmap.shape
         u_box_size = torch.tensor([
-            u[0, 2] - u[0, 0],  # W
-            u[0, 3] - u[0, 1],  # H
+            u[2] - u[0],  # W
+            u[3] - u[1],  # H
         ]).numpy()
         
-        p_joints_hmap = self.gen_joints_hmap(u_box_size,
-                                             (mH, mW),
-                                             p_joints, p_joints_scores)
-        c_joints_hmap = self.gen_joints_hmap(u_box_size,
-                                             (mH, mW),
-                                             c_joints, c_joints_scores)
-        # debug_print('get joints hemap ', time.time() - start, lvl = Levels.ERROR)
-        # assemble
-        start = time.time()
-        inputs = torch.cat([p_fmap.squeeze(), c_fmap.squeeze(), p_joints_hmap, c_joints_hmap])
-        # debug_print('assemble ', time.time() - start, lvl = Levels.ERROR)
+        p_joints_hmap = gen_joints_hmap(u_box_size,
+                                        (self.cfg.MODEL.FEATURE_MAP_RESOLUTION,
+                                         self.cfg.MODEL.FEATURE_MAP_RESOLUTION),
+                                        p_joints, p_joints_scores)
+        c_joints_hmap = gen_joints_hmap(u_box_size,
+                                        (self.cfg.MODEL.FEATURE_MAP_RESOLUTION,
+                                         self.cfg.MODEL.FEATURE_MAP_RESOLUTION),
+                                        c_joints, c_joints_scores)
         
-        return [inputs, torch.tensor([is_same]).float()]
+        sample_info = torch.zeros([1,6])
+        # 0 and 1 is p_box_idx and c's, but when forwarding they are not needed
+        sample_info[0,2:] = u
+        return torch.cat(inp), torch.tensor(scales), torch.cat([p_joints_hmap, c_joints_hmap]).unsqueeze(0),\
+               torch.tensor(is_same).float().unsqueeze(0), sample_info
     
     def get_entry_info(self, idx):
         db_rec = self.db[idx]
@@ -315,10 +305,10 @@ class mNetDataset(Dataset):
         is_same = bool(is_same)
         p = PurePosixPath(im_file_paths[0])
         c = PurePosixPath(im_file_paths[1])
-        d=os.path.join(nise_cfg.PATH.MODEL_SAVE_DIR_FOR_TRAINING_MNET, 'imgs', p.parts[-2].split('_')[0])
+        d = os.path.join(nise_cfg.PATH.MODEL_SAVE_DIR_FOR_TRAINING_MNET, 'imgs', p.parts[-2].split('_')[0])
         mkdir(d)
         file_name = '%s-%05d-%03d-%03d' % (
-            str((is_same)), idx,   int(p.stem), int(c.stem))
+            str((is_same)), idx, int(p.stem), int(c.stem))
         file_name = os.path.join(d, file_name + ".jpg")
         imgs = [cv2.imread(fn) for fn in im_file_paths]
         cropped = [imcrop(img, union_box.numpy().astype(np.uint)) for img in imgs]

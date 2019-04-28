@@ -545,9 +545,8 @@ class FrameItem:
                                                                 3)  # in case only one people is in this image
                             dist_mat = get_dist_mat(id_joints, proped_joints)
                     
-                    debug_print('Original\n', dist_mat, lvl = Levels.ERROR)
-
-                    # dist_mat should be np.ndarray
+                    # debug_print('Original\n', dist_mat, lvl = Levels.ERROR)
+                    assert isinstance(dist_mat, np.ndarray)
                     if self.cfg.ALG.MATCHING_ALG == self.cfg.ALG.MATCHING_MKRS:
                         indices = get_matching_indices(dist_mat)
                     elif self.cfg.ALG.MATCHING_ALG == self.cfg.ALG.MATCHING_GREEDY:
@@ -556,9 +555,9 @@ class FrameItem:
                     #     prev, cur, dist_mat[cur][prev], prev_frame.people_ids[prev])
                     #                        for cur, prev in indices]), indent = 1)
                     for cur, prev in indices:
-                        value = dist_mat[cur][prev]
-                        debug_print('(%d, %d) -> %f' % (cur, prev, value))
-                        self.vis_one_pair(prev_frame, prev, cur, dist_mat[cur, prev])
+                        # value = dist_mat[cur][prev]
+                        # debug_print('(%d, %d) -> %f' % (cur, prev, value))
+                        # self.vis_one_pair(prev_frame, prev, cur, dist_mat[cur, prev])
                         self.people_ids[cur] = prev_frame.people_ids[prev]
                 for i in range(self.people_ids.shape[0]):
                     if self.people_ids[i] == 0:  # unassigned
@@ -659,7 +658,15 @@ class FrameItem:
                     # cur_fmaps = get_box_fmap(self.fmap_dict, allboxes, 'align')
                     # pre_fmaps = get_box_fmap(prev_frame.fmap_dict, allboxes, 'align')
                     start = time.time()
-                    # debug_print('Original\n', dist_mat, lvl = Levels.ERROR)
+                    debug_print('Original\n', dist_mat, lvl = Levels.ERROR)
+                    if self.cfg.ALG.MATCHING_ALG == self.cfg.ALG.MATCHING_MKRS:
+                        indices = get_matching_indices(dist_mat)
+                    elif self.cfg.ALG.MATCHING_ALG == self.cfg.ALG.MATCHING_GREEDY:
+                        indices = list(zip(*bipartite_matching_greedy(-dist_mat)))
+                    for cur, prev in indices:
+                        value = dist_mat[cur][prev]
+                        debug_print('(%d, %d) -> %f' % (cur, prev, value))
+                    
                     all_inputs = torch.zeros([len(pairs),
                                               self.cfg.MODEL.INPUTS_CHANNELS,
                                               self.cfg.MODEL.FEATURE_MAP_RESOLUTION,
@@ -681,20 +688,20 @@ class FrameItem:
                     for i in range(len(pairs)):
                         p_idx, c_idx, _ = pairs[i]
                         dist_mat[c_idx, p_idx] = out[i].squeeze().detach().cpu().numpy()
-                    # debug_print('Changed\n', dist_mat, lvl = Levels.ERROR)
+                    debug_print('Changed\n', dist_mat, lvl = Levels.ERROR)
                     # dist_mat should be np.ndarray
                     if self.cfg.ALG.MATCHING_ALG == self.cfg.ALG.MATCHING_MKRS:
                         indices = get_matching_indices(dist_mat)
                     elif self.cfg.ALG.MATCHING_ALG == self.cfg.ALG.MATCHING_GREEDY:
-                        indices = list(zip(*bipartite_matching_greedy(dist_mat)))
+                        indices = list(zip(*bipartite_matching_greedy(-dist_mat)))
                     # debug_print('\t'.join(['(%d, %d) -> %.2f; ID %d' % (
                     #     prev, cur, dist_mat[cur][prev], prev_frame.people_ids[prev])
                     #                        for cur, prev in indices]), indent = 1)
-                    debug_print("Time consumed %.3f" % (time.time() - start))
+                    # debug_print("Time consumed %.3f" % (time.time() - start))
                     for cur, prev in indices:
-                        # value = dist_mat[cur][prev]
-                        # debug_print('(%d, %d) -> %f' % (cur, prev, value))
-                        self.vis_one_pair(prev_frame, prev, cur, dist_mat[cur, prev])
+                        value = dist_mat[cur][prev]
+                        debug_print('(%d, %d) -> %f' % (prev, cur, value))
+                        # self.vis_one_pair(prev_frame, prev, cur, dist_mat[cur, prev])
                         self.people_ids[cur] = prev_frame.people_ids[prev]
                 for i in range(self.people_ids.shape[0]):
                     if self.people_ids[i] == 0:  # unassigned

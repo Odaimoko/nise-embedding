@@ -24,6 +24,7 @@ from nise_utils.imutils import *
 from plogs.logutils import Levels
 from mem_util.gpu_mem_track import MemTracker
 import inspect
+from sklearn.metrics import precision_recall_curve, average_precision_score, roc_auc_score, roc_curve, accuracy_score
 
 # DEBUGGING
 gpuMemTracker = MemTracker(inspect.currentframe())
@@ -504,7 +505,6 @@ def imcrop(img, bbox):
     return img[y1:y2, x1:x2, :]
 
 
-from PIL import Image
 def rectify_img_size(img: np.ndarray, ratio = 9 / 16):
     h, w, c = img.shape
     img_ratio = h / w
@@ -515,24 +515,26 @@ def rectify_img_size(img: np.ndarray, ratio = 9 / 16):
         new_h = int(w * ratio)
     else:
         return img
-    if np.abs(img_ratio - ratio) <= .02:
-        return np.array(cv2.resize(img, (new_w, new_h)))
-    else:
-        new_img = np.zeros([new_h, new_w, c])
-        new_img[:h, :w, :c] = img
-        return new_img
+    # if np.abs(img_ratio - ratio) <= .02:
+    #     return np.array(cv2.resize(img, (new_w, new_h)))
+    # else:
+    new_img = np.zeros([new_h, new_w, c])
+    new_img[:h, :w, :c] = img
+    return new_img
 
 
-# 改变亮度
-def random_brightness(image, max_delta = 63, seed = None):
-    img = np.array(image)
-    delta = np.random.uniform(-max_delta, max_delta)
-    return np.uint8(img + delta)
+# ─── DATA AUG FUNCTIONS ─────────────────────────────────────────────────────────
+
+
+# Color, box scale, flip, 坐标相关的都要改变
+
+import imgaug as ia
+from random import randint, random
 
 
 # 改变对比度
 def random_contrast(image: np.ndarray, bound):
-    factor = np.random.uniform(-bound, bound)
+    factor = np.random.uniform(bound[0], bound[1])
     mean = image.mean(axis = 2)
     img = np.zeros(image.shape, np.float32)
     for i in range(0, 3):
@@ -540,8 +542,38 @@ def random_contrast(image: np.ndarray, bound):
     return img
 
 
-import imgaug as ia
-from random import randint
+def random_brightness(image: np.ndarray, bound):
+    factor = np.random.uniform(bound[0], bound[1])
+    img = image * factor
+    return img
+
+
+def random_scale_box(box, bound, clamp_size = ()):
+    '''
+    
+    :param box:
+    :param bound:
+    :param clamp_size:  h,w
+    :return:
+    '''
+    assert isinstance(box, torch.Tensor)
+    factor = np.random.uniform(bound[0], bound[1])
+    
+    # extend by a centain factor
+    bb = box.clone()
+    w, h = bb[2] - bb[0], bb[3] - bb[1]
+    ws = w * factor
+    hs = h * factor
+    bb[0] -= ws
+    bb[2] += ws
+    bb[1] -= hs
+    bb[2] += hs
+    if clamp_size:
+        bb[0] = max(0, bb[0])
+        bb[2] = min(clamp_size[1], bb[2])
+        bb[1] = max(0, bb[1])
+        bb[3] = min(clamp_size[0], bb[3])
+    return bb
 
 
 def flip_coin():
@@ -549,7 +581,7 @@ def flip_coin():
 
 
 def aug_img(img):
-    if flip_coin():
+    if random() < nise_cfg.TRAIN.motion_blur_prob:
         motion_blur_size = np.random.uniform(nise_cfg.TRAIN.motion_blur_size[0], nise_cfg.TRAIN.motion_blur_size[1])
         motion_blur_angle = np.random.uniform(nise_cfg.TRAIN.motion_blur_angle_range[0],
                                               nise_cfg.TRAIN.motion_blur_angle_range[1])
@@ -559,6 +591,36 @@ def aug_img(img):
     if flip_coin():
         img = random_contrast(img, nise_cfg.TRAIN.contrast_range)
     return img
+
+
+def flip_joints_coord_lr(joints, img_w):
+    assert isinstance(joints, torch.Tensor)
+    if len(joints.shape) == 2:
+        single = True
+        joints = expand_vector_to_tensor(joints, 3)
+    else:
+        single = False
+    bb = joints.clone()
+    bb[:, :, 0] = img_w - joints[:, :, 0]
+    if single:
+        bb = bb.squeeze()
+    return bb
+
+
+def flip_boxes_lr(boxes, img_w):
+    assert isinstance(boxes, torch.Tensor)
+    if len(boxes.shape) == 1:
+        single = True
+        boxes = expand_vector_to_tensor(boxes)
+    else:
+        single = False
+    
+    bb = boxes.clone()
+    bb[:, 0] = img_w - boxes[:, 2]
+    bb[:, 2] = img_w - boxes[:, 0]
+    if single:
+        bb = bb.squeeze()
+    return bb
 
 
 # ─── BOX UTILS ──────────────────────────────────────────────────────────────────
@@ -880,6 +942,7 @@ def make_nise_dirs():
     mkdir(nise_cfg.PATH.FLOW_JSON_DIR)
     mkdir(nise_cfg.PATH.DET_EST_JSON_DIR)
     mkdir(nise_cfg.PATH.UNIFIED_JSON_DIR)
+    mkdir(nise_cfg.PATH.MODEL_SAVE_DIR_FOR_TRAINING_MNET)
 
 
 def get_type_from_dir(dirpath, type_list):
@@ -904,6 +967,8 @@ def expand_vector_to_tensor(tensor, target_dim = 2):
         tensor = tensor.unsqueeze(0)
     return tensor
 
+
+# Posetrack annotations
 
 def get_joints_from_annorects(annorects):
     if annorects is not None and len(annorects) == 0:
@@ -1387,6 +1452,33 @@ def voc_eval_for_pt(gt_anno_dir, pred_anno_dir = None):
     prec = tp / torch.max(tp + fp, torch.tensor(np.finfo(float).eps))
     ap = voc_ap_for_pt(rec, prec)
     return rec, prec, ap, sorted_scores, npos
+
+
+# for
+def eval_classification(gt: np.ndarray, pred_scores: np.ndarray):
+    '''
+    :param gt: vector, (num_gt,)
+    :param pred_scores: not ordered
+    :return:
+    '''
+    
+    assert len(gt) == len(pred_scores)
+    
+    prec, rec, pr_thres = precision_recall_curve(gt, pred_scores)
+    ap = average_precision_score(gt, pred_scores)
+    fpr, tpr, roc_thres = roc_curve(gt, pred_scores)
+    auc = roc_auc_score(gt, pred_scores)
+    return {
+        'prec': prec, 'rec': rec, "pr_thres": pr_thres, 'ap': ap,
+        'fpr': fpr, 'tpr': tpr, 'roc_thres': roc_thres, 'auc': auc
+    }
+
+
+def accuracy(gt: np.ndarray, pred_scores: np.ndarray, thres):
+    assert len(gt) == len(pred_scores)
+    pred_label = pred_scores >= thres
+    acc = accuracy_score(gt, pred_label)
+    return acc
 
 
 if __name__ == '__main__':

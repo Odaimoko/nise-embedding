@@ -34,7 +34,7 @@ class LimitedSizeDict(OrderedDict):
 
 
 class mNetDataset(Dataset):
-    def __init__(self, _nise_cfg, gt_anno_dir, pred_anno_dir, uni_box_dir, is_train, maskRCNN):
+    def __init__(self, _nise_cfg, gt_anno_dir, pred_anno_dir, uni_box_dir, is_train, maskRCNN=None):
         self.cfg = _nise_cfg
         self.gt_anno_dir = gt_anno_dir
         self.anno_file_names = sorted(get_type_from_dir(self.gt_anno_dir, ['.json']))

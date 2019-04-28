@@ -81,19 +81,24 @@ t3-sb88-mnet-greedy:
 	$(nise_main_mnet)  $(tron_cfg_mask) --task1pred pred_json-single-est/79.0-sb88-valid_task_1_mask_DETbox_allBox_Flip_estJoints_tfIoU_nmsThres_0.35_0.50 $(nise_3_root_mnet_greedy)
 
 
-eval-t3-sb88-mnet-fbj: # f
+eval-t3-sb88-mnet-fbj:
 	$(mot_pypath); python ../poseval/py/evaluate.py $(eval_gt_all) -p  pred_json-track-mnet/valid_task_-2_mask_DETbox_allBox_Flip_estJoints_tfIoU_nmsThres_0.35_0.50_IoUMetric_mkrs_box_0.80_joint_0.50_matchID/ --evalPoseEstimation --evalPoseTracking
 
 
-eval-t3-sb88-mnet-debug-fbj: # f
+eval-t3-sb88-mnet-debug-fbj:
 	$(mot_pypath); python ../poseval/py/evaluate.py $(eval_gt_debug) -p  pred_json-track-mnet/valid_task_-2_mask_DETbox_allBox_Flip_estJoints_tfIoU_nmsThres_0.35_0.50_IoUMetric_mkrs_box_0.80_joint_0.50_matchID/ --evalPoseEstimation --evalPoseTracking
+
+eval-t3-sb88-mnet-greedy-debug:
+	$(mot_pypath); python ../poseval/py/evaluate.py $(eval_gt_debug) -p  pred_json-track-mnet/valid_task_-6_mask_DETbox_allBox_Flip_estJoints_tfIoU_nmsThres_0.35_0.50_IoUMetric_greedy_box_0.80_joint_0.50_matchID/ --evalPoseTracking
 
 nise_3_greedy=--nise_config exp_config/3/t-3-root-greedy.yaml
 t3-sb88-greedy:
 	$(nise_main)  $(tron_cfg_mask) --task1pred pred_json-single-est/79.0-sb88-valid_task_1_mask_DETbox_allBox_Flip_estJoints_tfIoU_nmsThres_0.35_0.50 $(nise_3_greedy)
 
+eval-t3-sb88-greedy:
+	$(mot_pypath); python ../poseval/py/evaluate.py $(eval_gt_all) -p  pred_json-track/valid_task_-2_mask_DETbox_allBox_Flip_estJoints_tfIoU_nmsThres_0.35_0.50_IoUMetric_greedy_box_0.80_joint_0.50_matchID/ --evalPoseEstimation --evalPoseTracking
 
-eval-t3-sb88-greedy-debug: # f
+eval-t3-sb88-greedy-debug:
 	$(mot_pypath); python ../poseval/py/evaluate.py $(eval_gt_debug) -p  pred_json-track/valid_task_-2_mask_DETbox_allBox_Flip_estJoints_tfIoU_nmsThres_0.35_0.50_IoUMetric_greedy_box_0.80_joint_0.50_matchID/ --evalPoseEstimation --evalPoseTracking
 
 
@@ -310,60 +315,60 @@ eval-t3-hr904:
 	$(mot_pypath); python ../poseval/py/evaluate.py $(eval_gt_all) -p  pred_json-track/hr904-64.0-valid_task_-2_mask_DETbox_allBox_Flip_estJoints_tfIoU_nmsThres_0.35_0.50_IoUMetric_mkrs_box_0.80_joint_0.50_matchID/ --evalPoseEstimation --evalPoseTracking -o out-hr904-tracking
 
 
-eval-t3-sb88-t1json: # f
+eval-t3-sb88-t1json:
 	$(mot_pypath); python ../poseval/py/evaluate.py $(eval_gt_all) -p  pred_json-single-est/79.0-sb88-valid_task_1_mask_DETbox_allBox_Flip_estJoints_tfIoU_nmsThres_0.35_0.50/ --evalPoseEstimation --evalPoseTracking -o out-hr904-tracking > evalt3-sb88-t1json
 
-eval-t3-sb88-gen_matched_box: # f
+eval-t3-sb88-gen_matched_box:
 	$(mot_pypath); python ../poseval/py/evaluate.py $(eval_gt_all) -p  pred_json-matchedDet/valid_task_-3_mask_DETbox_allBox_Flip_estJoints_tfIoU_nmsThres_0.35_0.50/ --evalPoseEstimation --evalPoseTracking
 
-eval-t3-sb88-gen_matched_box-gtid: # f
+eval-t3-sb88-gen_matched_box-gtid:
 	$(mot_pypath); python ../poseval/py/evaluate.py $(eval_gt_all) -p  pred_json-matchedDet/valid_task_-3_gtid/ --evalPoseEstimation --evalPoseTracking
 
-eval-t3-sb88-gen_matched_box-gtid-fj: # f
+eval-t3-sb88-gen_matched_box-gtid-fj:
 	$(mot_pypath); python ../poseval/py/evaluate.py $(eval_gt_all) -p  pred_json-matchedDet/valid_task_-3_gtid-fj/ --evalPoseEstimation --evalPoseTracking
 
 
-eval-t3-sb88-gen_matched_box-gtid-debug: # f
+eval-t3-sb88-gen_matched_box-gtid-debug:
 	$(mot_pypath); python ../poseval/py/evaluate.py $(eval_gt_debug) -p  pred_json-matchedDet/valid_task_-3_gtid/ --evalPoseEstimation --evalPoseTracking
 
-eval-t3-sb88-gen_matched_box-hipckh-debug: # f
+eval-t3-sb88-gen_matched_box-hipckh-debug:
 	$(mot_pypath); python ../poseval/py/evaluate.py $(eval_gt_debug) -p  pred_json-matchedDet-hipckh/valid_task_-3_mask_DETbox_allBox_Flip_estJoints_tfIoU_nmsThres_0.35_0.50_hiPckh_0.8/ --evalPoseEstimation --evalPoseTracking
 
-eval-t3-sb88-normal: # f
+eval-t3-sb88-normal:
 	$(mot_pypath); python ../poseval/py/evaluate.py $(eval_gt_all) -p  pred_json-track/sb88-60.1-normal-task_-2_box_0.80_joint_0.50_matchID/ --evalPoseEstimation --evalPoseTracking
 
 
-eval-t3-sb88-nofbj: # f
+eval-t3-sb88-nofbj:
 	$(mot_pypath); python ../poseval/py/evaluate.py $(eval_gt_all) -p  pred_json-track/valid_task_-2_mask_DETbox_allBox_Flip_estJoints_tfIoU_nmsThres_0.35_0.50_IoUMetric_mkrs_box_0.00_joint_0.00_matchID/ --evalPoseEstimation --evalPoseTracking
 
-eval-t3-sb88-normal-debug: # f
+eval-t3-sb88-normal-debug:
 	$(mot_pypath); python ../poseval/py/evaluate.py $(eval_gt_debug) -p  pred_json-track/sb88-60.1-normal-task_-2_box_0.80_joint_0.50_matchID/ --evalPoseEstimation --evalPoseTracking
 
-eval-t3-sb88-matched_box: # f
+eval-t3-sb88-matched_box:
 	$(mot_pypath); python ../poseval/py/evaluate.py $(eval_gt_all) -p  pred_json-matchedDet/valid_task_-2_mask_DETbox_allBox_Flip_estJoints_tfIoU_nmsThres_0.35_0.50_IoUMetric_mkrs_box_0.00_joint_0.00_matchID/ --evalPoseEstimation --evalPoseTracking
 
-eval-t3-sb88-matched_box-fb: # f
+eval-t3-sb88-matched_box-fb:
 	$(mot_pypath); python ../poseval/py/evaluate.py $(eval_gt_all) -p  pred_json-matchedDet/valid_task_-2_mask_DETbox_allBox_Flip_estJoints_tfIoU_nmsThres_0.35_0.50_IoUMetric_mkrs_box_0.80_joint_0.00_matchID/ --evalPoseEstimation --evalPoseTracking
 
-eval-t3-sb88-matched_box-fj: # f
+eval-t3-sb88-matched_box-fj:
 	$(mot_pypath); python ../poseval/py/evaluate.py $(eval_gt_all) -p  pred_json-matchedDet/valid_task_-2_mask_DETbox_allBox_Flip_estJoints_tfIoU_nmsThres_0.35_0.50_IoUMetric_mkrs_box_0.00_joint_0.50_matchID/ --evalPoseEstimation --evalPoseTracking
 
-eval-t3-sb88-matched_box-fbj: # f
+eval-t3-sb88-matched_box-fbj:
 	$(mot_pypath); python ../poseval/py/evaluate.py $(eval_gt_all) -p  pred_json-matchedDet/valid_task_-2_mask_DETbox_allBox_Flip_estJoints_tfIoU_nmsThres_0.35_0.50_IoUMetric_mkrs_box_0.80_joint_0.50_matchID/ --evalPoseEstimation --evalPoseTracking
 
 
 
-eval-t3-sb88-matched_box-debug: # f
+eval-t3-sb88-matched_box-debug:
 	$(mot_pypath); python ../poseval/py/evaluate.py $(eval_gt_debug) -p  pred_json-matchedDet/valid_task_-2_mask_DETbox_allBox_Flip_estJoints_tfIoU_nmsThres_0.35_0.50_IoUMetric_mkrs_box_0.00_joint_0.00_matchID/ --evalPoseEstimation --evalPoseTracking
 
-eval-t3-sb88-matched_box-debug-fb: # f
+eval-t3-sb88-matched_box-debug-fb:
 	$(mot_pypath); python ../poseval/py/evaluate.py $(eval_gt_debug) -p  pred_json-matchedDet/valid_task_-2_mask_DETbox_allBox_Flip_estJoints_tfIoU_nmsThres_0.35_0.50_IoUMetric_mkrs_box_0.80_joint_0.00_matchID/ --evalPoseEstimation --evalPoseTracking
 
-eval-t3-sb88-matched_box-debug-fj: # f
+eval-t3-sb88-matched_box-debug-fj:
 	$(mot_pypath); python ../poseval/py/evaluate.py $(eval_gt_debug) -p  pred_json-matchedDet/valid_task_-2_mask_DETbox_allBox_Flip_estJoints_tfIoU_nmsThres_0.35_0.50_IoUMetric_mkrs_box_0.00_joint_0.50_matchID/ --evalPoseEstimation --evalPoseTracking
 
 
-eval-t3-sb88-matched_box-debug-fbj: # f
+eval-t3-sb88-matched_box-debug-fbj:
 	$(mot_pypath); python ../poseval/py/evaluate.py $(eval_gt_debug) -p  pred_json-matchedDet/valid_task_-2_mask_DETbox_allBox_Flip_estJoints_tfIoU_nmsThres_0.35_0.50_IoUMetric_mkrs_box_0.80_joint_0.50_matchID/ --evalPoseEstimation --evalPoseTracking
 
 

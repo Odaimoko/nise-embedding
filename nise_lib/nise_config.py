@@ -180,7 +180,7 @@ def set_path_from_nise_cfg(nise_cfg):
     if nise_cfg.TEST.TASK == -1:
         if prop_part: suffix_list.append(prop_part)
     if unify_part: suffix_list.append(unify_part)
-    if nise_cfg.TEST.TASK in [-2, -3, -4]:
+    if nise_cfg.TEST.TASK in [-2, -3, -4, -6]:
         if track_part: suffix_list.append(track_part)
     if matchDet_part: suffix_list.append(matchDet_part)
     
@@ -237,8 +237,8 @@ class NiseConfig:
             self.IOU_THERS_FOR_NEGATIVE = 0
             
             # TRAINING PARAM
-            self.BATCH_SIZE_PER_GPU = 2
-            self.WORKERS = 4
+            self.BATCH_SIZE_PER_GPU = 4
+            self.WORKERS = 8
             self.SHUFFLE = True
             self.LR = 0.01
             self.LR_FACTOR = 0.1  # how much to reduce
@@ -248,14 +248,18 @@ class NiseConfig:
             # TRAINING PROCESS
             self.START_EPOCH = 0
             self.END_EPOCH = 0
-            self.PRINT_FREQ = 1
+            self.PRINT_FREQ = 10
             
             # ─── DATA AUGMENTATION SETTING ──────────────────────────────────────────────────
             
-            self.scale_factor = (0.7, 1.35)
-            self.contrast_range = 5
-            self.motion_blur_size = [30, 40]
+            self.box_scale_factor = (-.1, .3)
+            self.contrast_range = [-5, 5]
+            self.motion_blur_prob = .2
+            self.motion_blur_size = [20, 30]
             self.motion_blur_angle_range = (60, 120)
+            
+            # DEBUG
+            self.VIS_PAIR = False
     
     class _DATA:
         def __init__(self):
@@ -423,7 +427,7 @@ class NiseConfig:
             self.MAP_TP_IOU_THRES = .5
             
             # for training matching net
-            self.BATCH_SIZE_PER_GPU = 24
+            self.BATCH_SIZE_PER_GPU = 4
             
             # for tracking visualization
             self.POSITIVE_PAIR_THRES = .5

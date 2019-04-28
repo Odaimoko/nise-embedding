@@ -76,7 +76,7 @@ class MatchingNet(nn.Module):
             fmaps = self.conv_body(inputs)
         _, C, H, W = fmaps.shape
         fmaps = fmaps.view([bs, -1, C, H, W])
-
+        
         bs, num_samples, _, _, _ = fmaps.shape
         inputs = []
         for b in range(bs):
@@ -94,6 +94,7 @@ class MatchingNet(nn.Module):
         return out
     
     def original_forward(self, x):
+        # for test
         out = self.pool1(self.conv1(x))
         out = self.conv2(out)
         out = self.conv3(out)
@@ -126,7 +127,7 @@ def load_mNet_model(model_file, maskRCNN):
     model = torch.nn.DataParallel(model, device_ids = gpus).cuda()
     meta_info = torch.load(model_file)
     model.load_state_dict(meta_info['state_dict'])
-    return model
+    return model,meta_info
 
 
 if __name__ == '__main__':

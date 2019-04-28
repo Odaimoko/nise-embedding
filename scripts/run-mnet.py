@@ -45,7 +45,7 @@ if __name__ == '__main__':
         dataset_path = nise_cfg.PATH.GT_TRAIN_ANNOTATION_DIR
     
     model_file_path = os.path.join(nise_cfg.PATH.MODEL_SAVE_DIR_FOR_TRAINING_MNET, nise_cfg.PATH.mNet_MODEL_FILE)
-    model = load_mNet_model(model_file_path,maskRCNN)  # DataParallel
+    model,meta_info = load_mNet_model(model_file_path,maskRCNN)  # DataParallel
     
     task_3_with_mNet(dataset_path, mNet = model)
     # nise_flow_debug(dataset_path, maskRCNN, joint_est_model, None, mNet = model)  # 用于利用生成好的 box
