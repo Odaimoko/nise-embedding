@@ -1,6 +1,7 @@
 import os
 import threading
 import argparse
+from multiprocessing import Pool
 
 
 def mkdir(path):
@@ -22,7 +23,9 @@ def get_args():
 
 
 def run(cmd):
+    print(cmd)
     os.system(cmd)
+    print('DONEDONEDONE...!')
 
 
 root_dir = get_args().root_dir
@@ -33,23 +36,20 @@ files = [f for f in os.listdir(root_dir) if 'valid' in f]
 files = sorted(files)
 ts = []
 for f in files:
-    print(f)
-    cmd = ' '.join([
-        'python ',
-        '../poseval/py/evaluate.py',
-        '--groundTruth=pred_json-pre-commissioning/val_gt_task1/ ',
-        '--predictions=' + root_dir + '/' + f + '/',
-        ' --evalPoseEstimation  --evalPoseTracking ',
-        ">",
-        log_dir + "/" + f + ".log",
-    ])
-    print(cmd)
-    os.system(cmd)
-    # run(cmd)
-    t = threading.Thread(target = run, args = (cmd,))
-    # t.start()
-    ts.append(t)
-for t in ts:
-    t.start()
-for t in ts:
-    t.join()
+    if ('joint_0.3' in f or 'joint_0.4' in f or 'joint_0.5' in f or 'joint_0.6' in f or 'joint_0.7' in f) \
+            and ('box_0.4' in f or 'box_0.5' in f or 'box_0.6' in f or 'box_0.7' in f or 'box_0.8' in f):
+        print(f)
+        cmd = ' '.join([
+            'python ',
+            '../poseval/py/evaluate.py',
+            '--groundTruth=pred_json-pre-commissioning/val_gt_task1/ ',
+            '--predictions=' + root_dir + '/' + f + '/',
+            ' --evalPoseEstimation  --evalPoseTracking ',
+            ">",
+            log_dir + "/" + f + ".log",
+        ])
+        ts.append((cmd,))
+
+with Pool(processes = 12) as po:
+    print('Pool created.')
+    po.starmap(run, ts)

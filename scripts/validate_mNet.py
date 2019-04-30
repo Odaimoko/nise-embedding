@@ -95,6 +95,7 @@ def val_using_loader(config, val_loader, criterion, val_dataset, model):
                 debug_print(msg)
         
         perf_indicator = val_dataset.eval(all_scores)
+        perf_indicator.update({'scores': all_scores})
     
     return perf_indicator
 
@@ -120,7 +121,7 @@ if __name__ == '__main__':
     
     val_loader = torch.utils.data.DataLoader(
         val_pair,
-        batch_size = 4 * len(gpus),
+        batch_size = 8 * len(gpus),
         shuffle = False,
         num_workers = 4,
         pin_memory = False,
@@ -129,6 +130,5 @@ if __name__ == '__main__':
     #     print(inputs.shape)
     p2 = val_using_loader(nise_cfg, val_loader, loss_calc, val_pair, model)
     model_p = PurePosixPath(nise_cfg.PATH.mNet_MODEL_FILE)
-    result_file = os.path.join(nise_cfg.PATH.MODEL_SAVE_DIR_FOR_TRAINING_MNET, model_p.parts[-1]+'.eval')
+    result_file = os.path.join(nise_cfg.PATH.MODEL_SAVE_DIR_FOR_TRAINING_MNET, model_p.parts[-1] + '.eval')
     torch.save(p2, result_file)
-    

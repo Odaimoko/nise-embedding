@@ -551,14 +551,12 @@ class FrameItem:
                         indices = get_matching_indices(dist_mat)
                     elif self.cfg.ALG.MATCHING_ALG == self.cfg.ALG.MATCHING_GREEDY:
                         indices = list(zip(*bipartite_matching_greedy(-dist_mat)))
-                    # debug_print('\t'.join(['(%d, %d) -> %.2f; ID %d' % (
-                    #     prev, cur, dist_mat[cur][prev], prev_frame.people_ids[prev])
-                    #                        for cur, prev in indices]), indent = 1)
                     for cur, prev in indices:
-                        # value = dist_mat[cur][prev]
+                        value = dist_mat[cur][prev]
                         # debug_print('(%d, %d) -> %f' % (cur, prev, value))
                         # self.vis_one_pair(prev_frame, prev, cur, dist_mat[cur, prev])
-                        self.people_ids[cur] = prev_frame.people_ids[prev]
+                        if value > self.cfg.TEST.POSITIVE_PAIR_THRES:
+                            self.people_ids[cur] = prev_frame.people_ids[prev]
                 for i in range(self.people_ids.shape[0]):
                     if self.people_ids[i] == 0:  # unassigned
                         # 每个线程都会有新的 FI类变量，所以新的 video 还是会从零开始
@@ -623,7 +621,7 @@ class FrameItem:
         self.people_ids = torch.zeros(self.id_boxes.shape[0]).long()
         self.id_assigned = True
     
-    def assign_id_mNet(self, Q, mNet: nn.DataParallel) -> None:
+    def assign_id_mNet(self, Q, mNet: nn.DataParallel, mNetMat = None) -> None:
         """ - Associate ids. question: how to associate using more than two frames?between each 2?- """
         if not self.joints_detected:
             raise ValueError('Should detect joints first')
@@ -643,66 +641,74 @@ class FrameItem:
                 prev_frame = Q[-1]
                 assert isinstance(prev_frame, FrameItem)
                 if not prev_frame.people_ids.numel() == 0:
-                    assert self.fmap_dict is not None
+                    
                     cur_boxes = self.id_boxes.numpy()[:, :4]
                     pre_boxes = prev_frame.id_boxes.numpy()[:, :4]
-                    # Here cur comes first while when training pre comes first,
-                    # for the sake of unity of other tracking code, we keep cur at first
-                    dist_mat = tf_iou(cur_boxes, pre_boxes)
-                    pairs = [[p_idx, c_idx, expand_vector_to_tensor(
-                        torch.from_numpy(unioned_box(cur_boxes[c_idx], pre_boxes[p_idx]))).int().float()]
-                             for p_idx in range(len(pre_boxes))
-                             for c_idx in range(len(cur_boxes))
-                             if dist_mat[c_idx, p_idx] > self.cfg.TRAIN.IOU_THERS_FOR_NEGATIVE]
-                    # allboxes = torch.cat([p[3] for p in pairs])
-                    # cur_fmaps = get_box_fmap(self.fmap_dict, allboxes, 'align')
-                    # pre_fmaps = get_box_fmap(prev_frame.fmap_dict, allboxes, 'align')
                     start = time.time()
-                    debug_print('Original\n', dist_mat, lvl = Levels.ERROR)
-                    if self.cfg.ALG.MATCHING_ALG == self.cfg.ALG.MATCHING_MKRS:
-                        indices = get_matching_indices(dist_mat)
-                    elif self.cfg.ALG.MATCHING_ALG == self.cfg.ALG.MATCHING_GREEDY:
-                        indices = list(zip(*bipartite_matching_greedy(-dist_mat)))
-                    for cur, prev in indices:
-                        value = dist_mat[cur][prev]
-                        debug_print('(%d, %d) -> %f' % (cur, prev, value))
+                    p = PurePosixPath(self.img_path)
                     
-                    all_inputs = torch.zeros([len(pairs),
-                                              self.cfg.MODEL.INPUTS_CHANNELS,
-                                              self.cfg.MODEL.FEATURE_MAP_RESOLUTION,
-                                              self.cfg.MODEL.FEATURE_MAP_RESOLUTION])
-                    all_inputs = gen_all_inputs(all_inputs, pairs,
-                                                prev_frame.fmap_dict, self.fmap_dict,
-                                                prev_frame.joints[prev_frame.id_idx_in_unified],
-                                                prev_frame.joints_score[prev_frame.id_idx_in_unified],
-                                                self.joints[self.id_idx_in_unified],
-                                                self.joints_score[self.id_idx_in_unified]).cuda()
-                    if all_inputs.numel() != 0:
-                        with torch.no_grad():
-                            out = mNet.module.original_forward(all_inputs)
-                            out = FrameItem.sig(out)
-                            del all_inputs
-                            torch.cuda.empty_cache()
+                    mat_file_dir = os.path.join(self.cfg.PATH.MNET_DIST_MAT_DIR, p.parts[-2])
+                    mkdir(mat_file_dir)
+                    mat_file_path = os.path.join(mat_file_dir, p.stem + '.pkl')
+                    if isinstance(mNetMat, np.ndarray):
+                        dist_mat = np.zeros([cur_boxes.shape[0], pre_boxes.shape[0]])
+                        # debug_print('Original\n', mNetMat, lvl = Levels.ERROR)
+                        # debug_print(self.id_idx_in_unified, prev_frame.id_idx_in_unified)
+                        for i in range(cur_boxes.shape[0]):
+                            for j in range(pre_boxes.shape[0]):
+                                dist_mat[i, j] = mNetMat[
+                                    self.id_idx_in_unified[i], prev_frame.id_idx_in_unified[j]]
                     else:
-                        pass
-                    for i in range(len(pairs)):
-                        p_idx, c_idx, _ = pairs[i]
-                        dist_mat[c_idx, p_idx] = out[i].squeeze().detach().cpu().numpy()
-                    debug_print('Changed\n', dist_mat, lvl = Levels.ERROR)
-                    # dist_mat should be np.ndarray
+                        # Here cur comes first while when training pre comes first,
+                        # for the sake of unity of other tracking code, we keep cur at first
+                        dist_mat = tf_iou(cur_boxes, pre_boxes)
+                        # debug_print('Original\n', dist_mat, lvl = Levels.ERROR)
+                        # if self.cfg.ALG.MATCHING_ALG == self.cfg.ALG.MATCHING_MKRS:
+                        #     indices = get_matching_indices(dist_mat)
+                        # elif self.cfg.ALG.MATCHING_ALG == self.cfg.ALG.MATCHING_GREEDY:
+                        #     indices = list(zip(*bipartite_matching_greedy(-dist_mat)))
+                        # for cur, prev in indices:
+                        #     value = dist_mat[cur][prev]
+                        #     debug_print('(%d, %d) -> %f' % (cur, prev, value))
+                        pairs = [[p_idx, c_idx, expand_vector_to_tensor(
+                            torch.from_numpy(unioned_box(cur_boxes[c_idx], pre_boxes[p_idx]))).int().float()]
+                                 for p_idx in range(len(pre_boxes))
+                                 for c_idx in range(len(cur_boxes))
+                                 if dist_mat[c_idx, p_idx] > self.cfg.TRAIN.IOU_THERS_FOR_NEGATIVE]
+                        assert self.fmap_dict is not None
+                        all_inputs = torch.zeros([len(pairs),
+                                                  self.cfg.MODEL.INPUTS_CHANNELS,
+                                                  self.cfg.MODEL.FEATURE_MAP_RESOLUTION,
+                                                  self.cfg.MODEL.FEATURE_MAP_RESOLUTION])
+                        all_inputs = gen_all_inputs(all_inputs, pairs,
+                                                    prev_frame.fmap_dict, self.fmap_dict,
+                                                    prev_frame.joints[prev_frame.id_idx_in_unified],
+                                                    prev_frame.joints_score[prev_frame.id_idx_in_unified],
+                                                    self.joints[self.id_idx_in_unified],
+                                                    self.joints_score[self.id_idx_in_unified]).cuda()
+                        if all_inputs.numel() != 0:
+                            with torch.no_grad():
+                                out = mNet(all_inputs)
+                                out = FrameItem.sig(out)
+                                del all_inputs
+                                torch.cuda.empty_cache()
+                        for i in range(len(pairs)):
+                            p_idx, c_idx, _ = pairs[i]
+                            dist_mat[c_idx, p_idx] = out[i].squeeze().detach().cpu().numpy()
+                        
+                        torch.save(dist_mat, mat_file_path)
+                    # debug_print('Changed\n', dist_mat, lvl = Levels.ERROR)
                     if self.cfg.ALG.MATCHING_ALG == self.cfg.ALG.MATCHING_MKRS:
                         indices = get_matching_indices(dist_mat)
                     elif self.cfg.ALG.MATCHING_ALG == self.cfg.ALG.MATCHING_GREEDY:
                         indices = list(zip(*bipartite_matching_greedy(-dist_mat)))
-                    # debug_print('\t'.join(['(%d, %d) -> %.2f; ID %d' % (
-                    #     prev, cur, dist_mat[cur][prev], prev_frame.people_ids[prev])
-                    #                        for cur, prev in indices]), indent = 1)
                     # debug_print("Time consumed %.3f" % (time.time() - start))
                     for cur, prev in indices:
                         value = dist_mat[cur][prev]
-                        debug_print('(%d, %d) -> %f' % (prev, cur, value))
+                        # debug_print('(%d, %d) -> %f' % (prev, cur, value))
                         # self.vis_one_pair(prev_frame, prev, cur, dist_mat[cur, prev])
-                        self.people_ids[cur] = prev_frame.people_ids[prev]
+                        if value > self.cfg.TEST.POSITIVE_PAIR_THRES:
+                            self.people_ids[cur] = prev_frame.people_ids[prev]
                 for i in range(self.people_ids.shape[0]):
                     if self.people_ids[i] == 0:  # unassigned
                         self.people_ids[i] = FrameItem.max_id = FrameItem.max_id + 1

@@ -130,3 +130,7 @@ exp_config/12*nmsthres*.yaml
 scripts/test-fmap-load.py
 *.bin
 other_libs/
+exp_config/batch/
+exp_config/3/t-3-root-mnet-*
+.pdbrc
+Makefile

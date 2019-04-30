@@ -576,8 +576,14 @@ def task_3_with_mNet(gt_anno_dir, mNet):
                     fi.joints = pred_joints
                 fi.joints_score = pred_joints_scores
                 fi.joints_detected = True
-                
-                fi.assign_id_mNet(Q, mNet)
+                im_p = PurePosixPath(img_file_path)
+                mat_file_dir = os.path.join(nise_cfg.PATH.MNET_DIST_MAT_DIR, im_p.parts[-2])
+                mat_file_path = os.path.join(mat_file_dir, im_p.stem + '.pkl')
+                if os.path.exists(mat_file_path):
+                    dist_mat = torch.load(mat_file_path)
+                else:
+                    dist_mat = None
+                fi.assign_id_mNet(Q, mNet, dist_mat)
                 if nise_cfg.DEBUG.VISUALIZE:
                     t = threading.Thread(target = fi.visualize, args = ())
                     vis_threads.append(t)
@@ -733,7 +739,7 @@ def init_gm(_gm, n_cfg, ):
 def nise_flow_debug(gt_anno_dir, human_detector, joint_estimator, flow_model, mNet):
     # PREDICT ON POSETRACK 2017
     pp = pprint.PrettyPrinter(indent = 2)
-    # debug_print(pp.pformat(nise_cfg))
+    debug_print(pp.pformat(nise_cfg))
     
     anno_file_names = get_type_from_dir(gt_anno_dir, ['.json'])
     anno_file_names = sorted(anno_file_names)
@@ -970,7 +976,6 @@ def run_one_video_tracking(_nise_cfg, est_cfg, i: int, file_name: str, human_det
     for t in vis_threads:
         t.join()
 
-
 @log_time('One video...')
 def run_one_mnet(_nise_cfg, est_cfg, i: int, file_name: str, human_detector, joint_estimator,
                  flow_model, mNet):
@@ -983,12 +988,12 @@ def run_one_mnet(_nise_cfg, est_cfg, i: int, file_name: str, human_detector, joi
     :return:
     '''
     # for rectify threads, since every thread reloads py modules and config is reset
-    FrameItem.maskRCNN = human_detector
-    human_detect_args = human_detect_parse_args()
-    cfg_from_file(human_detect_args.cfg_file)
-    tron_cfg.MODEL.LOAD_IMAGENET_PRETRAINED_WEIGHTS = False
+    # FrameItem.maskRCNN = human_detector
+    # human_detect_args = human_detect_parse_args()
+    # cfg_from_file(human_detect_args.cfg_file)
+    # tron_cfg.MODEL.LOAD_IMAGENET_PRETRAINED_WEIGHTS = False
     
-    torch.cuda.empty_cache()
+    # torch.cuda.empty_cache()
     if is_skip_video(nise_cfg, i, file_name):
         debug_print('Skip', i, file_name)
         return
@@ -1010,7 +1015,7 @@ def run_one_mnet(_nise_cfg, est_cfg, i: int, file_name: str, human_detector, joi
     vis_threads = []
     for j, frame in enumerate(gt):
         img_file_path = os.path.join(nise_cfg.PATH.POSETRACK_ROOT, frame['image'][0]['name'])
-        debug_print(j, img_file_path, indent = 1)
+        # debug_print(j, img_file_path, indent = 1)
         gt_annorects = frame['annorect']
         gt_joints, gt_scores = get_joints_from_annorects(gt_annorects)
         gt_id = torch.tensor(
@@ -1040,7 +1045,14 @@ def run_one_mnet(_nise_cfg, est_cfg, i: int, file_name: str, human_detector, joi
             fi.joints_score = pred_joints_scores
             fi.joints_detected = True
             
-            fi.assign_id_mNet(Q, mNet)
+            im_p = PurePosixPath(img_file_path)
+            mat_file_dir = os.path.join(nise_cfg.PATH.MNET_DIST_MAT_DIR, im_p.parts[-2])
+            mat_file_path = os.path.join(mat_file_dir, im_p.stem + '.pkl')
+            if os.path.exists(mat_file_path):
+                dist_mat = torch.load(mat_file_path)
+            else:
+                dist_mat = None
+            fi.assign_id_mNet(Q, mNet, dist_mat)
             if nise_cfg.DEBUG.VISUALIZE:
                 t = threading.Thread(target = fi.visualize, args = ())
                 vis_threads.append(t)
@@ -1051,8 +1063,6 @@ def run_one_mnet(_nise_cfg, est_cfg, i: int, file_name: str, human_detector, joi
     with open(json_path, 'w') as f:
         json.dump({'annolist': pred_frames}, f, indent = 2)
         debug_print('json saved:', json_path)
-    del fi
-    del Q
 
 
 @log_time('One video...')

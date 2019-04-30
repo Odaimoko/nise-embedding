@@ -943,7 +943,7 @@ def make_nise_dirs():
     mkdir(nise_cfg.PATH.DET_EST_JSON_DIR)
     mkdir(nise_cfg.PATH.UNIFIED_JSON_DIR)
     mkdir(nise_cfg.PATH.MODEL_SAVE_DIR_FOR_TRAINING_MNET)
-
+    mkdir(nise_cfg.PATH.MNET_DIST_MAT_DIR)
 
 def get_type_from_dir(dirpath, type_list):
     files = []

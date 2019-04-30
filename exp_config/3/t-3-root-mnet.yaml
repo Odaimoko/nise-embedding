@@ -1,3 +1,5 @@
+TRAIN:
+  IOU_THERS_FOR_NEGATIVE: 0
 ALG:
   USE_COCO_IOU_IN_NMS: False
   UNIFY_NMS_THRES_1: .35
@@ -9,12 +11,12 @@ ALG:
 TEST:
   FLIP_TEST: True
   FROM: 0
-  TO: 1
-  ONLY_TEST:
+  TO: 50
+#  ONLY_TEST:
 #    - '03742'
 #    - 14102_mpii
 #    -  20880_mpii_relpath_5sec_testsub
-    -  '16236'
+#    -  '16236'
 
   TASK: -6
   MODE: valid
@@ -31,9 +33,10 @@ DEBUG:
   USE_FLOW_RESULT: False
   USE_DET_EST_RESULT: False
   load_simple_model: False
-  load_human_det_model: True
+  load_human_det_model: False
+  load_mnet_model: False
 PATH:
-  mNet_MODEL_FILE: 'ep-30-0.pkl'
+  mNet_MODEL_FILE: 'mnet_output/ep-40-0.pkl'
   _JOINTS_DIR: 'images_joint-track-mnet/'
   _IMAGES_OUT_DIR: 'images_out-track-mnet/'
   _JSON_SAVE_DIR: 'pred_json-track-mnet/'

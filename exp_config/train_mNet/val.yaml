@@ -1,24 +1,7 @@
-TRAIN:
-  START_EPOCH: 0
-  END_EPOCH: 40
-
 TEST:
-  FLIP_TEST: True
-  FROM: 0
-  TO: 250
-#  ONLY_TEST:
-#    - '14102'
-#    - '00522'
   TASK: 10
-  MODE: train
+  POSITIVE_PAIR_THRES: 0.5
 DEBUG:
-  VISUALIZE: False
-  VIS_JOINTS_FULL: False
-  VIS_HUMAN_THRES: 0.0
-  VIS_SINGLE_NO_JOINTS: False
-  VIS_EST_SINGLE: False
-  VIS_BOX: False
-
   load_human_det_model: True
 PATH:
   mNet_MODEL_FILE: 'mnet_output/ep-40-0.pkl'

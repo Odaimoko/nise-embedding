@@ -82,7 +82,7 @@ t3-sb88-mnet-greedy:
 
 
 eval-t3-sb88-mnet-fbj:
-	$(mot_pypath); python ../poseval/py/evaluate.py $(eval_gt_all) -p  pred_json-track-mnet/valid_task_-2_mask_DETbox_allBox_Flip_estJoints_tfIoU_nmsThres_0.35_0.50_IoUMetric_mkrs_box_0.80_joint_0.50_matchID/ --evalPoseEstimation --evalPoseTracking
+	$(mot_pypath); python ../poseval/py/evaluate.py $(eval_gt_all) -p  pred_json-track-mnet/valid_task_-6_mask_DETbox_allBox_Flip_estJoints_tfIoU_nmsThres_0.35_0.50_IoUMetric_mkrs_box_0.80_joint_0.50_matchID_posThres_0/ --evalPoseEstimation --evalPoseTracking
 
 
 eval-t3-sb88-mnet-debug-fbj:

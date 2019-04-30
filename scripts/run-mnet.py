@@ -19,12 +19,12 @@ from nise_lib.nise_debugging_func import *
 from nise_lib.core import *
 from tron_lib.core.config import cfg as tron_cfg
 from simple_lib.core.config import config as simple_cfg
-from nise_lib.nise_models import load_mNet_model
+from nise_lib.nise_models import load_mini_mNet_model
 
 if __name__ == '__main__':
     np.set_printoptions(precision = 2)
     np.set_printoptions(suppress = True)
-    
+    torch.backends.cudnn.enabled = False
     mp.set_start_method('spawn', force = True)
     warnings.filterwarnings('ignore')
     debug_print(pprint.pformat(nise_cfg), lvl = Levels.WARNING)
@@ -36,6 +36,8 @@ if __name__ == '__main__':
     if nise_cfg.DEBUG.load_human_det_model:
         human_detect_args = human_detect_parse_args()
         maskRCNN, human_det_dataset = load_human_detect_model(human_detect_args, tron_cfg)
+        maskRCNN.module.Conv_Body.P2only = True
+        
         FrameItem.maskRCNN = maskRCNN
     make_nise_dirs()
     
@@ -43,9 +45,13 @@ if __name__ == '__main__':
         dataset_path = nise_cfg.PATH.GT_VAL_ANNOTATION_DIR
     elif nise_cfg.TEST.MODE == 'train':
         dataset_path = nise_cfg.PATH.GT_TRAIN_ANNOTATION_DIR
+    mini_mNet = None
+    if nise_cfg.DEBUG.load_human_det_model:
+        model, meta_info = load_mini_mNet_model(nise_cfg.PATH.mNet_MODEL_FILE)  # DataParallel
+        # only use part of the model
+        model = model.module
+        mini_mNet = nn.Sequential(*list(model.children())[1:])
     
-    model_file_path = os.path.join(nise_cfg.PATH.MODEL_SAVE_DIR_FOR_TRAINING_MNET, nise_cfg.PATH.mNet_MODEL_FILE)
-    model,meta_info = load_mNet_model(model_file_path,maskRCNN)  # DataParallel
-    
-    task_3_with_mNet(dataset_path, mNet = model)
+    # task_3_with_mNet(dataset_path, mNet = model)
+    nise_flow_debug(dataset_path, None, None, None, mini_mNet)
     # nise_flow_debug(dataset_path, maskRCNN, joint_est_model, None, mNet = model)  # 用于利用生成好的 box

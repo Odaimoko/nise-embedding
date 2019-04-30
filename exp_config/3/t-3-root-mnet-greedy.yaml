@@ -33,7 +33,7 @@ DEBUG:
   load_simple_model: False
   load_human_det_model: True
 PATH:
-  mNet_MODEL_FILE: 'ep-6-0.pkl'
+  mNet_MODEL_FILE: 'mnet_output/ep-40-0.pkl'
   _JOINTS_DIR: 'images_joint-track-mnet/'
   _IMAGES_OUT_DIR: 'images_out-track-mnet/'
   _JSON_SAVE_DIR: 'pred_json-track-mnet/'

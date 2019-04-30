@@ -155,7 +155,9 @@ def set_path_from_nise_cfg(nise_cfg):
         track_part.append('gtID')
     else:
         track_part.append('matchID')
-    
+    if nise_cfg.TEST.POSITIVE_PAIR_THRES > -1:
+        track_part.append('posThres')
+        track_part.append(str(nise_cfg.TEST.POSITIVE_PAIR_THRES))
     matchDet_part = []
     if nise_cfg.DEBUG.USE_HIGH_PCKH_DET_BOX:
         matchDet_part.append('hiPckh')
@@ -296,7 +298,7 @@ class NiseConfig:
             self.DEVELOPING = True
             self.load_flow_model = False
             self.load_human_det_model = True
-            
+            self.load_mnet_model = False
             # These two will be decided  dynamically
             self.load_simple_model = True
             self.load_hr_model = False
@@ -401,6 +403,7 @@ class NiseConfig:
             
             self.MODEL_SAVE_DIR_FOR_TRAINING_MNET = 'mnet_output/'
             self.mNet_MODEL_FILE = ''
+            self.MNET_DIST_MAT_DIR = 'mNet_dist/all_vid'
     
     class _TEST:
         def __init__(self):
@@ -430,7 +433,7 @@ class NiseConfig:
             self.BATCH_SIZE_PER_GPU = 4
             
             # for tracking visualization
-            self.POSITIVE_PAIR_THRES = .5
+            self.POSITIVE_PAIR_THRES = 0.1
     
     def __init__(self):
         #

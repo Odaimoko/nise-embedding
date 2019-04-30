@@ -120,6 +120,28 @@ class MatchingNet(nn.Module):
         return boxes_fmap
 
 
+class Mini_MatchingNet(nn.Module):
+    
+    def __init__(self, channels):
+        super(Mini_MatchingNet, self).__init__()
+        self.conv1 = Conv3x3(channels, channels)  # out 48x48
+        self.pool1 = nn.MaxPool2d(3)  # out 16x16
+        self.conv2 = Conv3x3(channels, channels)  # out 8x8
+        self.conv3 = Conv3x3(channels, channels)  # out 4x4
+        self.conv4 = Conv3x3(channels, channels)  # out 2x2
+        self.linear = nn.Linear(in_features = channels * 4, out_features = 1)
+    
+    def forward(self, x):
+        # for test
+        out = self.pool1(self.conv1(x))
+        out = self.conv2(out)
+        out = self.conv3(out)
+        out = self.conv4(out)
+        batch_size = out.shape[0]
+        out = self.linear(out.view(batch_size, -1))
+        return out
+
+
 def load_mNet_model(model_file, maskRCNN):
     model = MatchingNet(nise_cfg.MODEL.INPUTS_CHANNELS, maskRCNN)
     gpus = list(range(len(os.environ.get('CUDA_VISIBLE_DEVICES', default = '0').split(','))))
@@ -127,8 +149,18 @@ def load_mNet_model(model_file, maskRCNN):
     model = torch.nn.DataParallel(model, device_ids = gpus).cuda()
     meta_info = torch.load(model_file)
     model.load_state_dict(meta_info['state_dict'])
-    return model,meta_info
+    return model, meta_info
 
+def load_mini_mNet_model(model_file):
+    mini_model = Mini_MatchingNet(nise_cfg.MODEL.INPUTS_CHANNELS)
+    gpus = list(range(len(os.environ.get('CUDA_VISIBLE_DEVICES', default = '0').split(','))))
+    debug_print(gpus)
+    mini_model = torch.nn.DataParallel(mini_model, device_ids = gpus).cuda()
+    meta_info = torch.load(model_file)
+    mini_model.load_state_dict(meta_info['state_dict'],strict = False)
+    
+    return mini_model, meta_info
+    
 
 if __name__ == '__main__':
     rand_mat = torch.rand(100, 542, 96, 96)
